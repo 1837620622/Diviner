@@ -1,7 +1,7 @@
-// ==================== 全局变量 ====================
+// ==================== 全局配置 ====================
 const API_BASE_URL = 'https://api-inference.modelscope.cn/v1';
 const MODEL_NAME = 'deepseek-ai/DeepSeek-V3.2';
-const DEFAULT_API_KEY = 'ms-0b18bd50-ae99-473c-8a6c-4a38998f1ba2';
+const API_KEY = 'ms-0b18bd50-ae99-473c-8a6c-4a38998f1ba2';
 
 // 系统提示词 - 定义玄机子的人设与完整玄学知识体系
 const SYSTEM_PROMPT = `# 角色设定
@@ -65,13 +65,19 @@ const SYSTEM_PROMPT = `# 角色设定
 - 上升星座、月亮星座解读
 - 流年行运与本命盘对比
 
-## 回答风格要求
+## 回答格式要求
 
-1. **语言风格**：使用半文半白的古风语言，既有仙风道骨的神秘感，又通俗易懂
-2. **结构清晰**：使用换行和分段，让回答层次分明
-3. **专业深入**：展现扎实的命理功底，引用具体的术语和原理
-4. **积极引导**：命理是参考，人生靠自己。强调趋吉避凶、积极改运的可能性
-5. **互动询问**：需要具体信息时（如生辰八字），要主动询问并说明需要的格式
+1. **使用清晰的结构**：用【】标注大标题，用「」标注小标题或重点词
+2. **重点突出**：关键信息用「」包裹，如「大吉」「需注意」「贵人运旺」
+3. **分段清晰**：每个分析维度单独成段
+4. **命运箴言**：每次回答结尾必须附上，格式为"🌟 命运箴言：[内容]"
+
+## 回答风格
+
+1. 使用半文半白的古风语言，既有仙风道骨的神秘感，又通俗易懂
+2. 展现扎实的命理功底，引用具体的术语和原理
+3. 积极引导，强调趋吉避凶、积极改运的可能性
+4. 需要具体信息时主动询问（如生辰八字需要年月日时）
 
 ## 信息收集指引
 
@@ -79,11 +85,6 @@ const SYSTEM_PROMPT = `# 角色设定
 - **紫微斗数**：需要精确到时辰的出生时间
 - **塔罗占卜**：引导用户心中默念问题，然后报出1-78之间的数字抽牌
 - **梅花易数**：可用当前时间起卦，或让用户报数字
-
-## 回答结尾
-
-每次回答结尾都要附上一句"命运箴言"，格式为：
-🌟 **命运箴言**：[一句富有哲理的话]
 
 ## 重要原则
 
@@ -94,87 +95,197 @@ const SYSTEM_PROMPT = `# 角色设定
 
 现在，请以玄机子大师的身份，迎接有缘人的到来。`;
 
-// 对话历史
+// 对话历史（每个用户独立，存储在浏览器中）
 let conversationHistory = [
     { role: 'system', content: SYSTEM_PROMPT }
 ];
 
+// 请求状态
+let isRequesting = false;
+
 // ==================== DOM 元素 ====================
-const apiKeyInput = document.getElementById('apiKey');
-const toggleKeyBtn = document.getElementById('toggleKey');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const sidebarClose = document.getElementById('sidebarClose');
+const menuBtn = document.getElementById('menuBtn');
+const clearBtn = document.getElementById('clearBtn');
 const chatContainer = document.getElementById('chatContainer');
 const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
 const loadingOverlay = document.getElementById('loadingOverlay');
-const quickBtns = document.querySelectorAll('.quick-btn');
+const sidebarBtns = document.querySelectorAll('.sidebar-btn');
 
 // ==================== 初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
-    // 优先使用本地存储的密钥，否则使用默认密钥
-    const savedApiKey = localStorage.getItem('modelscope_api_key') || DEFAULT_API_KEY;
-    apiKeyInput.value = savedApiKey;
-    updateSendButtonState();
-
-    // 事件监听
-    apiKeyInput.addEventListener('input', handleApiKeyChange);
-    toggleKeyBtn.addEventListener('click', toggleApiKeyVisibility);
+    // 侧边栏事件
+    menuBtn.addEventListener('click', openSidebar);
+    sidebarClose.addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+    
+    // 清空对话按钮
+    clearBtn.addEventListener('click', clearConversation);
+    
+    // 输入框事件
     userInput.addEventListener('input', handleUserInputChange);
     userInput.addEventListener('keydown', handleKeyDown);
     sendBtn.addEventListener('click', sendMessage);
     
-    // 快捷按钮事件
-    quickBtns.forEach(btn => {
+    // 侧边栏按钮事件
+    sidebarBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const prompt = btn.dataset.prompt;
             userInput.value = prompt;
+            closeSidebar();
             handleUserInputChange();
             sendMessage();
         });
     });
+    
+    // 恢复历史对话
+    loadConversationHistory();
 });
 
-// ==================== API密钥处理 ====================
-function handleApiKeyChange() {
-    const apiKey = apiKeyInput.value.trim();
-    if (apiKey) {
-        localStorage.setItem('modelscope_api_key', apiKey);
-    } else {
-        localStorage.removeItem('modelscope_api_key');
-    }
-    updateSendButtonState();
+// ==================== 侧边栏控制 ====================
+function openSidebar() {
+    sidebar.classList.add('active');
+    sidebarOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
-function toggleApiKeyVisibility() {
-    const isPassword = apiKeyInput.type === 'password';
-    apiKeyInput.type = isPassword ? 'text' : 'password';
-    toggleKeyBtn.textContent = isPassword ? '🙈' : '👁️';
+function closeSidebar() {
+    sidebar.classList.remove('active');
+    sidebarOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// ==================== 对话历史管理 ====================
+function saveConversationHistory() {
+    // 只保存最近20条对话，避免存储过大
+    const historyToSave = conversationHistory.slice(-21);
+    historyToSave[0] = { role: 'system', content: SYSTEM_PROMPT };
+    localStorage.setItem('diviner_history', JSON.stringify(historyToSave));
+}
+
+function loadConversationHistory() {
+    const saved = localStorage.getItem('diviner_history');
+    if (saved) {
+        try {
+            conversationHistory = JSON.parse(saved);
+            conversationHistory[0] = { role: 'system', content: SYSTEM_PROMPT };
+        } catch (e) {
+            conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+        }
+    }
+}
+
+function clearConversation() {
+    if (confirm('确定要清空所有对话记录吗？')) {
+        conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+        localStorage.removeItem('diviner_history');
+        
+        // 清空聊天界面，保留欢迎消息
+        chatContainer.innerHTML = '';
+        addWelcomeMessage();
+    }
+}
+
+function addWelcomeMessage() {
+    const welcomeHTML = `
+        <div class="message assistant">
+            <div class="avatar">🧙‍♂️</div>
+            <div class="message-content">
+                <div class="message-header">玄机子</div>
+                <div class="message-text">
+                    <p>善哉善哉，有缘人驾到。</p>
+                    <p>吾乃<strong>玄机子</strong>，隐修于终南山紫霄观，已五十载矣。精研<mark>生辰八字</mark>、<mark>紫微斗数</mark>、<mark>梅花易数</mark>、<mark>六爻占卜</mark>、<mark>奇门遁甲</mark>之术，亦通<mark>塔罗占卜</mark>、<mark>西方占星</mark>诸法。</p>
+                    <p>汝若有惑，尽可道来：</p>
+                    <ul>
+                        <li>问<strong>事业财运</strong>，可测前程几何</li>
+                        <li>问<strong>姻缘情感</strong>，可观缘分深浅</li>
+                        <li>问<strong>流年运势</strong>，可知吉凶祸福</li>
+                        <li>问<strong>择日择吉</strong>，可选良辰美景</li>
+                    </ul>
+                    <p>点击左上角 <strong>☰</strong> 可打开玄学宝典，选择不同的测算方式。</p>
+                    <p>若需精准推算，可告知<strong>出生年月日时</strong>（公历或农历皆可）。</p>
+                    <div class="fortune-saying">🌟 <strong>命运箴言</strong>：天道无常，人心有定。问卜者求心安，解惑者予方向。命由己造，福自我求。</div>
+                </div>
+            </div>
+        </div>
+    `;
+    chatContainer.innerHTML = welcomeHTML;
 }
 
 // ==================== 输入处理 ====================
 function handleUserInputChange() {
     // 自动调整文本框高度
     userInput.style.height = 'auto';
-    userInput.style.height = Math.min(userInput.scrollHeight, 150) + 'px';
-    updateSendButtonState();
+    userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
 }
 
 function handleKeyDown(e) {
     // Enter发送，Shift+Enter换行
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        if (!sendBtn.disabled) {
+        if (!isRequesting && userInput.value.trim()) {
             sendMessage();
         }
     }
 }
 
-function updateSendButtonState() {
-    const hasApiKey = apiKeyInput.value.trim().length > 0;
-    const hasMessage = userInput.value.trim().length > 0;
-    sendBtn.disabled = !(hasApiKey && hasMessage);
+// ==================== 消息格式化（正则表达式处理） ====================
+function formatContent(content) {
+    let formatted = content;
+    
+    // 1. 处理换行
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    // 2. 处理【标题】格式 -> 带样式的标题
+    formatted = formatted.replace(/【([^】]+)】/g, '<div class="section-title">📿 $1</div>');
+    
+    // 3. 处理「重点词」格式 -> 高亮标记
+    formatted = formatted.replace(/「([^」]+)」/g, '<mark>$1</mark>');
+    
+    // 4. 处理 **加粗** 格式
+    formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // 5. 处理命运箴言 -> 特殊样式
+    formatted = formatted.replace(
+        /🌟\s*(命运箴言|箴言)[：:]\s*(.+?)(?=<br><br>|<br>$|$)/gi,
+        '<div class="fortune-saying">🌟 <strong>命运箴言</strong>：$2</div>'
+    );
+    
+    // 6. 处理卦象、星盘等结果区块
+    formatted = formatted.replace(
+        /(卦象|排盘|星盘|命盘)[：:]\s*<br>(.+?)(?=<br><br>|<div class="section-title">|$)/gi,
+        '<div class="divination-result"><strong>$1：</strong><br>$2</div>'
+    );
+    
+    // 7. 处理吉凶标记
+    formatted = formatted.replace(/大吉/g, '<span style="color: #ffd700; font-weight: bold;">大吉</span>');
+    formatted = formatted.replace(/中吉/g, '<span style="color: #90EE90; font-weight: bold;">中吉</span>');
+    formatted = formatted.replace(/小吉/g, '<span style="color: #98FB98;">小吉</span>');
+    formatted = formatted.replace(/大凶/g, '<span style="color: #ff6b6b; font-weight: bold;">大凶</span>');
+    formatted = formatted.replace(/中凶/g, '<span style="color: #ff9999;">中凶</span>');
+    formatted = formatted.replace(/小凶/g, '<span style="color: #ffb3b3;">小凶</span>');
+    
+    // 8. 处理五行颜色
+    formatted = formatted.replace(/金/g, '<span style="color: #FFD700;">金</span>');
+    formatted = formatted.replace(/木/g, '<span style="color: #90EE90;">木</span>');
+    formatted = formatted.replace(/水/g, '<span style="color: #87CEEB;">水</span>');
+    formatted = formatted.replace(/火/g, '<span style="color: #FF6B6B;">火</span>');
+    formatted = formatted.replace(/土/g, '<span style="color: #DEB887;">土</span>');
+    
+    // 9. 处理列表格式
+    formatted = formatted.replace(/<br>[-•]\s*/g, '<br>• ');
+    
+    // 10. 包裹段落
+    formatted = '<p>' + formatted.replace(/<br><br>/g, '</p><p>') + '</p>';
+    formatted = formatted.replace(/<p><\/p>/g, '');
+    
+    return formatted;
 }
 
-// ==================== 消息处理 ====================
+// ==================== 添加消息到界面 ====================
 function addMessage(role, content) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
@@ -182,8 +293,8 @@ function addMessage(role, content) {
     const avatar = role === 'assistant' ? '🧙‍♂️' : '👤';
     const name = role === 'assistant' ? '玄机子' : '缘主';
     
-    // 处理内容格式
-    const formattedContent = formatContent(content);
+    // 格式化内容
+    const formattedContent = role === 'assistant' ? formatContent(content) : escapeHtml(content).replace(/\n/g, '<br>');
     
     messageDiv.innerHTML = `
         <div class="avatar">${avatar}</div>
@@ -194,29 +305,27 @@ function addMessage(role, content) {
     `;
     
     chatContainer.appendChild(messageDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    scrollToBottom();
 }
 
-function formatContent(content) {
-    // 将换行转换为<br>
-    let formatted = content.replace(/\n/g, '<br>');
-    
-    // 处理命运箴言（以🌟开头的行）
-    formatted = formatted.replace(/(🌟[^<]+)/g, '<em>$1</em>');
-    
-    return formatted;
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function scrollToBottom() {
+    setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, 100);
 }
 
 // ==================== API调用 ====================
 async function sendMessage() {
     const message = userInput.value.trim();
-    if (!message) return;
+    if (!message || isRequesting) return;
     
-    const apiKey = apiKeyInput.value.trim();
-    if (!apiKey) {
-        alert('请先输入 ModelScope API Key');
-        return;
-    }
+    isRequesting = true;
     
     // 添加用户消息到界面
     addMessage('user', message);
@@ -224,32 +333,33 @@ async function sendMessage() {
     // 清空输入框
     userInput.value = '';
     userInput.style.height = 'auto';
-    updateSendButtonState();
     
     // 添加到对话历史
     conversationHistory.push({ role: 'user', content: message });
     
     // 显示加载动画
     showLoading(true);
+    sendBtn.disabled = true;
     
     try {
         const response = await fetch(`${API_BASE_URL}/chat/completions`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
+                'Authorization': `Bearer ${API_KEY}`
             },
             body: JSON.stringify({
                 model: MODEL_NAME,
                 messages: conversationHistory,
-                temperature: 0.7,
-                max_tokens: 1024
+                temperature: 0.8,
+                max_tokens: 2048,
+                top_p: 0.95
             })
         });
         
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `API请求失败: ${response.status}`);
+            throw new Error(errorData.message || `请求失败: ${response.status}`);
         }
         
         const data = await response.json();
@@ -258,14 +368,20 @@ async function sendMessage() {
         // 添加助手回复到对话历史
         conversationHistory.push({ role: 'assistant', content: assistantMessage });
         
+        // 保存对话历史
+        saveConversationHistory();
+        
         // 显示助手回复
         addMessage('assistant', assistantMessage);
         
     } catch (error) {
         console.error('API调用错误:', error);
-        addMessage('assistant', `天机晦涩，连接中断...\n\n错误信息：${error.message}\n\n请检查API密钥是否正确，或稍后重试。`);
+        const errorMessage = `天机晦涩，连接中断...\n\n错误信息：${error.message}\n\n请稍后重试，或刷新页面。`;
+        addMessage('assistant', errorMessage);
     } finally {
         showLoading(false);
+        sendBtn.disabled = false;
+        isRequesting = false;
     }
 }
 
@@ -273,20 +389,7 @@ async function sendMessage() {
 function showLoading(show) {
     if (show) {
         loadingOverlay.classList.add('active');
-        sendBtn.disabled = true;
     } else {
         loadingOverlay.classList.remove('active');
-        updateSendButtonState();
     }
-}
-
-// ==================== 工具函数 ====================
-// 清空对话历史（可选功能）
-function clearConversation() {
-    conversationHistory = [
-        { role: 'system', content: SYSTEM_PROMPT }
-    ];
-    chatContainer.innerHTML = '';
-    // 重新添加欢迎消息
-    addMessage('assistant', `善哉善哉，缘主驾到。吾乃玄机子，通晓周易八卦、紫微斗数、塔罗占卜之术。\n\n汝有何困惑？可问事业前程、姻缘情感、财运健康，亦可抽一签问问今日运势。\n\n🌟 命运箴言：问卜者，求的是心安；解惑者，予的是方向。`);
 }

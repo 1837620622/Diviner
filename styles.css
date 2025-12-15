@@ -16,14 +16,18 @@
     --text-secondary: #a0a0c0;
     --gold: #ffd700;
     --border-radius: 15px;
+    --sidebar-width: 280px;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
 }
 
 body {
     font-family: 'Noto Serif SC', serif;
     background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-medium) 50%, var(--bg-light) 100%);
     color: var(--text-primary);
-    min-height: 100vh;
-    overflow-x: hidden;
 }
 
 /* ==================== 星空背景动画 ==================== */
@@ -64,148 +68,236 @@ body {
     to { transform: translateX(-300px); }
 }
 
-/* ==================== 主容器 ==================== */
-.container {
-    position: relative;
-    z-index: 10;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    min-height: 100vh;
+/* ==================== 侧边栏样式 ==================== */
+.sidebar {
+    position: fixed;
+    left: -320px;
+    top: 0;
+    width: var(--sidebar-width);
+    height: 100%;
+    background: rgba(15, 12, 41, 0.98);
+    backdrop-filter: blur(20px);
+    z-index: 1000;
     display: flex;
     flex-direction: column;
+    transition: left 0.3s ease;
+    border-right: 1px solid rgba(142, 45, 226, 0.3);
 }
 
-/* ==================== 头部区域 ==================== */
-.header {
+.sidebar.active {
+    left: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 10px;
+}
+
+.sidebar-logo {
+    font-size: 1.8rem;
+}
+
+.sidebar-header h2 {
+    flex: 1;
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.5rem;
+    color: var(--gold);
+}
+
+.sidebar-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.3s;
+}
+
+.sidebar-close:hover {
+    color: var(--primary-color);
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.sidebar-category {
+    margin-bottom: 20px;
+}
+
+.sidebar-category h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    background: rgba(142, 45, 226, 0.1);
+    border: 1px solid rgba(142, 45, 226, 0.2);
+    border-radius: 10px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.sidebar-btn:hover {
+    background: rgba(142, 45, 226, 0.3);
+    transform: translateX(5px);
+    border-color: var(--primary-color);
+}
+
+.sidebar-btn:active {
+    transform: translateX(5px) scale(0.98);
+}
+
+.btn-icon {
+    font-size: 1.2rem;
+}
+
+.btn-text {
+    font-size: 0.95rem;
+}
+
+.sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.author-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 0.8rem;
     text-align: center;
-    padding: 40px 20px 30px;
 }
 
-.logo {
+.author-card p {
+    margin: 3px 0;
+    color: var(--text-secondary);
+}
+
+.author-card strong {
+    color: var(--gold);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ==================== 主容器 ==================== */
+.main-container {
+    position: relative;
+    z-index: 10;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ==================== 顶部导航 ==================== */
+.top-nav {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    background: rgba(15, 12, 41, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(142, 45, 226, 0.3);
+}
+
+.menu-btn, .clear-btn {
+    background: rgba(142, 45, 226, 0.2);
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.3rem;
+    padding: 10px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.menu-btn:hover, .clear-btn:hover {
+    background: rgba(142, 45, 226, 0.4);
+}
+
+.nav-title {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px;
-    margin-bottom: 10px;
+    gap: 10px;
 }
 
-.crystal-ball {
-    font-size: 3rem;
+.nav-logo {
+    font-size: 1.5rem;
     animation: float 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 20px rgba(142, 45, 226, 0.8));
 }
 
 @keyframes float {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-5px); }
 }
 
-.header h1 {
+.nav-title h1 {
     font-family: 'Ma Shan Zheng', cursive;
-    font-size: 3.5rem;
-    background: linear-gradient(to right, var(--gold), #fff, var(--gold));
+    font-size: 1.8rem;
+    background: linear-gradient(to right, var(--gold), #fff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-}
-
-.subtitle {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin-top: 5px;
-}
-
-.motto {
-    font-style: italic;
-    color: var(--accent-color);
-    margin-top: 15px;
-    font-size: 1.1rem;
-    opacity: 0.9;
-}
-
-/* ==================== API设置区 ==================== */
-.api-section {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-radius: var(--border-radius);
-    padding: 20px;
-    margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.api-input-wrapper {
-    display: flex;
-    gap: 10px;
-}
-
-.api-input-wrapper input {
-    flex: 1;
-    padding: 12px 15px;
-    border: 2px solid rgba(142, 45, 226, 0.3);
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.3);
-    color: var(--text-primary);
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.api-input-wrapper input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 15px rgba(142, 45, 226, 0.3);
-}
-
-.toggle-btn {
-    padding: 12px 15px;
-    border: none;
-    border-radius: 10px;
-    background: rgba(142, 45, 226, 0.3);
-    cursor: pointer;
-    font-size: 1.2rem;
-    transition: all 0.3s ease;
-}
-
-.toggle-btn:hover {
-    background: rgba(142, 45, 226, 0.5);
-}
-
-.api-hint {
-    margin-top: 10px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.api-hint a {
-    color: var(--accent-color);
-    text-decoration: none;
-}
-
-.api-hint a:hover {
-    text-decoration: underline;
 }
 
 /* ==================== 聊天区域 ==================== */
 .chat-container {
     flex: 1;
     overflow-y: auto;
-    padding: 20px 0;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    max-height: 50vh;
-    min-height: 300px;
 }
 
 .message {
     display: flex;
-    gap: 15px;
-    animation: fadeIn 0.5s ease;
+    gap: 12px;
+    animation: fadeIn 0.4s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -214,20 +306,19 @@ body {
 }
 
 .avatar {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.1);
 }
 
 .message.assistant .avatar {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    box-shadow: 0 0 20px rgba(142, 45, 226, 0.5);
+    box-shadow: 0 0 15px rgba(142, 45, 226, 0.5);
 }
 
 .message.user .avatar {
@@ -235,57 +326,114 @@ body {
 }
 
 .message-content {
-    max-width: 70%;
-    padding: 15px 20px;
+    max-width: 80%;
+    padding: 15px 18px;
     border-radius: var(--border-radius);
     backdrop-filter: blur(10px);
 }
 
 .message.assistant .message-content {
-    background: rgba(142, 45, 226, 0.15);
-    border: 1px solid rgba(142, 45, 226, 0.3);
+    background: rgba(142, 45, 226, 0.12);
+    border: 1px solid rgba(142, 45, 226, 0.25);
     border-left: 4px solid var(--primary-color);
 }
 
 .message.user .message-content {
     background: rgba(0, 198, 255, 0.1);
-    border: 1px solid rgba(0, 198, 255, 0.3);
+    border: 1px solid rgba(0, 198, 255, 0.25);
     border-right: 4px solid var(--accent-color);
 }
 
 .message-header {
     font-weight: bold;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
     color: var(--text-secondary);
 }
 
 .message-text {
-    line-height: 1.8;
-    font-size: 1rem;
+    line-height: 1.9;
+    font-size: 0.95rem;
 }
 
-.message-text em {
+.message-text p {
+    margin-bottom: 12px;
+}
+
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+.message-text ul, .message-text ol {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.message-text li {
+    margin: 6px 0;
+}
+
+.message-text strong {
     color: var(--gold);
-    font-style: normal;
-    display: block;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed rgba(255, 215, 0, 0.3);
+}
+
+.message-text mark {
+    background: linear-gradient(120deg, rgba(142, 45, 226, 0.3) 0%, rgba(74, 0, 224, 0.3) 100%);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.message-text .highlight {
+    background: linear-gradient(120deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.1) 100%);
+    border-left: 3px solid var(--gold);
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 0 10px 10px 0;
+}
+
+.message-text .section-title {
+    color: var(--accent-color);
+    font-weight: bold;
+    font-size: 1.05rem;
+    margin: 15px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.message-text .divination-result {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(142, 45, 226, 0.4);
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+.fortune-saying {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+    color: var(--gold);
+    font-style: italic;
 }
 
 /* ==================== 输入区域 ==================== */
 .input-section {
-    padding: 20px 0;
+    padding: 15px 20px;
+    background: rgba(15, 12, 41, 0.8);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(142, 45, 226, 0.2);
 }
 
 .input-wrapper {
     display: flex;
     gap: 10px;
     background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
     border-radius: 25px;
-    padding: 10px 15px;
+    padding: 8px 15px;
     border: 2px solid rgba(142, 45, 226, 0.3);
     transition: all 0.3s ease;
 }
@@ -304,7 +452,7 @@ body {
     font-family: inherit;
     resize: none;
     outline: none;
-    max-height: 150px;
+    max-height: 120px;
     line-height: 1.5;
 }
 
@@ -313,91 +461,43 @@ body {
 }
 
 .send-btn {
-    width: 50px;
-    height: 50px;
+    width: 48px;
+    height: 48px;
     border: none;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
-.send-btn:hover:not(:disabled) {
-    transform: scale(1.1);
+.send-btn:hover {
+    transform: scale(1.08);
     box-shadow: 0 0 25px rgba(142, 45, 226, 0.6);
 }
 
 .send-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
 }
 
-.quick-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 15px;
-    justify-content: center;
-}
-
-.quick-btn {
-    padding: 8px 16px;
-    border: 1px solid rgba(142, 45, 226, 0.4);
-    border-radius: 20px;
-    background: rgba(142, 45, 226, 0.1);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.quick-btn:hover {
-    background: rgba(142, 45, 226, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(142, 45, 226, 0.3);
-}
-
-/* ==================== 页脚 ==================== */
-.footer {
+/* ==================== 底部信息 ==================== */
+.bottom-info {
     text-align: center;
-    padding: 30px 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 20px;
-}
-
-.footer-content p {
-    margin: 5px 0;
-    font-size: 0.85rem;
+    padding: 10px;
+    font-size: 0.75rem;
     color: var(--text-secondary);
+    background: rgba(15, 12, 41, 0.5);
 }
 
-.footer-content strong {
+.bottom-info strong {
     color: var(--accent-color);
-}
-
-.disclaimer {
-    font-style: italic;
-    opacity: 0.7;
-}
-
-.author-info {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.1);
-}
-
-.author-info a {
-    color: var(--primary-color);
-    text-decoration: none;
-}
-
-.author-info a:hover {
-    text-decoration: underline;
 }
 
 /* ==================== 加载动画 ==================== */
@@ -411,7 +511,7 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 2000;
 }
 
 .loading-overlay.active {
@@ -423,13 +523,13 @@ body {
 }
 
 .loading-spinner {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border: 4px solid rgba(142, 45, 226, 0.2);
     border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
+    margin: 0 auto 15px;
 }
 
 @keyframes spin {
@@ -443,48 +543,26 @@ body {
 
 /* ==================== 响应式设计 ==================== */
 @media (max-width: 768px) {
-    .container {
-        padding: 10px;
+    :root {
+        --sidebar-width: 85vw;
     }
     
-    .header {
-        padding: 20px 10px 15px;
+    .top-nav {
+        padding: 12px 15px;
     }
     
-    .header h1 {
-        font-size: 2rem;
+    .nav-title h1 {
+        font-size: 1.5rem;
     }
     
-    .crystal-ball {
-        font-size: 2rem;
-    }
-    
-    .logo {
-        gap: 10px;
-    }
-    
-    .subtitle {
-        font-size: 0.85rem;
-    }
-    
-    .motto {
-        font-size: 0.95rem;
-    }
-    
-    .api-section {
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-    
-    .api-input-wrapper input {
-        padding: 10px 12px;
-        font-size: 0.9rem;
+    .menu-btn, .clear-btn {
+        padding: 8px 12px;
+        font-size: 1.2rem;
     }
     
     .chat-container {
-        max-height: 45vh;
-        min-height: 250px;
-        padding: 10px 0;
+        padding: 15px;
+        gap: 15px;
     }
     
     .message {
@@ -492,27 +570,27 @@ body {
     }
     
     .avatar {
-        width: 40px;
-        height: 40px;
-        font-size: 1.4rem;
+        width: 38px;
+        height: 38px;
+        font-size: 1.3rem;
     }
     
     .message-content {
         max-width: 85%;
-        padding: 12px 15px;
+        padding: 12px 14px;
     }
     
     .message-text {
         font-size: 0.9rem;
-        line-height: 1.7;
+        line-height: 1.8;
     }
     
     .input-section {
-        padding: 15px 0;
+        padding: 12px 15px;
     }
     
     .input-wrapper {
-        padding: 8px 12px;
+        padding: 6px 12px;
     }
     
     .input-wrapper textarea {
@@ -520,87 +598,70 @@ body {
     }
     
     .send-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 1.3rem;
-    }
-    
-    .quick-actions {
-        gap: 8px;
-        justify-content: center;
-    }
-    
-    .quick-btn {
-        font-size: 0.75rem;
-        padding: 6px 10px;
-        border-radius: 15px;
-    }
-    
-    .footer {
-        padding: 20px 10px;
-    }
-    
-    .footer-content p {
-        font-size: 0.75rem;
-    }
-    
-    .author-info p {
-        font-size: 0.7rem;
-    }
-}
-
-/* 超小屏幕适配 (iPhone SE 等) */
-@media (max-width: 375px) {
-    .header h1 {
-        font-size: 1.8rem;
-    }
-    
-    .crystal-ball {
-        font-size: 1.8rem;
-    }
-    
-    .quick-btn {
-        font-size: 0.7rem;
-        padding: 5px 8px;
-    }
-    
-    .avatar {
-        width: 35px;
-        height: 35px;
+        width: 44px;
+        height: 44px;
         font-size: 1.2rem;
     }
     
-    .message-content {
-        max-width: 80%;
+    .sidebar-btn {
         padding: 10px 12px;
+    }
+    
+    .btn-text {
+        font-size: 0.9rem;
     }
 }
 
-/* 大屏幕优化 */
-@media (min-width: 1200px) {
-    .container {
-        max-width: 900px;
+@media (max-width: 375px) {
+    .nav-title h1 {
+        font-size: 1.3rem;
     }
     
-    .chat-container {
-        max-height: 55vh;
+    .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+    
+    .message-content {
+        max-width: 88%;
+        padding: 10px 12px;
+    }
+    
+    .message-text {
+        font-size: 0.85rem;
     }
 }
 
 /* ==================== 滚动条美化 ==================== */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(142, 45, 226, 0.5);
-    border-radius: 4px;
+    background: rgba(142, 45, 226, 0.4);
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(142, 45, 226, 0.7);
+    background: rgba(142, 45, 226, 0.6);
+}
+
+/* ==================== 打字机效果 ==================== */
+.typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--primary-color);
+    margin-left: 2px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
 }
