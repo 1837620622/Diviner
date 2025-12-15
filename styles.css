@@ -443,25 +443,147 @@ body {
 
 /* ==================== 响应式设计 ==================== */
 @media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .header {
+        padding: 20px 10px 15px;
+    }
+    
     .header h1 {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
     
     .crystal-ball {
-        font-size: 2.5rem;
+        font-size: 2rem;
+    }
+    
+    .logo {
+        gap: 10px;
+    }
+    
+    .subtitle {
+        font-size: 0.85rem;
+    }
+    
+    .motto {
+        font-size: 0.95rem;
+    }
+    
+    .api-section {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .api-input-wrapper input {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+    
+    .chat-container {
+        max-height: 45vh;
+        min-height: 250px;
+        padding: 10px 0;
+    }
+    
+    .message {
+        gap: 10px;
+    }
+    
+    .avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 1.4rem;
     }
     
     .message-content {
         max-width: 85%;
+        padding: 12px 15px;
+    }
+    
+    .message-text {
+        font-size: 0.9rem;
+        line-height: 1.7;
+    }
+    
+    .input-section {
+        padding: 15px 0;
+    }
+    
+    .input-wrapper {
+        padding: 8px 12px;
+    }
+    
+    .input-wrapper textarea {
+        font-size: 0.95rem;
+    }
+    
+    .send-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
     }
     
     .quick-actions {
-        justify-content: flex-start;
+        gap: 8px;
+        justify-content: center;
     }
     
     .quick-btn {
-        font-size: 0.8rem;
-        padding: 6px 12px;
+        font-size: 0.75rem;
+        padding: 6px 10px;
+        border-radius: 15px;
+    }
+    
+    .footer {
+        padding: 20px 10px;
+    }
+    
+    .footer-content p {
+        font-size: 0.75rem;
+    }
+    
+    .author-info p {
+        font-size: 0.7rem;
+    }
+}
+
+/* 超小屏幕适配 (iPhone SE 等) */
+@media (max-width: 375px) {
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .crystal-ball {
+        font-size: 1.8rem;
+    }
+    
+    .quick-btn {
+        font-size: 0.7rem;
+        padding: 5px 8px;
+    }
+    
+    .avatar {
+        width: 35px;
+        height: 35px;
+        font-size: 1.2rem;
+    }
+    
+    .message-content {
+        max-width: 80%;
+        padding: 10px 12px;
+    }
+}
+
+/* 大屏幕优化 */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 900px;
+    }
+    
+    .chat-container {
+        max-height: 55vh;
     }
 }
 
