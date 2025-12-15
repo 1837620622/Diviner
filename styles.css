@@ -603,7 +603,16 @@ body {
 /* ==================== 响应式设计 ==================== */
 @media (max-width: 768px) {
     :root {
-        --sidebar-width: 85vw;
+        --sidebar-width: 100vw;
+    }
+    
+    .sidebar {
+        left: -100vw;
+        width: 100vw;
+    }
+    
+    .sidebar.active {
+        left: 0;
     }
     
     .top-nav {
