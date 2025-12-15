@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔮 玄机子 - DeepSeek 算命助手</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔮</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 背景星空效果 -->
+    <div class="stars"></div>
+    <div class="twinkling"></div>
+    
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 头部区域 -->
+        <header class="header">
+            <div class="logo">
+                <span class="crystal-ball">🔮</span>
+                <h1>玄机子</h1>
+            </div>
+            <p class="subtitle">DeepSeek V3.2 智能命理助手</p>
+            <p class="motto">"万物皆有数，星辰指迷津"</p>
+        </header>
+
+        <!-- API设置区 -->
+        <div class="api-section">
+            <div class="api-input-wrapper">
+                <input type="password" id="apiKey" placeholder="请输入 ModelScope API Key" />
+                <button id="toggleKey" class="toggle-btn" title="显示/隐藏密钥">👁️</button>
+            </div>
+            <p class="api-hint">💡 获取API密钥: <a href="https://www.modelscope.cn" target="_blank">ModelScope 官网</a></p>
+        </div>
+
+        <!-- 聊天区域 -->
+        <div class="chat-container" id="chatContainer">
+            <!-- 欢迎消息 -->
+            <div class="message assistant">
+                <div class="avatar">🧙‍♂️</div>
+                <div class="message-content">
+                    <div class="message-header">玄机子</div>
+                    <div class="message-text">
+                        善哉善哉，缘主驾到。吾乃玄机子，通晓周易八卦、紫微斗数、塔罗占卜之术。
+                        <br><br>
+                        汝有何困惑？可问事业前程、姻缘情感、财运健康，亦可抽一签问问今日运势。
+                        <br><br>
+                        <em>🌟 命运箴言：问卜者，求的是心安；解惑者，予的是方向。</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="input-section">
+            <div class="input-wrapper">
+                <textarea id="userInput" placeholder="请在此输入您的困惑，寻求解惑..." rows="1"></textarea>
+                <button id="sendBtn" class="send-btn" disabled>
+                    <span class="send-icon">✨</span>
+                </button>
+            </div>
+            <div class="quick-actions">
+                <button class="quick-btn" data-prompt="请帮我分析一下今日运势">📅 今日运势</button>
+                <button class="quick-btn" data-prompt="我想问问事业方面的发展">💼 事业前程</button>
+                <button class="quick-btn" data-prompt="请帮我看看感情运势">💕 姻缘情感</button>
+                <button class="quick-btn" data-prompt="帮我抽一张塔罗牌">🃏 塔罗抽牌</button>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>Powered by <strong>DeepSeek-V3.2</strong> & <strong>ModelScope</strong></p>
+                <p class="disclaimer">仅供娱乐与心灵疗愈，请相信科学，命运掌握在自己手中</p>
+                <div class="author-info">
+                    <p>👨‍💻 作者: <strong>传康 kk</strong></p>
+                    <p>📱 微信: 1837620622 | 📧 邮箱: 2040168455@qq.com</p>
+                    <p>🐟 闲鱼/B站: 万能程序员 | <a href="https://github.com/1837620622" target="_blank">GitHub</a></p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 加载动画 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>玄机子正在通过星象推演...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
