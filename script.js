@@ -118,12 +118,24 @@ const sendBtn = document.getElementById('sendBtn');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const sidebarBtns = document.querySelectorAll('.sidebar-btn');
 
+// ==================== 触摸滑动变量 ====================
+let touchStartX = 0;
+let touchEndX = 0;
+let touchStartY = 0;
+let isSwiping = false;
+const SWIPE_THRESHOLD = 50;
+
 // ==================== 初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
     // 侧边栏事件
     menuBtn.addEventListener('click', openSidebar);
     sidebarClose.addEventListener('click', closeSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
+    
+    // 触摸滑动手势支持
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
     
     // 清空对话按钮
     clearBtn.addEventListener('click', clearConversation);
@@ -151,6 +163,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // 恢复历史对话
     loadConversationHistory();
 });
+
+// ==================== 触摸滑动手势处理 ====================
+function handleTouchStart(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    isSwiping = true;
+}
+
+function handleTouchMove(e) {
+    if (!isSwiping) return;
+    touchEndX = e.touches[0].clientX;
+}
+
+function handleTouchEnd(e) {
+    if (!isSwiping) return;
+    isSwiping = false;
+    
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    
+    // 确保是水平滑动（水平位移大于垂直位移）
+    if (Math.abs(deltaX) > deltaY && Math.abs(deltaX) > SWIPE_THRESHOLD) {
+        if (deltaX > 0 && touchStartX < 50) {
+            // 从左边缘向右滑动 -> 打开侧边栏
+            openSidebar();
+        } else if (deltaX < 0 && sidebar.classList.contains('active')) {
+            // 向左滑动且侧边栏已打开 -> 关闭侧边栏
+            closeSidebar();
+        }
+    }
+    
+    touchEndX = 0;
+}
 
 // ==================== 侧边栏控制 ====================
 function openSidebar() {
@@ -204,7 +249,7 @@ function addWelcomeMessage() {
                 <div class="message-header">玄机子</div>
                 <div class="message-text">
                     <p>善哉善哉，有缘人驾到。</p>
-                    <p>吾乃<strong>玄机子</strong>，隐修于终南山紫霄观，已五十载矣。精研<mark>生辰八字</mark>、<mark>紫微斗数</mark>、<mark>梅花易数</mark>、<mark>六爻占卜</mark>、<mark>奇门遁甲</mark>之术，亦通<mark>塔罗占卜</mark>、<mark>西方占星</mark>诸法。</p>
+                    <p>吾乃<strong>玄机子</strong>，由<mark>传康KK（万能程序员）</mark>精心训练的专属算命AI模型。精研<mark>生辰八字</mark>、<mark>紫微斗数</mark>、<mark>梅花易数</mark>、<mark>六爻占卜</mark>、<mark>奇门遁甲</mark>之术，亦通<mark>塔罗占卜</mark>、<mark>西方占星</mark>诸法。</p>
                     <p>汝若有惑，尽可道来：</p>
                     <ul>
                         <li>问<strong>事业财运</strong>，可测前程几何</li>
@@ -212,7 +257,8 @@ function addWelcomeMessage() {
                         <li>问<strong>流年运势</strong>，可知吉凶祸福</li>
                         <li>问<strong>择日择吉</strong>，可选良辰美景</li>
                     </ul>
-                    <p>点击左上角 <strong>☰</strong> 可打开玄学宝典，选择不同的测算方式。</p>
+                    <p>📱 <strong>手机用户</strong>：从屏幕左边缘向右滑动可打开玄学宝典，向左滑动关闭。</p>
+                    <p>💻 <strong>电脑用户</strong>：点击左上角 <strong>☰</strong> 打开玄学宝典。</p>
                     <p>若需精准推算，可告知<strong>出生年月日时</strong>（公历或农历皆可）。</p>
                     <div class="fortune-saying">🌟 <strong>命运箴言</strong>：天道无常，人心有定。问卜者求心安，解惑者予方向。命由己造，福自我求。</div>
                 </div>
