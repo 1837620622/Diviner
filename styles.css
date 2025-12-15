@@ -378,10 +378,69 @@ body {
 }
 
 .message-text mark {
-    background: linear-gradient(120deg, rgba(142, 45, 226, 0.3) 0%, rgba(74, 0, 224, 0.3) 100%);
+    background: linear-gradient(120deg, rgba(142, 45, 226, 0.4) 0%, rgba(74, 0, 224, 0.4) 100%);
     color: #fff;
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-weight: 500;
+}
+
+/* 吉凶样式 */
+.luck-great {
+    color: #ffd700;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.luck-good {
+    color: #90EE90;
+    font-weight: bold;
+}
+
+.luck-small {
+    color: #98FB98;
+}
+
+.luck-bad {
+    color: #ff6b6b;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(255, 107, 107, 0.5);
+}
+
+.luck-medium-bad {
+    color: #ff9999;
+}
+
+.luck-small-bad {
+    color: #ffb3b3;
+}
+
+/* 五行颜色 */
+.wuxing-金 { color: #FFD700; font-weight: 500; }
+.wuxing-木 { color: #90EE90; font-weight: 500; }
+.wuxing-水 { color: #87CEEB; font-weight: 500; }
+.wuxing-火 { color: #FF6B6B; font-weight: 500; }
+.wuxing-土 { color: #DEB887; font-weight: 500; }
+
+/* 列表项样式 */
+.list-item {
+    padding-left: 10px;
+    margin: 6px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+.list-num {
+    color: var(--accent-color);
+    font-weight: bold;
+    min-width: 20px;
+}
+
+/* 标题图标 */
+.title-icon {
+    color: var(--gold);
+    margin-right: 5px;
 }
 
 .message-text .highlight {

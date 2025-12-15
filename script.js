@@ -130,14 +130,19 @@ document.addEventListener('DOMContentLoaded', () => {
     userInput.addEventListener('keydown', handleKeyDown);
     sendBtn.addEventListener('click', sendMessage);
     
-    // 侧边栏按钮事件
+    // 侧边栏按钮事件（只填充输入框，不自动发送）
     sidebarBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const prompt = btn.dataset.prompt;
+            const btnText = btn.querySelector('.btn-text')?.textContent || '推演天机';
             userInput.value = prompt;
+            userInput.dataset.loadingText = `玄机子正在为您${btnText}...`;
             closeSidebar();
             handleUserInputChange();
-            sendMessage();
+            // 聚焦输入框，让用户可以编辑或补充信息后再发送
+            userInput.focus();
+            // 将光标移到文本末尾
+            userInput.setSelectionRange(userInput.value.length, userInput.value.length);
         });
     });
     
@@ -236,51 +241,59 @@ function handleKeyDown(e) {
 function formatContent(content) {
     let formatted = content;
     
-    // 1. 处理换行
+    // 1. 处理 ### 标题格式 (在换行处理之前)
+    formatted = formatted.replace(/^###\s*(.+)$/gm, '【$1】');
+    formatted = formatted.replace(/^##\s*(.+)$/gm, '【$1】');
+    formatted = formatted.replace(/^#\s*(.+)$/gm, '【$1】');
+    
+    // 2. 处理换行
     formatted = formatted.replace(/\n/g, '<br>');
     
-    // 2. 处理【标题】格式 -> 带样式的标题
-    formatted = formatted.replace(/【([^】]+)】/g, '<div class="section-title">📿 $1</div>');
+    // 3. 处理【标题】格式 -> 带样式的标题
+    formatted = formatted.replace(/【([^】]+)】/g, '<div class="section-title"><span class="title-icon">✦</span> $1</div>');
     
-    // 3. 处理「重点词」格式 -> 高亮标记
+    // 4. 处理「重点词」格式 -> 高亮标记
     formatted = formatted.replace(/「([^」]+)」/g, '<mark>$1</mark>');
     
-    // 4. 处理 **加粗** 格式
+    // 5. 处理 **加粗** 格式
     formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     
-    // 5. 处理命运箴言 -> 特殊样式
+    // 6. 处理命运箴言 -> 特殊样式
     formatted = formatted.replace(
         /🌟\s*(命运箴言|箴言)[：:]\s*(.+?)(?=<br><br>|<br>$|$)/gi,
         '<div class="fortune-saying">🌟 <strong>命运箴言</strong>：$2</div>'
     );
     
-    // 6. 处理卦象、星盘等结果区块
+    // 7. 处理卦象、星盘等结果区块
     formatted = formatted.replace(
         /(卦象|排盘|星盘|命盘)[：:]\s*<br>(.+?)(?=<br><br>|<div class="section-title">|$)/gi,
         '<div class="divination-result"><strong>$1：</strong><br>$2</div>'
     );
     
-    // 7. 处理吉凶标记
-    formatted = formatted.replace(/大吉/g, '<span style="color: #ffd700; font-weight: bold;">大吉</span>');
-    formatted = formatted.replace(/中吉/g, '<span style="color: #90EE90; font-weight: bold;">中吉</span>');
-    formatted = formatted.replace(/小吉/g, '<span style="color: #98FB98;">小吉</span>');
-    formatted = formatted.replace(/大凶/g, '<span style="color: #ff6b6b; font-weight: bold;">大凶</span>');
-    formatted = formatted.replace(/中凶/g, '<span style="color: #ff9999;">中凶</span>');
-    formatted = formatted.replace(/小凶/g, '<span style="color: #ffb3b3;">小凶</span>');
+    // 8. 处理吉凶标记
+    formatted = formatted.replace(/大吉/g, '<span class="luck-great">大吉</span>');
+    formatted = formatted.replace(/中吉/g, '<span class="luck-good">中吉</span>');
+    formatted = formatted.replace(/小吉/g, '<span class="luck-small">小吉</span>');
+    formatted = formatted.replace(/大凶/g, '<span class="luck-bad">大凶</span>');
+    formatted = formatted.replace(/中凶/g, '<span class="luck-medium-bad">中凶</span>');
+    formatted = formatted.replace(/小凶/g, '<span class="luck-small-bad">小凶</span>');
     
-    // 8. 处理五行颜色
-    formatted = formatted.replace(/金/g, '<span style="color: #FFD700;">金</span>');
-    formatted = formatted.replace(/木/g, '<span style="color: #90EE90;">木</span>');
-    formatted = formatted.replace(/水/g, '<span style="color: #87CEEB;">水</span>');
-    formatted = formatted.replace(/火/g, '<span style="color: #FF6B6B;">火</span>');
-    formatted = formatted.replace(/土/g, '<span style="color: #DEB887;">土</span>');
+    // 9. 处理五行颜色（使用词边界避免误匹配）
+    formatted = formatted.replace(/([金木水火土])行/g, '<span class="wuxing-$1">$1</span>行');
+    formatted = formatted.replace(/五行/g, '五行');
     
-    // 9. 处理列表格式
-    formatted = formatted.replace(/<br>[-•]\s*/g, '<br>• ');
+    // 10. 处理列表格式
+    formatted = formatted.replace(/<br>[-•]\s*/g, '</p><p class="list-item">• ');
+    formatted = formatted.replace(/<br>\d+[.、]\s*/g, function(match) {
+        const num = match.match(/\d+/)[0];
+        return '</p><p class="list-item"><span class="list-num">' + num + '.</span> ';
+    });
     
-    // 10. 包裹段落
+    // 11. 包裹段落
     formatted = '<p>' + formatted.replace(/<br><br>/g, '</p><p>') + '</p>';
     formatted = formatted.replace(/<p><\/p>/g, '');
+    formatted = formatted.replace(/<p>(<div)/g, '$1');
+    formatted = formatted.replace(/(<\/div>)<\/p>/g, '$1');
     
     return formatted;
 }
@@ -387,8 +400,14 @@ async function sendMessage() {
 
 // ==================== 加载状态 ====================
 function showLoading(show) {
+    const loadingText = document.getElementById('loadingText');
     if (show) {
+        // 使用自定义加载文字或默认文字
+        const customText = userInput.dataset.loadingText || '玄机子正在为您推演天机...';
+        loadingText.textContent = customText;
         loadingOverlay.classList.add('active');
+        // 清除自定义文字
+        delete userInput.dataset.loadingText;
     } else {
         loadingOverlay.classList.remove('active');
     }
