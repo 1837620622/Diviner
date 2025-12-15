@@ -145,18 +145,21 @@ document.addEventListener('DOMContentLoaded', () => {
     userInput.addEventListener('keydown', handleKeyDown);
     sendBtn.addEventListener('click', sendMessage);
     
-    // 侧边栏按钮事件（发送请求让玄机子询问所需信息）
+    // 侧边栏按钮事件（显示提示信息，不直接发送API）
     sidebarBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const btnText = btn.querySelector('.btn-text')?.textContent || '推演天机';
-            // 发送一个请求让玄机子主动询问用户需要提供什么信息
-            const askPrompt = `我想请您帮我进行「${btnText}」，请告诉我需要提供哪些信息？`;
-            userInput.value = askPrompt;
-            userInput.dataset.loadingText = `玄机子正在准备${btnText}...`;
+            const hint = btn.dataset.hint || '请告诉我您的问题';
+            
+            // 关闭侧边栏
             closeSidebar();
-            handleUserInputChange();
-            // 直接发送，让玄机子询问用户需要什么信息
-            sendMessage();
+            
+            // 显示玄机子的提示消息（不调用API，直接显示）
+            const hintMessage = `【${btnText}】\n\n${hint}`;
+            addLocalAssistantMessage(hintMessage);
+            
+            // 聚焦输入框，方便用户直接输入
+            userInput.focus();
         });
     });
     
@@ -379,6 +382,25 @@ function scrollToBottom() {
     setTimeout(() => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }, 100);
+}
+
+// 添加本地助手消息（不调用API，直接显示提示）
+function addLocalAssistantMessage(content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message assistant';
+    
+    const formattedContent = formatContent(content);
+    
+    messageDiv.innerHTML = `
+        <div class="avatar">🧙‍♂️</div>
+        <div class="message-content">
+            <div class="message-header">玄机子</div>
+            <div class="message-text">${formattedContent}</div>
+        </div>
+    `;
+    
+    chatContainer.appendChild(messageDiv);
+    scrollToBottom();
 }
 
 // ==================== API调用 ====================
