@@ -1,17 +1,10 @@
 // ==================== 全局配置 ====================
 const MODEL_NAME = 'deepseek-ai/DeepSeek-V3.2';
 
-// 判断是否在Cloudflare Pages环境（通过检测是否有/api/chat端点）
-// 在Cloudflare部署时使用代理API（密钥存储在环境变量中）
-// 本地开发时直接使用ModelScope API
-const isCloudflare = window.location.hostname.includes('.pages.dev') || 
-                      window.location.hostname.includes('.workers.dev') ||
-                      !window.location.hostname.includes('localhost');
-const API_ENDPOINT = isCloudflare ? '/api/chat' : 'https://api-inference.modelscope.cn/v1/chat/completions';
-const USE_PROXY = isCloudflare;
-
-// 本地开发用的API密钥（部署到Cloudflare后会使用环境变量中的密钥）
-const LOCAL_API_KEY = 'ms-0b18bd50-ae99-473c-8a6c-4a38998f1ba2';
+// API端点配置
+// 生产环境使用Cloudflare Functions代理（密钥安全存储在环境变量中）
+// 支持自定义域名: diviner.chuankangkk.top
+const API_ENDPOINT = '/api/chat';
 
 // 系统提示词 - 定义玄机子的人设与完整玄学知识体系
 const SYSTEM_PROMPT = `# 角色设定
@@ -364,15 +357,11 @@ async function sendMessage() {
     sendBtn.disabled = true;
     
     try {
-        // 构建请求头（Cloudflare代理模式不需要Authorization头）
-        const headers = { 'Content-Type': 'application/json' };
-        if (!USE_PROXY) {
-            headers['Authorization'] = `Bearer ${LOCAL_API_KEY}`;
-        }
-        
         const response = await fetch(API_ENDPOINT, {
             method: 'POST',
-            headers: headers,
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
                 model: MODEL_NAME,
                 messages: conversationHistory,
