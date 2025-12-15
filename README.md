@@ -80,21 +80,39 @@
 ### 步骤 1：Fork 仓库
 点击本仓库右上角的 **Fork** 按钮，将项目复制到你的 GitHub 账号下。
 
-### 步骤 2：连接 Cloudflare Pages
+### 步骤 2：获取 ModelScope API 密钥
+1. 访问 [ModelScope 官网](https://www.modelscope.cn) 并注册登录
+2. 进入个人中心获取 API Token
+
+### 步骤 3：连接 Cloudflare Pages
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
 2. 进入 **Workers & Pages** → **Create application** → **Pages**
 3. 选择 **Connect to Git**
 4. 授权并选择你 Fork 的仓库
 
-### 步骤 3：配置构建设置
+### 步骤 4：配置构建设置
 | 配置项 | 值 |
 |:---|:---|
 | Production branch | `main` |
 | Build command | *(留空)* |
 | Build output directory | `/` |
 
-### 步骤 4：部署
+### 步骤 5：⚠️ 配置环境变量（重要！）
+1. 在部署设置页面，找到 **Environment variables** 部分
+2. 点击 **Add variable**
+3. 添加以下环境变量：
+
+| 变量名 | 值 |
+|:---|:---|
+| `MODELSCOPE_API_KEY` | 你的 ModelScope API Token |
+
+> ⚠️ **注意**：必须配置此环境变量，否则应用无法正常调用 AI 接口！
+
+### 步骤 6：部署
 点击 **Save and Deploy**，等待部署完成即可通过分配的 `.pages.dev` 域名访问！
+
+### 更新环境变量
+如需更新 API 密钥，进入 **Pages 项目** → **Settings** → **Environment variables** 进行修改。
 
 ---
 

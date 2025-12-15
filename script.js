@@ -1,7 +1,17 @@
 // ==================== 全局配置 ====================
-const API_BASE_URL = 'https://api-inference.modelscope.cn/v1';
 const MODEL_NAME = 'deepseek-ai/DeepSeek-V3.2';
-const API_KEY = 'ms-0b18bd50-ae99-473c-8a6c-4a38998f1ba2';
+
+// 判断是否在Cloudflare Pages环境（通过检测是否有/api/chat端点）
+// 在Cloudflare部署时使用代理API（密钥存储在环境变量中）
+// 本地开发时直接使用ModelScope API
+const isCloudflare = window.location.hostname.includes('.pages.dev') || 
+                      window.location.hostname.includes('.workers.dev') ||
+                      !window.location.hostname.includes('localhost');
+const API_ENDPOINT = isCloudflare ? '/api/chat' : 'https://api-inference.modelscope.cn/v1/chat/completions';
+const USE_PROXY = isCloudflare;
+
+// 本地开发用的API密钥（部署到Cloudflare后会使用环境变量中的密钥）
+const LOCAL_API_KEY = 'ms-0b18bd50-ae99-473c-8a6c-4a38998f1ba2';
 
 // 系统提示词 - 定义玄机子的人设与完整玄学知识体系
 const SYSTEM_PROMPT = `# 角色设定
@@ -130,19 +140,18 @@ document.addEventListener('DOMContentLoaded', () => {
     userInput.addEventListener('keydown', handleKeyDown);
     sendBtn.addEventListener('click', sendMessage);
     
-    // 侧边栏按钮事件（只填充输入框，不自动发送）
+    // 侧边栏按钮事件（发送请求让玄机子询问所需信息）
     sidebarBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            const prompt = btn.dataset.prompt;
             const btnText = btn.querySelector('.btn-text')?.textContent || '推演天机';
-            userInput.value = prompt;
-            userInput.dataset.loadingText = `玄机子正在为您${btnText}...`;
+            // 发送一个请求让玄机子主动询问用户需要提供什么信息
+            const askPrompt = `我想请您帮我进行「${btnText}」，请告诉我需要提供哪些信息？`;
+            userInput.value = askPrompt;
+            userInput.dataset.loadingText = `玄机子正在准备${btnText}...`;
             closeSidebar();
             handleUserInputChange();
-            // 聚焦输入框，让用户可以编辑或补充信息后再发送
-            userInput.focus();
-            // 将光标移到文本末尾
-            userInput.setSelectionRange(userInput.value.length, userInput.value.length);
+            // 直接发送，让玄机子询问用户需要什么信息
+            sendMessage();
         });
     });
     
@@ -355,12 +364,15 @@ async function sendMessage() {
     sendBtn.disabled = true;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/chat/completions`, {
+        // 构建请求头（Cloudflare代理模式不需要Authorization头）
+        const headers = { 'Content-Type': 'application/json' };
+        if (!USE_PROXY) {
+            headers['Authorization'] = `Bearer ${LOCAL_API_KEY}`;
+        }
+        
+        const response = await fetch(API_ENDPOINT, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
-            },
+            headers: headers,
             body: JSON.stringify({
                 model: MODEL_NAME,
                 messages: conversationHistory,
