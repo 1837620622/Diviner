@@ -1,9 +1,9 @@
 // ==================== 全局配置 ====================
+// 传康KK（万能程序员）
 const MODEL_NAME = 'deepseek-ai/DeepSeek-V3.2';
 
 // API端点配置
 // 生产环境使用Cloudflare Functions代理（密钥安全存储在环境变量中）
-// 支持自定义域名: diviner.chuankangkk.top
 const API_ENDPOINT = '/api/chat';
 
 // 系统提示词 - 定义玄机子的人设与完整玄学知识体系
