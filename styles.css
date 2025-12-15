@@ -71,7 +71,7 @@ body {
 /* ==================== 侧边栏样式 ==================== */
 .sidebar {
     position: fixed;
-    left: -320px;
+    left: calc(-1 * var(--sidebar-width) - 20px);
     top: 0;
     width: var(--sidebar-width);
     height: 100%;
@@ -603,16 +603,21 @@ body {
 /* ==================== 响应式设计 ==================== */
 @media (max-width: 768px) {
     :root {
-        --sidebar-width: 100vw;
+        --sidebar-width: 100%;
     }
     
     .sidebar {
-        left: -100vw;
-        width: 100vw;
+        left: -100%;
+        width: 100%;
+        max-width: 100vw;
     }
     
     .sidebar.active {
         left: 0;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
     }
     
     .top-nav {
