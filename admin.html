@@ -218,11 +218,13 @@
 
         .ip-group-header .ip-address {
             font-family: monospace;
-            font-size: 1rem;
+            font-size: 0.85rem;
             color: #ffd700;
             background: rgba(0, 0, 0, 0.3);
             padding: 5px 12px;
             border-radius: 8px;
+            word-break: break-all;
+            max-width: 100%;
         }
 
         .ip-group-header .chat-count {
@@ -695,13 +697,14 @@
             sortedIPs.forEach((ip, groupIndex) => {
                 const groupRecords = ipGroups[ip];
                 const latestTime = new Date(groupRecords[0].timestamp).toLocaleString('zh-CN');
+                const storedLocation = groupRecords[0].location || '';
                 
                 html += `
                     <div class="ip-group" id="group-${groupIndex}">
                         <div class="ip-group-header" onclick="toggleGroup(${groupIndex})">
                             <div class="ip-info">
                                 <span class="ip-address">🌐 ${ip}</span>
-                                <span class="location">📍 ${groupRecords[0].location || '未知位置'}</span>
+                                <span class="location" id="loc-${groupIndex}" data-ip="${ip}">📍 ${storedLocation || '查询中...'}</span>
                                 <span class="chat-count">${groupRecords.length} 条对话 · 最新: ${latestTime}</span>
                             </div>
                             <span class="toggle-icon">▼</span>
@@ -743,6 +746,41 @@
             });
 
             recordsList.innerHTML = html;
+            
+            // 异步查询所有IP的位置信息
+            queryAllIPLocations();
+        }
+
+        // ==================== 查询IP位置信息 ====================
+        async function queryAllIPLocations() {
+            const locationElements = document.querySelectorAll('.location[data-ip]');
+            
+            for (const elem of locationElements) {
+                const ip = elem.dataset.ip;
+                if (!ip || ip === '未知IP') continue;
+                
+                // 如果已经有位置信息（不是"查询中..."或"未知位置"），跳过
+                const currentText = elem.textContent;
+                if (currentText && !currentText.includes('查询中') && !currentText.includes('未知位置')) {
+                    continue;
+                }
+                
+                try {
+                    const response = await fetch(`https://api.vore.top/api/IPdata?ip=${ip}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.code === 200 && data.adcode && data.adcode.o) {
+                            elem.textContent = `📍 ${data.adcode.o}`;
+                        } else {
+                            elem.textContent = '📍 未知位置';
+                        }
+                    } else {
+                        elem.textContent = '📍 查询失败';
+                    }
+                } catch (e) {
+                    elem.textContent = '📍 查询失败';
+                }
+            }
         }
 
         // ==================== IP分组展开/收起 ====================
