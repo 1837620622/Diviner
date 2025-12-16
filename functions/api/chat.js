@@ -15,8 +15,8 @@ const ROUTES = {
         endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
     },
     3: {
-        name: 'Kimi-K2',
-        model: 'moonshotai/Kimi-K2-Instruct',
+        name: 'Qwen3-32B',
+        model: 'Qwen/Qwen3-32B',
         endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
     }
 };
