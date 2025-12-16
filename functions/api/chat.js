@@ -76,16 +76,16 @@ export async function onRequestPost(context) {
         const routeId = body.route || 1;
         const route = ROUTES[routeId] || ROUTES[1];
         
-        // 线路对应关系：主线路1-4对应备用线路5-8
-        // 如果主线路繁忙，建议切换到对应备用；如果备用繁忙，建议切换到下一组
+        // 线路对应关系：线路1->备用1->线路2->备用2...
+        // 主线路繁忙建议对应备用，备用繁忙建议下一组主线路
         const routeMapping = {
             1: { backup: 5, next: 2, backupLabel: '备用1', nextLabel: '线路2' },
-            2: { backup: 6, next: 3, backupLabel: '备用2', nextLabel: '线路3' },
-            3: { backup: 7, next: 4, backupLabel: '备用3', nextLabel: '线路4' },
-            4: { backup: 8, next: 1, backupLabel: '备用4', nextLabel: '线路1' },
             5: { backup: 2, next: 6, backupLabel: '线路2', nextLabel: '备用2' },
+            2: { backup: 6, next: 3, backupLabel: '备用2', nextLabel: '线路3' },
             6: { backup: 3, next: 7, backupLabel: '线路3', nextLabel: '备用3' },
+            3: { backup: 7, next: 4, backupLabel: '备用3', nextLabel: '线路4' },
             7: { backup: 4, next: 8, backupLabel: '线路4', nextLabel: '备用4' },
+            4: { backup: 8, next: 1, backupLabel: '备用4', nextLabel: '线路1' },
             8: { backup: 1, next: 5, backupLabel: '线路1', nextLabel: '备用1' }
         };
         const currentMapping = routeMapping[routeId] || routeMapping[1];
