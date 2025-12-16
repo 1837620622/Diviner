@@ -75,8 +75,21 @@ export async function onRequestPost(context) {
         // 获取线路选择（默认线路1）
         const routeId = body.route || 1;
         const route = ROUTES[routeId] || ROUTES[1];
-        const otherRouteId = routeId === 1 ? 2 : 1;
-        const otherRoute = ROUTES[otherRouteId];
+        
+        // 线路对应关系：主线路1-4对应备用线路5-8
+        // 如果主线路繁忙，建议切换到对应备用；如果备用繁忙，建议切换到下一组
+        const routeMapping = {
+            1: { backup: 5, next: 2, backupLabel: '备用1', nextLabel: '线路2' },
+            2: { backup: 6, next: 3, backupLabel: '备用2', nextLabel: '线路3' },
+            3: { backup: 7, next: 4, backupLabel: '备用3', nextLabel: '线路4' },
+            4: { backup: 8, next: 1, backupLabel: '备用4', nextLabel: '线路1' },
+            5: { backup: 2, next: 6, backupLabel: '线路2', nextLabel: '备用2' },
+            6: { backup: 3, next: 7, backupLabel: '线路3', nextLabel: '备用3' },
+            7: { backup: 4, next: 8, backupLabel: '线路4', nextLabel: '备用4' },
+            8: { backup: 1, next: 5, backupLabel: '线路1', nextLabel: '备用1' }
+        };
+        const currentMapping = routeMapping[routeId] || routeMapping[1];
+        const currentLabel = routeId <= 4 ? `线路${routeId}` : `备用${routeId - 4}`;
         
         // 根据provider选择API密钥
         let API_KEY;
@@ -158,10 +171,10 @@ export async function onRequestPost(context) {
                 error: '🔮 天机繁忙，请稍后再试',
                 route_error: true,
                 current_route: routeId,
-                suggest_route: otherRouteId,
+                suggest_route: currentMapping.backup,
                 choices: [{
                     message: {
-                        content: `🔮 **线路${routeId}繁忙**\n\n当前线路请求人数较多，建议您切换到**线路${otherRouteId}**继续问卦。\n\n👆 点击右上角的线路按钮即可切换。\n\n🌟 条条大路通天机，换个线路试试看！`
+                        content: `🔮 **${currentLabel}繁忙**\n\n当前线路请求人数较多，建议您切换到**${currentMapping.backupLabel}**继续问卦。\n\n如果${currentMapping.backupLabel}也繁忙，可以尝试**${currentMapping.nextLabel}**或其对应备用线路。\n\n👆 点击右上角的线路按钮即可切换。`
                     }
                 }]
             }), {
