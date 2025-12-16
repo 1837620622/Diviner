@@ -1,5 +1,20 @@
 // Cloudflare Pages Function - API代理
 // API密钥存储在Cloudflare环境变量中，不会暴露在前端代码
+// 支持多线路：线路1(DeepSeek) 和 线路2(Qwen3)
+
+// 线路配置
+const ROUTES = {
+    1: {
+        name: 'DeepSeek',
+        model: 'deepseek-ai/DeepSeek-V3.2',
+        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
+    },
+    2: {
+        name: 'Qwen3',
+        model: 'Qwen/Qwen3-Next-80B-A3B-Instruct',
+        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
+    }
+};
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -28,14 +43,27 @@ export async function onRequestPost(context) {
         // 获取请求体
         const body = await request.json();
         
+        // 获取线路选择（默认线路1）
+        const routeId = body.route || 1;
+        const route = ROUTES[routeId] || ROUTES[1];
+        const otherRouteId = routeId === 1 ? 2 : 1;
+        const otherRoute = ROUTES[otherRouteId];
+        
+        // 使用选定线路的模型
+        const requestBody = {
+            ...body,
+            model: route.model
+        };
+        delete requestBody.route;
+        
         // 转发请求到ModelScope API
-        const response = await fetch('https://api-inference.modelscope.cn/v1/chat/completions', {
+        const response = await fetch(route.endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${API_KEY}`
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify(requestBody)
         });
         
         // 获取响应
@@ -45,10 +73,12 @@ export async function onRequestPost(context) {
         if (response.status === 429) {
             return new Response(JSON.stringify({
                 error: '🔮 天机繁忙，请稍后再试',
-                message: '当前请求人数较多，请等待30秒后重试。',
+                route_error: true,
+                current_route: routeId,
+                suggest_route: otherRouteId,
                 choices: [{
                     message: {
-                        content: '🔮 **天机繁忙**\n\n当前问卦者众多，玄机子正在为其他有缘人推演命数。\n\n请稍候30秒后再次问卦，或可先整理好您要询问的信息。\n\n🌟 **命运箴言**：耐心等待，机缘自来。'
+                        content: `🔮 **线路${routeId}（${route.name}）繁忙**\n\n当前线路请求人数较多，建议您切换到**线路${otherRouteId}（${otherRoute.name}）**继续问卦。\n\n👆 点击顶部的线路切换按钮即可更换线路。\n\n🌟 **命运箴言**：条条大路通天机，换个方向亦可行。`
                     }
                 }]
             }), {
