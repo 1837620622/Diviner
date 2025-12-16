@@ -6,8 +6,8 @@ const API_ENDPOINT = '/api/chat';
 
 // 线路配置
 const ROUTES = {
-    1: { name: 'DeepSeek', label: '线路1' },
-    2: { name: 'Qwen3', label: '线路2' }
+    1: { label: '线路1' },
+    2: { label: '线路2' }
 };
 
 // 当前选择的线路（默认线路1）
@@ -448,17 +448,16 @@ function switchRoute(routeId) {
     localStorage.setItem('diviner_route', routeId.toString());
     updateRouteUI();
     
-    // 显示切换提示
-    const routeName = ROUTES[routeId]?.name || 'AI';
-    addLocalAssistantMessage(`已切换到**线路${routeId}（${routeName}）**，可以继续问卦了！`);
+    // 显示切换提示（不显示具体模型名）
+    addLocalAssistantMessage(`✅ 已切换到**线路${routeId}**，可以继续问卦了！`);
 }
 
 function updateRouteUI() {
     const routeBtn = document.getElementById('routeBtn');
-    const routeName = ROUTES[currentRoute]?.name || 'AI';
     if (routeBtn) {
-        routeBtn.innerHTML = `<span class="route-icon">📡</span> 线路${currentRoute}`;
-        routeBtn.title = `当前：${routeName}，点击切换`;
+        routeBtn.innerHTML = `线路${currentRoute}`;
+        routeBtn.className = `route-btn route-${currentRoute}`;
+        routeBtn.title = `当前线路${currentRoute}，点击切换`;
     }
 }
 
