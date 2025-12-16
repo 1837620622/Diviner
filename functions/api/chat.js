@@ -198,12 +198,16 @@ export async function onRequestPost(context) {
                 // 生成唯一ID
                 const recordId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 
+                // 生成友好的线路标签
+                const routeLabel = routeId <= 4 ? `线路${routeId}` : `备用${routeId - 4}`;
+                
                 // 保存记录
                 await env.CHAT_LOGS.put(recordId, JSON.stringify({
                     id: recordId,
                     ip: clientIP,
                     location: location,
                     route: routeId,
+                    routeLabel: routeLabel,
                     timestamp: new Date().toISOString(),
                     question: lastUserMessage,
                     answer: assistantResponse
