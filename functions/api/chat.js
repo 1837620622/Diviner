@@ -11,21 +11,21 @@ const ROUTES = {
         provider: 'modelscope'
     },
     2: {
-        name: 'Qwen3',
+        name: 'Qwen3-80B',
         model: 'Qwen/Qwen3-Next-80B-A3B-Instruct',
         endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions',
         provider: 'modelscope'
     },
     3: {
-        name: 'Qwen2.5-32B',
-        model: 'Qwen/Qwen2.5-32B-Instruct',
-        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions',
-        provider: 'modelscope'
+        name: 'Llama-70B',
+        model: 'llama-3.3-70b',
+        endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions',
+        provider: 'huggingface'
     },
     4: {
-        name: 'HF-DeepSeek',
-        model: 'deepseek-ai/DeepSeek-V3-0324',
-        endpoint: 'https://router.huggingface.co/novita/v3/openai/chat/completions',
+        name: 'Qwen3-32B',
+        model: 'qwen-3-32b',
+        endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions',
         provider: 'huggingface'
     }
 };
