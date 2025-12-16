@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>玄机子 - 后台管理</title>
+    <style>
+        /* ==================== 基础样式 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        /* ==================== 登录页面 ==================== */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(142, 45, 226, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-box h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            background: linear-gradient(to right, #8E2DE2, #4A00E0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .login-box input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #8E2DE2, #4A00E0);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .login-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(142, 45, 226, 0.4);
+        }
+
+        .error-msg {
+            color: #ff6b6b;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+
+        /* ==================== 管理面板 ==================== */
+        .admin-container {
+            display: none;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(142, 45, 226, 0.2);
+        }
+
+        .admin-header h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(to right, #8E2DE2, #4A00E0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .admin-header .stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px 20px;
+            background: rgba(142, 45, 226, 0.2);
+            border-radius: 10px;
+        }
+
+        .stat-item .number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #8E2DE2;
+        }
+
+        .stat-item .label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 107, 107, 0.4);
+        }
+
+        /* ==================== 对话记录列表 ==================== */
+        .records-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(142, 45, 226, 0.2);
+        }
+
+        .records-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .records-header h2 {
+            font-size: 1.2rem;
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #8E2DE2, #4A00E0);
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .record-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(142, 45, 226, 0.1);
+            transition: border-color 0.3s;
+        }
+
+        .record-item:hover {
+            border-color: rgba(142, 45, 226, 0.4);
+        }
+
+        .record-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .record-meta .ip {
+            font-family: monospace;
+            background: rgba(142, 45, 226, 0.2);
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+        }
+
+        .record-meta .time {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .record-conversation {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .record-msg {
+            padding: 12px 16px;
+            border-radius: 10px;
+            max-width: 85%;
+        }
+
+        .record-msg.user {
+            background: rgba(142, 45, 226, 0.3);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .record-msg.assistant {
+            background: rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .record-msg .role {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .record-msg .content {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .no-records {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .no-records .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        /* ==================== 加载状态 ==================== */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(142, 45, 226, 0.3);
+            border-top-color: #8E2DE2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ==================== 响应式 ==================== */
+        @media (max-width: 768px) {
+            .admin-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .admin-header .stats {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .record-meta {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .record-msg {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h1>🔮 玄机子后台</h1>
+            <input type="password" id="passwordInput" placeholder="请输入管理密码" autocomplete="off">
+            <button onclick="login()">进入管理</button>
+            <p class="error-msg" id="errorMsg">密码错误，请重试</p>
+        </div>
+    </div>
+
+    <!-- 管理面板 -->
+    <div class="admin-container" id="adminContainer">
+        <div class="admin-header">
+            <h1>🔮 玄机子 · 对话管理</h1>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="number" id="totalRecords">0</div>
+                    <div class="label">对话总数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="todayRecords">0</div>
+                    <div class="label">今日对话</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="uniqueIPs">0</div>
+                    <div class="label">独立IP</div>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="logout()">退出登录</button>
+        </div>
+
+        <div class="records-container">
+            <div class="records-header">
+                <h2>📝 对话记录</h2>
+                <button class="refresh-btn" onclick="loadRecords()">🔄 刷新</button>
+            </div>
+            <div id="recordsList">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 配置 ====================
+        const ADMIN_PASSWORD = 'chuankangkk';
+        let isLoggedIn = false;
+
+        // ==================== 登录功能 ====================
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            const errorMsg = document.getElementById('errorMsg');
+            
+            if (password === ADMIN_PASSWORD) {
+                isLoggedIn = true;
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('adminContainer').style.display = 'block';
+                loadRecords();
+            } else {
+                errorMsg.style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            sessionStorage.removeItem('adminLoggedIn');
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('adminContainer').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+        }
+
+        // 回车键登录
+        document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        // 检查登录状态
+        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('adminContainer').style.display = 'block';
+            isLoggedIn = true;
+            loadRecords();
+        }
+
+        // ==================== 加载对话记录 ====================
+        async function loadRecords() {
+            if (!isLoggedIn) return;
+
+            const recordsList = document.getElementById('recordsList');
+            recordsList.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>加载中...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/admin/records', {
+                    headers: {
+                        'X-Admin-Password': ADMIN_PASSWORD
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('加载失败');
+                }
+
+                const data = await response.json();
+                displayRecords(data);
+            } catch (error) {
+                recordsList.innerHTML = `
+                    <div class="no-records">
+                        <div class="icon">❌</div>
+                        <p>加载失败: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ==================== 显示对话记录 ====================
+        function displayRecords(data) {
+            const recordsList = document.getElementById('recordsList');
+            const records = data.records || [];
+
+            // 更新统计
+            document.getElementById('totalRecords').textContent = data.stats?.total || records.length;
+            document.getElementById('todayRecords').textContent = data.stats?.today || 0;
+            document.getElementById('uniqueIPs').textContent = data.stats?.uniqueIPs || 0;
+
+            if (records.length === 0) {
+                recordsList.innerHTML = `
+                    <div class="no-records">
+                        <div class="icon">📭</div>
+                        <p>暂无对话记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 按时间倒序排列
+            records.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            let html = '';
+            records.forEach(record => {
+                const time = new Date(record.timestamp).toLocaleString('zh-CN');
+                html += `
+                    <div class="record-item">
+                        <div class="record-meta">
+                            <span class="ip">🌐 ${record.ip || '未知IP'}</span>
+                            <span class="time">🕐 ${time}</span>
+                        </div>
+                        <div class="record-conversation">
+                            <div class="record-msg user">
+                                <div class="role">👤 用户提问</div>
+                                <div class="content">${escapeHtml(record.question || '')}</div>
+                            </div>
+                            <div class="record-msg assistant">
+                                <div class="role">🧙‍♂️ 玄机子回答</div>
+                                <div class="content">${escapeHtml(truncateText(record.answer || '', 500))}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            recordsList.innerHTML = html;
+        }
+
+        // ==================== 工具函数 ====================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+    </script>
+</body>
+</html>

@@ -4,6 +4,11 @@
 export async function onRequestPost(context) {
     const { request, env } = context;
     
+    // 获取用户IP地址
+    const clientIP = request.headers.get('CF-Connecting-IP') || 
+                     request.headers.get('X-Forwarded-For')?.split(',')[0] || 
+                     'unknown';
+    
     // 从环境变量获取API密钥
     const API_KEY = env.MODELSCOPE_API_KEY;
     
@@ -53,6 +58,35 @@ export async function onRequestPost(context) {
                     'Access-Control-Allow-Origin': '*'
                 }
             });
+        }
+        
+        // 保存对话记录到KV存储（如果配置了）
+        if (env.CHAT_LOGS && data.choices && data.choices[0]?.message?.content) {
+            try {
+                // 提取用户最后一条消息
+                const messages = body.messages || [];
+                const userMessages = messages.filter(m => m.role === 'user');
+                const lastUserMessage = userMessages[userMessages.length - 1]?.content || '';
+                const assistantResponse = data.choices[0].message.content;
+                
+                // 生成唯一ID
+                const recordId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                // 保存记录
+                await env.CHAT_LOGS.put(recordId, JSON.stringify({
+                    id: recordId,
+                    ip: clientIP,
+                    timestamp: new Date().toISOString(),
+                    question: lastUserMessage,
+                    answer: assistantResponse
+                }), {
+                    // 保留90天
+                    expirationTtl: 90 * 24 * 60 * 60
+                });
+            } catch (logError) {
+                // 记录失败不影响正常响应
+                console.error('保存对话记录失败:', logError);
+            }
         }
         
         // 返回响应

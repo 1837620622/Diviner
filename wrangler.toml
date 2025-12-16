@@ -1,0 +1,17 @@
+# Cloudflare Pages 配置文件
+# 用于配置KV绑定等
+
+name = "diviner"
+compatibility_date = "2024-01-01"
+
+# KV命名空间绑定
+# 需要在Cloudflare Dashboard中创建KV命名空间后，将ID填入下方
+# 1. 登录 https://dash.cloudflare.com
+# 2. 进入 Workers & Pages -> KV
+# 3. 点击 "Create a namespace"，名称填写 "CHAT_LOGS"
+# 4. 创建后复制ID，替换下方的 "your-kv-namespace-id"
+# 5. 或者通过命令行：wrangler kv:namespace create CHAT_LOGS
+
+[[kv_namespaces]]
+binding = "CHAT_LOGS"
+id = "6033ad3d4bfa43c3bc679bcbe6e74643"
