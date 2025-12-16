@@ -12,12 +12,12 @@ const MAIN_ROUTES = {
     6: { name: 'Qwen3-235B', model: 'Qwen/Qwen3-235B-A22B', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' }
 };
 
-// 备用线路配置（Hugging Face Cerebras）
+// 备用线路配置（iFlow）
 const BACKUP_ROUTES = {
-    1: { name: 'Llama-3.3-70B', model: 'llama-3.3-70b', endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions', provider: 'huggingface' },
-    2: { name: 'Qwen3-32B', model: 'qwen-3-32b', endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions', provider: 'huggingface' },
-    3: { name: 'Qwen3-235B', model: 'qwen-3-235b-a22b-instruct-2507', endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions', provider: 'huggingface' },
-    4: { name: 'Llama3.1-8B', model: 'llama3.1-8b', endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions', provider: 'huggingface' }
+    1: { name: 'DeepSeek-V3', model: 'deepseek-v3', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
+    2: { name: 'Qwen3-235B', model: 'qwen3-235b', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
+    3: { name: 'DeepSeek-R1', model: 'deepseek-r1', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
+    4: { name: 'DeepSeek-V3', model: 'deepseek-v3', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' }
 };
 
 // 合并所有线路
@@ -73,7 +73,17 @@ export async function onRequestPost(context) {
         
         // 根据provider选择API密钥
         let API_KEY;
-        if (route.provider === 'huggingface') {
+        if (route.provider === 'iflow') {
+            API_KEY = env.IFLOW_API_KEY;
+            if (!API_KEY) {
+                return new Response(JSON.stringify({
+                    error: 'iFlow API密钥未配置，请在Cloudflare Pages设置中添加 IFLOW_API_KEY 环境变量'
+                }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+                });
+            }
+        } else if (route.provider === 'huggingface') {
             API_KEY = env.HUGGINGFACE_API_KEY;
             if (!API_KEY) {
                 return new Response(JSON.stringify({

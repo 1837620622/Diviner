@@ -17,12 +17,12 @@ const MAIN_ROUTES = {
     6: { label: '线路6', desc: 'Qwen3-235B' }
 };
 
-// 备用线路配置（Hugging Face）
+// 备用线路配置（iFlow）
 const BACKUP_ROUTES = {
-    7: { label: '备用1', desc: 'Llama-70B' },
-    8: { label: '备用2', desc: 'Qwen3-32B' },
-    9: { label: '备用3', desc: 'Qwen3-235B' },
-    10: { label: '备用4', desc: 'Llama-8B' }
+    7: { label: '备用1', desc: 'DeepSeek-V3' },
+    8: { label: '备用2', desc: 'Qwen3-235B' },
+    9: { label: '备用3', desc: 'DeepSeek-R1' },
+    10: { label: '备用4', desc: 'DeepSeek-V3' }
 };
 
 // 合并所有线路
