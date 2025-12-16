@@ -106,6 +106,7 @@ export async function onRequestPost(context) {
                 await env.CHAT_LOGS.put(recordId, JSON.stringify({
                     id: recordId,
                     ip: clientIP,
+                    route: routeId,
                     timestamp: new Date().toISOString(),
                     question: lastUserMessage,
                     answer: assistantResponse

@@ -222,6 +222,14 @@
             font-size: 0.85rem;
         }
 
+        .record-meta .route-tag {
+            background: rgba(142, 45, 226, 0.3);
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #ffd700;
+        }
+
         .record-conversation {
             display: flex;
             flex-direction: column;
@@ -530,6 +538,7 @@
                     <div class="record-item">
                         <div class="record-meta">
                             <span class="ip">🌐 ${record.ip || '未知IP'}</span>
+                            <span class="route-tag">📡 线路${record.route || '1'}</span>
                             <span class="time">🕐 ${time}</span>
                         </div>
                         <div class="record-conversation">
