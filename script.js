@@ -151,6 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 恢复历史对话
     loadConversationHistory();
+    
+    // 加载历史对话列表
+    loadSavedChats();
+    
+    // 保存对话按钮事件
+    document.getElementById('saveChatBtn').addEventListener('click', saveCurrentChat);
 });
 
 // ==================== 触摸滑动手势处理 ====================
@@ -499,3 +505,127 @@ function toggleRoute() {
 document.addEventListener('DOMContentLoaded', () => {
     updateRouteUI();
 });
+
+// ==================== 历史对话功能 ====================
+// 生成唯一用户ID
+function getUserId() {
+    let userId = localStorage.getItem('diviner_user_id');
+    if (!userId) {
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('diviner_user_id', userId);
+    }
+    return userId;
+}
+
+// 保存当前对话
+function saveCurrentChat() {
+    // 过滤掉系统消息，只保留用户和助手的对话
+    const chatMessages = conversationHistory.filter(m => m.role !== 'system');
+    
+    if (chatMessages.length < 2) {
+        addLocalAssistantMessage('⚠️ 当前对话内容太少，请先进行一些对话再保存。');
+        return;
+    }
+    
+    // 获取第一条用户消息作为标题
+    const firstUserMsg = chatMessages.find(m => m.role === 'user');
+    const title = firstUserMsg ? firstUserMsg.content.substring(0, 30) + (firstUserMsg.content.length > 30 ? '...' : '') : '新对话';
+    
+    // 生成对话ID
+    const chatId = 'chat_' + Date.now();
+    const userId = getUserId();
+    
+    // 获取已保存的对话列表
+    let savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
+    
+    // 添加新对话
+    savedChats.unshift({
+        id: chatId,
+        userId: userId,
+        title: title,
+        time: new Date().toLocaleString('zh-CN'),
+        timestamp: Date.now(),
+        messages: chatMessages
+    });
+    
+    // 最多保存20条历史对话
+    if (savedChats.length > 20) {
+        savedChats = savedChats.slice(0, 20);
+    }
+    
+    // 保存到localStorage
+    localStorage.setItem('diviner_saved_chats', JSON.stringify(savedChats));
+    
+    // 刷新历史对话列表
+    loadSavedChats();
+    
+    addLocalAssistantMessage('✅ 对话已保存！可在左侧「历史对话」中找到。');
+}
+
+// 加载已保存的对话列表
+function loadSavedChats() {
+    const historyList = document.getElementById('historyList');
+    const savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
+    
+    if (savedChats.length === 0) {
+        historyList.innerHTML = '<p class="no-history">暂无保存的对话</p>';
+        return;
+    }
+    
+    let html = '';
+    savedChats.forEach(chat => {
+        html += `
+            <div class="history-item" onclick="loadChat('${chat.id}')">
+                <div class="title">${escapeHtml(chat.title)}</div>
+                <div class="time">${chat.time}</div>
+                <button class="delete-btn" onclick="event.stopPropagation(); deleteChat('${chat.id}')">✕</button>
+            </div>
+        `;
+    });
+    
+    historyList.innerHTML = html;
+}
+
+// 加载指定对话
+function loadChat(chatId) {
+    const savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
+    const chat = savedChats.find(c => c.id === chatId);
+    
+    if (!chat) {
+        addLocalAssistantMessage('⚠️ 未找到该对话记录。');
+        return;
+    }
+    
+    // 清空当前聊天界面
+    chatContainer.innerHTML = '';
+    
+    // 重置对话历史（保留系统提示词）
+    conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+    
+    // 加载保存的对话
+    chat.messages.forEach(msg => {
+        conversationHistory.push(msg);
+        addMessage(msg.role, msg.content);
+    });
+    
+    // 关闭侧边栏
+    closeSidebar();
+    
+    // 保存当前对话历史
+    saveConversationHistory();
+}
+
+// 删除指定对话
+function deleteChat(chatId) {
+    let savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
+    savedChats = savedChats.filter(c => c.id !== chatId);
+    localStorage.setItem('diviner_saved_chats', JSON.stringify(savedChats));
+    loadSavedChats();
+}
+
+// HTML转义函数
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}

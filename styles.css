@@ -177,6 +177,103 @@ body {
     font-size: 0.95rem;
 }
 
+/* ==================== 历史对话 ==================== */
+.sidebar-history {
+    padding: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.history-header h3 {
+    font-size: 0.9rem;
+    color: var(--gold);
+    margin: 0;
+}
+
+.save-chat-btn {
+    background: rgba(142, 45, 226, 0.3);
+    border: 1px solid rgba(142, 45, 226, 0.5);
+    color: var(--text-primary);
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.save-chat-btn:hover {
+    background: rgba(142, 45, 226, 0.5);
+}
+
+.history-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.no-history {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 10px 0;
+}
+
+.history-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.history-item:hover {
+    background: rgba(142, 45, 226, 0.2);
+}
+
+.history-item .title {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-item .time {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.history-item .delete-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 100, 100, 0.3);
+    border: none;
+    color: #ff6b6b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.history-item:hover .delete-btn {
+    opacity: 1;
+}
+
+.history-item .delete-btn:hover {
+    background: rgba(255, 100, 100, 0.5);
+}
+
 .sidebar-footer {
     padding: 15px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
