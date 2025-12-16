@@ -389,7 +389,9 @@ function addLocalAssistantMessage(content) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message assistant';
     
-    const formattedContent = formatContent(content);
+    // 将字面\n转换为实际换行，然后格式化
+    const processedContent = content.replace(/\\n/g, '\n');
+    const formattedContent = formatContent(processedContent);
     
     messageDiv.innerHTML = `
         <div class="avatar">🧙‍♂️</div>

@@ -36,6 +36,25 @@ export async function onRequestPost(context) {
         // 获取响应
         const data = await response.json();
         
+        // 处理429速率限制错误
+        if (response.status === 429) {
+            return new Response(JSON.stringify({
+                error: '🔮 天机繁忙，请稍后再试',
+                message: '当前请求人数较多，请等待30秒后重试。',
+                choices: [{
+                    message: {
+                        content: '🔮 **天机繁忙**\n\n当前问卦者众多，玄机子正在为其他有缘人推演命数。\n\n请稍候30秒后再次问卦，或可先整理好您要询问的信息。\n\n🌟 **命运箴言**：耐心等待，机缘自来。'
+                    }
+                }]
+            }), {
+                status: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+        }
+        
         // 返回响应
         return new Response(JSON.stringify(data), {
             status: response.status,
