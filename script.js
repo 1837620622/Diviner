@@ -108,6 +108,7 @@ const sidebarOverlay = document.getElementById('sidebarOverlay');
 const sidebarClose = document.getElementById('sidebarClose');
 const menuBtn = document.getElementById('menuBtn');
 const clearBtn = document.getElementById('clearBtn');
+const newChatBtn = document.getElementById('newChatBtn');
 const chatContainer = document.getElementById('chatContainer');
 const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
@@ -190,6 +191,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 清空对话按钮
     clearBtn.addEventListener('click', clearConversation);
+    
+    // 新建对话按钮
+    newChatBtn.addEventListener('click', newChat);
     
     // 输入框事件
     userInput.addEventListener('input', handleUserInputChange);
@@ -318,6 +322,28 @@ function clearConversation() {
         chatContainer.innerHTML = '';
         addWelcomeMessage();
     }
+}
+
+// ==================== 新建对话 ====================
+function newChat() {
+    // 先保存当前对话（如果有内容的话）
+    if (conversationHistory.length > 1) {
+        autoSaveChat();
+    }
+    
+    // 重置当前对话ID，创建新对话
+    currentChatId = null;
+    
+    // 重置对话历史
+    conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+    localStorage.removeItem('diviner_history');
+    
+    // 清空聊天界面，显示欢迎消息
+    chatContainer.innerHTML = '';
+    addWelcomeMessage();
+    
+    // 聚焦输入框
+    userInput.focus();
 }
 
 function addWelcomeMessage() {
