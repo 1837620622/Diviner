@@ -254,9 +254,63 @@
 
         .record-msg .content {
             font-size: 0.9rem;
-            line-height: 1.5;
+            line-height: 1.6;
             word-break: break-word;
         }
+
+        .record-msg .content.collapsed {
+            max-height: 100px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .record-msg .content.collapsed::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.5));
+        }
+
+        .expand-btn {
+            background: rgba(142, 45, 226, 0.3);
+            border: 1px solid rgba(142, 45, 226, 0.5);
+            color: var(--gold, #ffd700);
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .expand-btn:hover {
+            background: rgba(142, 45, 226, 0.5);
+        }
+
+        /* 格式化内容样式 */
+        .record-msg .content .section-title {
+            color: #ffd700;
+            font-weight: bold;
+            margin: 10px 0 5px;
+        }
+
+        .record-msg .content mark {
+            background: rgba(142, 45, 226, 0.4);
+            color: #fff;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
+        .record-msg .content strong {
+            color: #ffd700;
+        }
+
+        .record-msg .content .luck-great { color: #00ff88; font-weight: bold; }
+        .record-msg .content .luck-good { color: #88ff00; }
+        .record-msg .content .luck-bad { color: #ff4444; font-weight: bold; }
 
         .no-records {
             text-align: center;
@@ -467,8 +521,11 @@
             records.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             let html = '';
-            records.forEach(record => {
+            records.forEach((record, index) => {
                 const time = new Date(record.timestamp).toLocaleString('zh-CN');
+                const answerFormatted = formatContent(record.answer || '');
+                const isLong = (record.answer || '').length > 200;
+                
                 html += `
                     <div class="record-item">
                         <div class="record-meta">
@@ -482,7 +539,8 @@
                             </div>
                             <div class="record-msg assistant">
                                 <div class="role">🧙‍♂️ 玄机子回答</div>
-                                <div class="content">${escapeHtml(truncateText(record.answer || '', 500))}</div>
+                                <div class="content ${isLong ? 'collapsed' : ''}" id="answer-${index}">${answerFormatted}</div>
+                                ${isLong ? `<button class="expand-btn" onclick="toggleExpand(${index})">📖 展开全文</button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -492,16 +550,56 @@
             recordsList.innerHTML = html;
         }
 
+        // ==================== 展开/收起功能 ====================
+        function toggleExpand(index) {
+            const content = document.getElementById(`answer-${index}`);
+            const btn = content.nextElementSibling;
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                btn.textContent = '📕 收起';
+            } else {
+                content.classList.add('collapsed');
+                btn.textContent = '📖 展开全文';
+            }
+        }
+
+        // ==================== 内容格式化（与前端一致） ====================
+        function formatContent(content) {
+            if (!content) return '';
+            
+            let formatted = escapeHtml(content);
+            
+            // 处理 ### 标题格式
+            formatted = formatted.replace(/^###\s*(.+)$/gm, '<div class="section-title">【$1】</div>');
+            formatted = formatted.replace(/^##\s*(.+)$/gm, '<div class="section-title">【$1】</div>');
+            formatted = formatted.replace(/^#\s*(.+)$/gm, '<div class="section-title">【$1】</div>');
+            
+            // 处理换行
+            formatted = formatted.replace(/\n/g, '<br>');
+            
+            // 处理【标题】格式
+            formatted = formatted.replace(/【([^】]+)】/g, '<div class="section-title">✦ $1</div>');
+            
+            // 处理「重点词」格式
+            formatted = formatted.replace(/「([^」]+)」/g, '<mark>$1</mark>');
+            
+            // 处理 **加粗** 格式
+            formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // 处理吉凶标记
+            formatted = formatted.replace(/大吉/g, '<span class="luck-great">大吉</span>');
+            formatted = formatted.replace(/中吉/g, '<span class="luck-good">中吉</span>');
+            formatted = formatted.replace(/大凶/g, '<span class="luck-bad">大凶</span>');
+            
+            return formatted;
+        }
+
         // ==================== 工具函数 ====================
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-
-        function truncateText(text, maxLength) {
-            if (text.length <= maxLength) return text;
-            return text.substring(0, maxLength) + '...';
         }
     </script>
 </body>
