@@ -467,10 +467,21 @@ function handleKeyDown(e) {
 function formatContent(content) {
     let formatted = content;
     
-    // 0. 预处理：清理【】标题内部的换行符（AI有时会在标题中间换行）
-    formatted = formatted.replace(/【([^】]*)\n+([^】]*)】/g, '【$1$2】');
-    formatted = formatted.replace(/【\s*\n+/g, '【');
-    formatted = formatted.replace(/\n+\s*】/g, '】');
+    // 0. 预处理：修复AI输出的各种格式问题
+    // 0.1 修复 ✦\n【标题\n】 这种格式
+    formatted = formatted.replace(/✦\s*\n+\s*【/g, '✦【');
+    // 0.2 修复【标题\n】格式
+    formatted = formatted.replace(/【([^】\n]*)\n+([^】\n]*)】/g, '【$1$2】');
+    formatted = formatted.replace(/【([^】\n]*)\n+】/g, '【$1】');
+    formatted = formatted.replace(/【\n+([^】]+)】/g, '【$1】');
+    // 0.3 循环处理直到没有换行
+    let prevFormatted;
+    do {
+        prevFormatted = formatted;
+        formatted = formatted.replace(/【([^】]*)\n+([^】]*)】/g, '【$1 $2】');
+    } while (formatted !== prevFormatted);
+    // 0.4 清理✦符号后的换行（会在后面统一添加）
+    formatted = formatted.replace(/✦\s*【/g, '【');
     
     // 1. 处理 ### 标题格式 (在换行处理之前)
     formatted = formatted.replace(/^###\s*(.+)$/gm, '【$1】');
@@ -482,7 +493,7 @@ function formatContent(content) {
     
     // 3. 处理【标题】格式 -> 带样式的标题（同时清理内部可能残留的<br>）
     formatted = formatted.replace(/【([^】]+)】/g, function(match, p1) {
-        const cleanTitle = p1.replace(/<br>/g, ' ').trim();
+        const cleanTitle = p1.replace(/<br>/g, ' ').replace(/\s+/g, ' ').trim();
         return '<div class="section-title"><span class="title-icon">✦</span> ' + cleanTitle + '</div>';
     });
     
