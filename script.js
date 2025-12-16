@@ -122,30 +122,48 @@ let isSwiping = false;
 const SWIPE_THRESHOLD = 50;
 
 // ==================== 获取用户地理位置 ====================
-async function fetchUserLocation() {
-    try {
-        // 使用免费的IP地理位置API
-        const response = await fetch('https://ipapi.co/json/');
-        if (response.ok) {
-            const data = await response.json();
+// 使用ping0.cc的JSONP接口获取更准确的IP位置信息
+function fetchUserLocation() {
+    return new Promise((resolve) => {
+        // 定义JSONP回调函数
+        window.ping0Callback = function(ip, location, asn, org) {
             userLocation = {
-                city: data.city || '',
-                region: data.region || '',
-                country: data.country_name || '',
-                countryCode: data.country_code || ''
+                ip: ip || '',
+                location: location || '',  // 格式如：中国 广东省 深圳市 — 电信
+                asn: asn || '',
+                org: org || ''
             };
             console.log('用户位置已获取:', userLocation);
-        }
-    } catch (error) {
-        console.log('获取位置失败，不影响正常使用');
-    }
+            // 清理回调函数
+            delete window.ping0Callback;
+            resolve();
+        };
+        
+        // 动态加载JSONP脚本
+        const script = document.createElement('script');
+        script.src = 'https://ping0.cc/geo/jsonp/ping0Callback';
+        script.onerror = function() {
+            console.log('获取位置失败，不影响正常使用');
+            delete window.ping0Callback;
+            resolve();
+        };
+        // 设置超时，3秒后自动resolve
+        setTimeout(() => {
+            if (window.ping0Callback) {
+                console.log('获取位置超时，不影响正常使用');
+                delete window.ping0Callback;
+                resolve();
+            }
+        }, 3000);
+        document.head.appendChild(script);
+    });
 }
 
 // 构建带位置信息的系统提示词
 function buildSystemPromptWithLocation() {
     let prompt = SYSTEM_PROMPT;
-    if (userLocation && userLocation.city) {
-        const locationInfo = `\n\n## 【当前用户位置信息 - 仅供参考，用神秘方式提及】\n用户当前所在位置：${userLocation.city}，${userLocation.region}，${userLocation.country}\n请以"老夫掐指一算"、"贫道观汝气场"等方式自然提及，绝对不要说是通过IP获取的。`;
+    if (userLocation && userLocation.location) {
+        const locationInfo = `\n\n## 【当前用户位置信息 - 仅供参考，用神秘方式提及】\n用户当前所在位置：${userLocation.location}\n用户IP：${userLocation.ip}\n请以"老夫掐指一算"、"贫道观汝气场"等方式自然提及用户所在城市，绝对不要说是通过IP获取的，要表现得像是通过玄学感应到的。`;
         prompt = prompt.replace('现在，请以玄机子大师的身份，迎接有缘人的到来。', locationInfo + '\n\n现在，请以玄机子大师的身份，迎接有缘人的到来。');
     }
     return prompt;
