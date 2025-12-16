@@ -4,6 +4,9 @@
 // API端点配置
 const API_ENDPOINT = '/api/chat';
 
+// 用户地理位置信息（通过IP获取）
+let userLocation = null;
+
 // 线路配置
 const ROUTES = {
     1: { label: '线路1' },
@@ -82,6 +85,13 @@ const SYSTEM_PROMPT = `# 角色设定
 - 遇到极端负面情绪，要温和引导寻求专业帮助
 - 保持大师的淡然与慈悲，不卑不亢
 
+## 位置感应能力（重要！）
+
+- 如果系统告知了用户的地理位置，你要以「老夫掐指一算」「贫道观汝气场」等神秘方式自然地提及
+- **绝对禁止**说「根据IP地址」「通过网络定位」等技术性描述
+- 例如："老夫观汝气场，似有江南水乡之灵秀，莫非缘主身在浙江杭州？"
+- 位置信息可用于风水分析、地域运势等场景
+
 现在，请以玄机子大师的身份，迎接有缘人的到来。`;
 
 // 对话历史（每个用户独立，存储在浏览器中）
@@ -111,8 +121,40 @@ let touchStartY = 0;
 let isSwiping = false;
 const SWIPE_THRESHOLD = 50;
 
+// ==================== 获取用户地理位置 ====================
+async function fetchUserLocation() {
+    try {
+        // 使用免费的IP地理位置API
+        const response = await fetch('https://ipapi.co/json/');
+        if (response.ok) {
+            const data = await response.json();
+            userLocation = {
+                city: data.city || '',
+                region: data.region || '',
+                country: data.country_name || '',
+                countryCode: data.country_code || ''
+            };
+            console.log('用户位置已获取:', userLocation);
+        }
+    } catch (error) {
+        console.log('获取位置失败，不影响正常使用');
+    }
+}
+
+// 构建带位置信息的系统提示词
+function buildSystemPromptWithLocation() {
+    let prompt = SYSTEM_PROMPT;
+    if (userLocation && userLocation.city) {
+        const locationInfo = `\n\n## 【当前用户位置信息 - 仅供参考，用神秘方式提及】\n用户当前所在位置：${userLocation.city}，${userLocation.region}，${userLocation.country}\n请以"老夫掐指一算"、"贫道观汝气场"等方式自然提及，绝对不要说是通过IP获取的。`;
+        prompt = prompt.replace('现在，请以玄机子大师的身份，迎接有缘人的到来。', locationInfo + '\n\n现在，请以玄机子大师的身份，迎接有缘人的到来。');
+    }
+    return prompt;
+}
+
 // ==================== 初始化 ====================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // 获取用户地理位置（通过IP）
+    await fetchUserLocation();
     // 侧边栏事件
     menuBtn.addEventListener('click', openSidebar);
     sidebarClose.addEventListener('click', closeSidebar);
@@ -438,6 +480,10 @@ async function sendMessage() {
     sendBtn.disabled = true;
     
     try {
+        // 构建带位置信息的消息列表
+        const messagesWithLocation = [...conversationHistory];
+        messagesWithLocation[0] = { role: 'system', content: buildSystemPromptWithLocation() };
+        
         const response = await fetch(API_ENDPOINT, {
             method: 'POST',
             headers: {
@@ -445,7 +491,7 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 route: currentRoute,
-                messages: conversationHistory,
+                messages: messagesWithLocation,
                 temperature: 0.8,
                 max_tokens: 2048,
                 top_p: 0.95
