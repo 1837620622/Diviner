@@ -613,6 +613,25 @@ body {
     font-style: italic;
 }
 
+/* 多线路提示样式 */
+.route-tip {
+    background: linear-gradient(135deg, rgba(142, 45, 226, 0.2) 0%, rgba(74, 0, 224, 0.1) 100%);
+    border: 2px solid rgba(142, 45, 226, 0.5);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 15px 0;
+    animation: pulse-border 2s ease-in-out infinite;
+}
+
+.route-tip p {
+    margin: 8px 0;
+}
+
+@keyframes pulse-border {
+    0%, 100% { border-color: rgba(142, 45, 226, 0.5); }
+    50% { border-color: rgba(255, 215, 0, 0.8); }
+}
+
 /* ==================== 输入区域 ==================== */
 .input-section {
     padding: 15px 20px;

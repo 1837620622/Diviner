@@ -424,20 +424,22 @@ function addWelcomeMessage() {
             <div class="message-content">
                 <div class="message-header">玄机子</div>
                 <div class="message-text">
-                    <p>善哉善哉，有缘人驾到。</p>
-                    <p>吾乃<strong>玄机子</strong>，由<mark>传康KK（万能程序员）</mark>精心训练的专属算命AI模型。精研<mark>生辰八字</mark>、<mark>紫微斗数</mark>、<mark>梅花易数</mark>、<mark>六爻占卜</mark>、<mark>奇门遁甲</mark>之术，亦通<mark>塔罗占卜</mark>、<mark>西方占星</mark>诸法。</p>
-                    <p>汝若有惑，尽可道来：</p>
+                    <p>👋 嗨，欢迎来找我聊聊！</p>
+                    <p>我是<strong>玄机子</strong>，一个懂命理的AI助手，由<mark>传康KK（万能程序员）</mark>打造。我会用通俗易懂的方式帮你分析运势，不整那些玄乎的话！</p>
+                    <p>我能帮你看：</p>
                     <ul>
-                        <li>问<strong>事业财运</strong>，可测前程几何</li>
-                        <li>问<strong>姻缘情感</strong>，可观缘分深浅</li>
-                        <li>问<strong>流年运势</strong>，可知吉凶祸福</li>
-                        <li>问<strong>择日择吉</strong>，可选良辰美景</li>
+                        <li>💼 <strong>事业财运</strong> - 工作发展、投资理财</li>
+                        <li>💕 <strong>感情姻缘</strong> - 桃花运、合不合适</li>
+                        <li>📅 <strong>运势分析</strong> - 今年运气怎么样</li>
+                        <li>🎯 <strong>择日选吉</strong> - 选个好日子办事</li>
                     </ul>
-                    <p>📱 <strong>手机用户</strong>：从屏幕左边缘向右滑动可打开玄学宝典，向左滑动关闭。</p>
-                    <p>💻 <strong>电脑用户</strong>：点击左上角 <strong>☰</strong> 打开玄学宝典。</p>
-                    <p>🔄 <strong>多线路体验</strong>：点击右上角线路按钮可切换不同AI，<mark>每条线路风格各异</mark>，同一问题可尝试不同线路获得多角度解读！</p>
-                    <p>若需精准推算，可告知<strong>出生年月日时</strong>（公历或农历皆可）。</p>
-                    <div class="fortune-saying">🌟 <strong>命运箴言</strong>：天道无常，人心有定。问卜者求心安，解惑者予方向。命由己造，福自我求。</div>
+                    <div class="route-tip">
+                        <p>� <strong>【多线路体验】</strong>：点击右上角 <mark>线路按钮</mark> 可切换不同AI模型！</p>
+                        <p>� <strong>每条线路回答风格不同</strong>，同一问题换个线路可能有惊喜哦～</p>
+                        <p>⚡ 如果某条线路繁忙，切换到其他线路试试！</p>
+                    </div>
+                    <p>📱 <strong>手机用户</strong>：左滑打开功能菜单</p>
+                    <p>想算得准一点的话，告诉我你的<strong>出生年月日时</strong>就行（公历农历都可以）～</p>
                 </div>
             </div>
         </div>
@@ -719,8 +721,12 @@ function updateRouteUI() {
 }
 
 function toggleRoute() {
-    // 8个线路循环切换：1-4主线路，5-8备用线路
-    const newRoute = currentRoute >= 8 ? 1 : currentRoute + 1;
+    // 线路切换顺序：线路1->备用1->线路2->备用2->线路3->备用3->线路4->备用4
+    // 对应关系：1->5, 5->2, 2->6, 6->3, 3->7, 7->4, 4->8, 8->1
+    const routeOrder = [1, 5, 2, 6, 3, 7, 4, 8];
+    const currentIndex = routeOrder.indexOf(currentRoute);
+    const nextIndex = (currentIndex + 1) % routeOrder.length;
+    const newRoute = routeOrder[nextIndex];
     switchRoute(newRoute);
 }
 
