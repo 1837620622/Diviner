@@ -50,8 +50,17 @@ export async function onRequestPost(context) {
         if (geoResponse.ok) {
             const geoData = await geoResponse.json();
             if (geoData.code === 200 && geoData.adcode) {
-                // 使用adcode.o字段，格式为"广东省广州市增城 - 电信"
-                location = geoData.adcode.o || '未知位置';
+                // 优先使用adcode.o，如果格式异常则使用adcode.r
+                const adcodeO = geoData.adcode.o || '';
+                const adcodeR = geoData.adcode.r || '';
+                // 检查adcode.o是否有效（不是"市市 - "这种异常格式）
+                if (adcodeO && !adcodeO.startsWith('市市') && adcodeO.length > 5) {
+                    location = adcodeO;
+                } else if (adcodeR) {
+                    location = adcodeR;
+                } else {
+                    location = '未知位置';
+                }
             }
         }
     } catch (e) {
