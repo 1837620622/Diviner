@@ -216,6 +216,28 @@ function loadConversationHistory() {
         try {
             conversationHistory = JSON.parse(saved);
             conversationHistory[0] = { role: 'system', content: SYSTEM_PROMPT };
+            
+            // 在界面上显示历史对话消息
+            const userMessages = conversationHistory.filter(m => m.role !== 'system');
+            if (userMessages.length > 0) {
+                chatContainer.innerHTML = ''; // 清空欢迎消息
+                userMessages.forEach(msg => {
+                    addMessage(msg.role, msg.content);
+                });
+                
+                // 尝试恢复当前对话ID（从已保存的对话中匹配）
+                const savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
+                const firstUserMsg = userMessages.find(m => m.role === 'user');
+                if (firstUserMsg) {
+                    const matchedChat = savedChats.find(c => 
+                        c.messages.length > 0 && 
+                        c.messages[0].content === firstUserMsg.content
+                    );
+                    if (matchedChat) {
+                        currentChatId = matchedChat.id;
+                    }
+                }
+            }
         } catch (e) {
             conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
         }
