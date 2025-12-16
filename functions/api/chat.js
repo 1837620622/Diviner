@@ -19,7 +19,7 @@ const ROUTES = {
 export async function onRequestPost(context) {
     const { request, env } = context;
     
-    // 获取用户IP地址（优先IPv4）
+    // 获取用户IP地址（仅支持IPv4）
     let clientIP = request.headers.get('CF-Connecting-IP') || 
                    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 
                    'unknown';
@@ -28,6 +28,27 @@ export async function onRequestPost(context) {
     if (clientIP.startsWith('::ffff:')) {
         clientIP = clientIP.substring(7);
     }
+    
+    // 检测是否为IPv6地址（包含冒号且不是IPv4映射）
+    const isIPv6 = clientIP.includes(':') && !clientIP.match(/^\d+\.\d+\.\d+\.\d+$/);
+    if (isIPv6) {
+        return new Response(JSON.stringify({
+            error: '请使用IPv4网络访问本服务',
+            message: '检测到您正在使用IPv6网络，请切换至IPv4网络后重试。'
+        }), {
+            status: 403,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+        });
+    }
+    
+    // 获取Cloudflare提供的地理位置信息
+    const country = request.headers.get('CF-IPCountry') || 'unknown';
+    const city = request.cf?.city || 'unknown';
+    const region = request.cf?.region || 'unknown';
+    const location = `${country}/${region}/${city}`;
     
     // 从环境变量获取API密钥
     const API_KEY = env.MODELSCOPE_API_KEY;
@@ -111,6 +132,7 @@ export async function onRequestPost(context) {
                 await env.CHAT_LOGS.put(recordId, JSON.stringify({
                     id: recordId,
                     ip: clientIP,
+                    location: location,
                     route: routeId,
                     timestamp: new Date().toISOString(),
                     question: lastUserMessage,

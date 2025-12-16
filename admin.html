@@ -230,6 +230,14 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
+        .ip-group-header .location {
+            font-size: 0.85rem;
+            color: #00c6ff;
+            background: rgba(0, 198, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 5px;
+        }
+
         .ip-group-header .toggle-icon {
             font-size: 1.2rem;
             transition: transform 0.3s;
@@ -616,6 +624,7 @@
                         <div class="ip-group-header" onclick="toggleGroup(${groupIndex})">
                             <div class="ip-info">
                                 <span class="ip-address">🌐 ${ip}</span>
+                                <span class="location">📍 ${groupRecords[0].location || '未知位置'}</span>
                                 <span class="chat-count">${groupRecords.length} 条对话 · 最新: ${latestTime}</span>
                             </div>
                             <span class="toggle-icon">▼</span>
