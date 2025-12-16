@@ -78,7 +78,7 @@ export async function onRequestPost(context) {
                 suggest_route: otherRouteId,
                 choices: [{
                     message: {
-                        content: `🔮 **线路${routeId}（${route.name}）繁忙**\n\n当前线路请求人数较多，建议您切换到**线路${otherRouteId}（${otherRoute.name}）**继续问卦。\n\n👆 点击顶部的线路切换按钮即可更换线路。\n\n🌟 **命运箴言**：条条大路通天机，换个方向亦可行。`
+                        content: `🔮 **线路${routeId}繁忙**\n\n当前线路请求人数较多，建议您切换到**线路${otherRouteId}**继续问卦。\n\n👆 点击右上角的线路按钮即可切换。\n\n🌟 条条大路通天机，换个线路试试看！`
                     }
                 }]
             }), {
