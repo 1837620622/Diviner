@@ -704,8 +704,10 @@ function switchRoute(routeId) {
     localStorage.setItem('diviner_route', routeId.toString());
     updateRouteUI();
     
-    // 显示切换提示（不显示具体模型名）
-    addLocalAssistantMessage(`✅ 已切换到**线路${routeId}**，可以继续问卦了！`);
+    // 显示切换提示（使用友好的线路名称）
+    const route = ROUTES[routeId];
+    const label = route ? route.label : `线路${routeId}`;
+    addLocalAssistantMessage(`✅ 已切换到**${label}**，可以继续问卦了！`);
 }
 
 function updateRouteUI() {
