@@ -467,6 +467,11 @@ function handleKeyDown(e) {
 function formatContent(content) {
     let formatted = content;
     
+    // 0. 预处理：清理【】标题内部的换行符（AI有时会在标题中间换行）
+    formatted = formatted.replace(/【([^】]*)\n+([^】]*)】/g, '【$1$2】');
+    formatted = formatted.replace(/【\s*\n+/g, '【');
+    formatted = formatted.replace(/\n+\s*】/g, '】');
+    
     // 1. 处理 ### 标题格式 (在换行处理之前)
     formatted = formatted.replace(/^###\s*(.+)$/gm, '【$1】');
     formatted = formatted.replace(/^##\s*(.+)$/gm, '【$1】');
@@ -475,8 +480,11 @@ function formatContent(content) {
     // 2. 处理换行
     formatted = formatted.replace(/\n/g, '<br>');
     
-    // 3. 处理【标题】格式 -> 带样式的标题
-    formatted = formatted.replace(/【([^】]+)】/g, '<div class="section-title"><span class="title-icon">✦</span> $1</div>');
+    // 3. 处理【标题】格式 -> 带样式的标题（同时清理内部可能残留的<br>）
+    formatted = formatted.replace(/【([^】]+)】/g, function(match, p1) {
+        const cleanTitle = p1.replace(/<br>/g, ' ').trim();
+        return '<div class="section-title"><span class="title-icon">✦</span> ' + cleanTitle + '</div>';
+    });
     
     // 4. 处理「重点词」格式 -> 高亮标记
     formatted = formatted.replace(/「([^」]+)」/g, '<mark>$1</mark>');
