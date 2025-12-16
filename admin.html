@@ -418,25 +418,102 @@
 
         /* ==================== 响应式 ==================== */
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
             .admin-header {
                 flex-direction: column;
                 gap: 15px;
                 text-align: center;
+                padding: 15px;
+            }
+
+            .admin-header h1 {
+                font-size: 1.3rem;
             }
 
             .admin-header .stats {
                 flex-wrap: wrap;
                 justify-content: center;
+                gap: 8px;
+            }
+
+            .stat-item {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            /* IP分组头部手机适配 */
+            .ip-group-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 12px 15px;
+            }
+
+            .ip-group-header .ip-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                width: 100%;
+            }
+
+            .ip-group-header .ip-address {
+                font-size: 0.9rem;
+            }
+
+            .ip-group-header .location {
+                font-size: 0.75rem;
+                word-break: break-all;
+            }
+
+            .ip-group-header .chat-count {
+                font-size: 0.75rem;
+            }
+
+            .ip-group-header .toggle-icon {
+                position: absolute;
+                right: 15px;
+                top: 15px;
+            }
+
+            /* 记录项手机适配 */
+            .record-item {
+                padding: 12px;
             }
 
             .record-meta {
                 flex-direction: column;
-                gap: 10px;
+                gap: 8px;
                 align-items: flex-start;
             }
 
             .record-msg {
                 max-width: 100%;
+                padding: 10px 12px;
+            }
+
+            .record-msg .content {
+                font-size: 0.85rem;
+                line-height: 1.5;
+                word-break: break-all;
+            }
+
+            .record-msg .content.collapsed {
+                max-height: 80px;
+            }
+
+            .expand-btn {
+                width: 100%;
+                text-align: center;
+                padding: 8px;
+            }
+
+            /* 刷新按钮手机适配 */
+            .refresh-btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
             }
         }
     </style>

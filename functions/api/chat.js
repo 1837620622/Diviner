@@ -29,25 +29,22 @@ export async function onRequestPost(context) {
         clientIP = clientIP.substring(7);
     }
     
-    // 使用第三方API查询IP地理位置（支持IPv4和IPv6）
+    // 使用VORE-API查询IP地理位置（支持IPv4和IPv6）
     let location = '未知位置';
     try {
-        const geoResponse = await fetch(`https://api.ip.sb/geoip/${clientIP}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
+        const geoResponse = await fetch(`https://api.vore.top/api/IPdata?ip=${clientIP}`);
         if (geoResponse.ok) {
             const geoData = await geoResponse.json();
-            const country = geoData.country || '';
-            const region = geoData.region || '';
-            const city = geoData.city || '';
-            const isp = geoData.isp || '';
-            location = [country, region, city, isp].filter(Boolean).join(' · ');
+            if (geoData.code === 200 && geoData.adcode) {
+                // 使用adcode.o字段，格式为"广东省广州市增城 - 电信"
+                location = geoData.adcode.o || '未知位置';
+            }
         }
     } catch (e) {
         // 地理位置查询失败，使用Cloudflare提供的信息
         const cfCountry = request.headers.get('CF-IPCountry') || '';
         const cfCity = request.cf?.city || '';
-        location = [cfCountry, cfCity].filter(Boolean).join(' · ') || '未知位置';
+        location = [cfCountry, cfCity].filter(Boolean).join(' ') || '未知位置';
     }
     
     // 从环境变量获取API密钥
