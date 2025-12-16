@@ -15,8 +15,8 @@ const ROUTES = {
         endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
     },
     3: {
-        name: 'QwQ-32B',
-        model: 'Qwen/QwQ-32B',
+        name: 'Qwen2.5-32B',
+        model: 'Qwen/Qwen2.5-32B-Instruct',
         endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
     }
 };
@@ -96,6 +96,26 @@ export async function onRequestPost(context) {
         
         // 获取响应
         const data = await response.json();
+        
+        // 处理400错误（参数错误）
+        if (response.status === 400) {
+            console.error('400错误详情:', JSON.stringify(data));
+            return new Response(JSON.stringify({
+                error: '请求参数错误',
+                details: data,
+                choices: [{
+                    message: {
+                        content: `🔮 **线路${routeId}暂不可用**\n\n该线路模型暂时无法使用，建议您切换到**其他线路**继续问卦。\n\n👆 点击右上角的线路按钮即可切换。`
+                    }
+                }]
+            }), {
+                status: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+        }
         
         // 处理429速率限制错误
         if (response.status === 429) {
