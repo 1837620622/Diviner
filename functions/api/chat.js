@@ -7,17 +7,26 @@ const ROUTES = {
     1: {
         name: 'DeepSeek',
         model: 'deepseek-ai/DeepSeek-V3.2',
-        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
+        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions',
+        provider: 'modelscope'
     },
     2: {
         name: 'Qwen3',
         model: 'Qwen/Qwen3-Next-80B-A3B-Instruct',
-        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
+        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions',
+        provider: 'modelscope'
     },
     3: {
         name: 'Qwen2.5-32B',
         model: 'Qwen/Qwen2.5-32B-Instruct',
-        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
+        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions',
+        provider: 'modelscope'
+    },
+    4: {
+        name: 'HF-DeepSeek',
+        model: 'deepseek-ai/DeepSeek-V3-0324',
+        endpoint: 'https://router.huggingface.co/novita/v3/openai/chat/completions',
+        provider: 'huggingface'
     }
 };
 
@@ -52,21 +61,6 @@ export async function onRequestPost(context) {
         location = [cfCountry, cfCity].filter(Boolean).join(' ') || '未知位置';
     }
     
-    // 从环境变量获取API密钥
-    const API_KEY = env.MODELSCOPE_API_KEY;
-    
-    if (!API_KEY) {
-        return new Response(JSON.stringify({
-            error: 'API密钥未配置，请在Cloudflare Pages设置中添加 MODELSCOPE_API_KEY 环境变量'
-        }), {
-            status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        });
-    }
-    
     try {
         // 获取请求体
         const body = await request.json();
@@ -77,6 +71,30 @@ export async function onRequestPost(context) {
         const otherRouteId = routeId === 1 ? 2 : 1;
         const otherRoute = ROUTES[otherRouteId];
         
+        // 根据provider选择API密钥
+        let API_KEY;
+        if (route.provider === 'huggingface') {
+            API_KEY = env.HUGGINGFACE_API_KEY;
+            if (!API_KEY) {
+                return new Response(JSON.stringify({
+                    error: 'Hugging Face API密钥未配置，请在Cloudflare Pages设置中添加 HUGGINGFACE_API_KEY 环境变量'
+                }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+                });
+            }
+        } else {
+            API_KEY = env.MODELSCOPE_API_KEY;
+            if (!API_KEY) {
+                return new Response(JSON.stringify({
+                    error: 'ModelScope API密钥未配置，请在Cloudflare Pages设置中添加 MODELSCOPE_API_KEY 环境变量'
+                }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+                });
+            }
+        }
+        
         // 使用选定线路的模型
         const requestBody = {
             ...body,
@@ -84,7 +102,7 @@ export async function onRequestPost(context) {
         };
         delete requestBody.route;
         
-        // 转发请求到ModelScope API
+        // 转发请求到API
         const response = await fetch(route.endpoint, {
             method: 'POST',
             headers: {

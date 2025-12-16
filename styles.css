@@ -375,6 +375,10 @@ body {
     background: rgba(0, 150, 136, 0.2);
 }
 
+.route-btn.route-4 {
+    background: rgba(255, 152, 0, 0.2);
+}
+
 .nav-title {
     flex: 1;
     display: flex;
