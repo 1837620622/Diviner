@@ -326,12 +326,15 @@ function clearConversation() {
 
 // ==================== 新建对话 ====================
 function newChat() {
-    // 先保存当前对话（如果有内容的话）
-    if (conversationHistory.length > 1) {
-        autoSaveChat();
+    // 检查当前对话是否有内容需要保存（至少有用户消息）
+    const hasUserMessage = conversationHistory.some(m => m.role === 'user');
+    
+    if (hasUserMessage) {
+        // 强制保存当前对话
+        forceAutoSaveChat();
     }
     
-    // 重置当前对话ID，创建新对话
+    // 重置当前对话ID，准备创建新对话
     currentChatId = null;
     
     // 重置对话历史
@@ -342,8 +345,59 @@ function newChat() {
     chatContainer.innerHTML = '';
     addWelcomeMessage();
     
+    // 刷新历史对话列表
+    loadSavedChats();
+    
     // 聚焦输入框
     userInput.focus();
+    
+    console.log('✅ 已新建对话');
+}
+
+// 强制保存当前对话（即使只有一条消息也保存）
+function forceAutoSaveChat() {
+    const chatMessages = conversationHistory.filter(m => m.role !== 'system');
+    
+    // 至少有一条用户消息才保存
+    if (chatMessages.length < 1) return;
+    
+    // 获取第一条用户消息作为标题
+    const firstUserMsg = chatMessages.find(m => m.role === 'user');
+    const title = firstUserMsg ? firstUserMsg.content.substring(0, 20) + (firstUserMsg.content.length > 20 ? '...' : '') : '新对话';
+    
+    const userId = getUserId();
+    let savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
+    
+    // 如果当前对话已存在，更新它
+    if (currentChatId) {
+        const existingIndex = savedChats.findIndex(c => c.id === currentChatId);
+        if (existingIndex !== -1) {
+            savedChats[existingIndex].messages = chatMessages;
+            savedChats[existingIndex].time = new Date().toLocaleString('zh-CN');
+            localStorage.setItem('diviner_saved_chats', JSON.stringify(savedChats));
+            console.log('✅ 已更新对话:', currentChatId);
+            return;
+        }
+    }
+    
+    // 创建新对话记录
+    const newChatId = 'chat_' + Date.now();
+    savedChats.unshift({
+        id: newChatId,
+        userId: userId,
+        title: title,
+        time: new Date().toLocaleString('zh-CN'),
+        timestamp: Date.now(),
+        messages: chatMessages
+    });
+    
+    // 最多保存20条历史对话
+    if (savedChats.length > 20) {
+        savedChats = savedChats.slice(0, 20);
+    }
+    
+    localStorage.setItem('diviner_saved_chats', JSON.stringify(savedChats));
+    console.log('✅ 已保存新对话:', newChatId);
 }
 
 function addWelcomeMessage() {
