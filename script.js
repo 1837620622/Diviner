@@ -435,8 +435,8 @@ function addWelcomeMessage() {
                         <li>🎯 <strong>择日选吉</strong> - 选个好日子办事</li>
                     </ul>
                     <div class="route-tip">
-                        <p>� <strong>【多线路体验】</strong>：点击右上角 <mark>线路按钮</mark> 可切换不同AI模型！</p>
-                        <p>� <strong>每条线路回答风格不同</strong>，同一问题换个线路可能有惊喜哦～</p>
+                        <p>❕ <strong>【多线路体验】</strong>：点击右上角 <mark>线路按钮</mark> 可切换不同AI模型！</p>
+                        <p>❕ <strong>每条线路回答风格不同</strong>，同一问题换个线路可能有惊喜哦～</p>
                         <p>⚡ 如果某条线路繁忙，切换到其他线路试试！</p>
                     </div>
                     <p>📱 <strong>手机用户</strong>：左滑打开功能菜单</p>
@@ -658,6 +658,13 @@ async function sendMessage() {
         }
         
         const data = await response.json();
+        
+        // 检查响应数据是否有效
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            console.error('异常响应数据:', data);
+            throw new Error(data.error || '服务器返回了异常数据，请切换线路重试');
+        }
+        
         const assistantMessage = data.choices[0].message.content;
         
         // 添加助手回复到对话历史
