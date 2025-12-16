@@ -13,6 +13,11 @@ const ROUTES = {
         name: 'Qwen3',
         model: 'Qwen/Qwen3-Next-80B-A3B-Instruct',
         endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
+    },
+    3: {
+        name: 'Kimi-K2',
+        model: 'moonshotai/Kimi-K2-Instruct',
+        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
     }
 };
 

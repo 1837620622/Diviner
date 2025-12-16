@@ -10,7 +10,8 @@ let userLocation = null;
 // 线路配置
 const ROUTES = {
     1: { label: '线路1' },
-    2: { label: '线路2' }
+    2: { label: '线路2' },
+    3: { label: '线路3' }
 };
 
 // 当前选择的线路（默认线路1）
@@ -677,7 +678,8 @@ function updateRouteUI() {
 }
 
 function toggleRoute() {
-    const newRoute = currentRoute === 1 ? 2 : 1;
+    // 3个线路循环切换：1 -> 2 -> 3 -> 1
+    const newRoute = currentRoute >= 3 ? 1 : currentRoute + 1;
     switchRoute(newRoute);
 }
 
