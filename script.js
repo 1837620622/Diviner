@@ -326,10 +326,14 @@ function clearConversation() {
 
 // ==================== 新建对话 ====================
 function newChat() {
-    // 检查当前对话是否有内容需要保存（至少有用户消息）
+    // 检查当前对话是否有内容
     const hasUserMessage = conversationHistory.some(m => m.role === 'user');
     
+    // 如果有对话内容，先询问用户是否新建
     if (hasUserMessage) {
+        if (!confirm('确定要新建对话吗？\n当前对话将自动保存到历史记录中。')) {
+            return; // 用户取消
+        }
         // 强制保存当前对话
         forceAutoSaveChat();
     }
@@ -774,7 +778,12 @@ function loadChat(chatId) {
     const savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
     const chat = savedChats.find(c => c.id === chatId);
     
-    if (!chat) return;
+    if (!chat) {
+        console.log('❌ 未找到对话:', chatId);
+        return;
+    }
+    
+    console.log('📂 正在加载对话:', chatId, '消息数:', chat.messages.length);
     
     // 设置当前对话ID（用于后续自动更新）
     currentChatId = chatId;
@@ -785,11 +794,19 @@ function loadChat(chatId) {
     // 重置对话历史（保留系统提示词）
     conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
     
-    // 加载保存的对话
-    chat.messages.forEach(msg => {
-        conversationHistory.push(msg);
-        addMessage(msg.role, msg.content);
-    });
+    // 加载保存的对话消息
+    if (chat.messages && chat.messages.length > 0) {
+        chat.messages.forEach(msg => {
+            if (msg.role && msg.content) {
+                conversationHistory.push(msg);
+                addMessage(msg.role, msg.content);
+            }
+        });
+        console.log('✅ 对话加载完成，共', chat.messages.length, '条消息');
+    } else {
+        console.log('⚠️ 对话没有消息内容');
+        addWelcomeMessage();
+    }
     
     // 关闭侧边栏
     closeSidebar();
