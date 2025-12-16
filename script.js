@@ -154,9 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 加载历史对话列表
     loadSavedChats();
-    
-    // 保存对话按钮事件
-    document.getElementById('saveChatBtn').addEventListener('click', saveCurrentChat);
 });
 
 // ==================== 触摸滑动手势处理 ====================
@@ -447,6 +444,9 @@ async function sendMessage() {
         // 保存对话历史
         saveConversationHistory();
         
+        // 自动保存到历史对话
+        autoSaveChat();
+        
         // 显示助手回复
         addMessage('assistant', assistantMessage);
         
@@ -517,30 +517,39 @@ function getUserId() {
     return userId;
 }
 
-// 保存当前对话
-function saveCurrentChat() {
-    // 过滤掉系统消息，只保留用户和助手的对话
+// 当前对话ID（用于自动保存时更新同一对话）
+let currentChatId = null;
+
+// 自动保存当前对话（每次收到回复后调用）
+function autoSaveChat() {
     const chatMessages = conversationHistory.filter(m => m.role !== 'system');
     
-    if (chatMessages.length < 2) {
-        addLocalAssistantMessage('⚠️ 当前对话内容太少，请先进行一些对话再保存。');
-        return;
-    }
+    // 至少有一问一答才保存
+    if (chatMessages.length < 2) return;
     
     // 获取第一条用户消息作为标题
     const firstUserMsg = chatMessages.find(m => m.role === 'user');
-    const title = firstUserMsg ? firstUserMsg.content.substring(0, 30) + (firstUserMsg.content.length > 30 ? '...' : '') : '新对话';
+    const title = firstUserMsg ? firstUserMsg.content.substring(0, 20) + (firstUserMsg.content.length > 20 ? '...' : '') : '新对话';
     
-    // 生成对话ID
-    const chatId = 'chat_' + Date.now();
     const userId = getUserId();
-    
-    // 获取已保存的对话列表
     let savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
     
-    // 添加新对话
+    // 如果当前对话已存在，更新它
+    if (currentChatId) {
+        const existingIndex = savedChats.findIndex(c => c.id === currentChatId);
+        if (existingIndex !== -1) {
+            savedChats[existingIndex].messages = chatMessages;
+            savedChats[existingIndex].time = new Date().toLocaleString('zh-CN');
+            localStorage.setItem('diviner_saved_chats', JSON.stringify(savedChats));
+            loadSavedChats();
+            return;
+        }
+    }
+    
+    // 创建新对话记录
+    currentChatId = 'chat_' + Date.now();
     savedChats.unshift({
-        id: chatId,
+        id: currentChatId,
         userId: userId,
         title: title,
         time: new Date().toLocaleString('zh-CN'),
@@ -548,18 +557,13 @@ function saveCurrentChat() {
         messages: chatMessages
     });
     
-    // 最多保存20条历史对话
-    if (savedChats.length > 20) {
-        savedChats = savedChats.slice(0, 20);
+    // 最多保存15条历史对话
+    if (savedChats.length > 15) {
+        savedChats = savedChats.slice(0, 15);
     }
     
-    // 保存到localStorage
     localStorage.setItem('diviner_saved_chats', JSON.stringify(savedChats));
-    
-    // 刷新历史对话列表
     loadSavedChats();
-    
-    addLocalAssistantMessage('✅ 对话已保存！可在左侧「历史对话」中找到。');
 }
 
 // 加载已保存的对话列表
@@ -568,18 +572,21 @@ function loadSavedChats() {
     const savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
     
     if (savedChats.length === 0) {
-        historyList.innerHTML = '<p class="no-history">暂无保存的对话</p>';
+        historyList.innerHTML = '<p class="no-history">暂无对话记录</p>';
         return;
     }
     
     let html = '';
     savedChats.forEach(chat => {
         html += `
-            <div class="history-item" onclick="loadChat('${chat.id}')">
-                <div class="title">${escapeHtml(chat.title)}</div>
-                <div class="time">${chat.time}</div>
-                <button class="delete-btn" onclick="event.stopPropagation(); deleteChat('${chat.id}')">✕</button>
-            </div>
+            <button class="history-btn" onclick="loadChat('${chat.id}')">
+                <span class="btn-icon">💬</span>
+                <div class="btn-info">
+                    <div class="btn-title">${escapeHtml(chat.title)}</div>
+                    <div class="btn-time">${chat.time}</div>
+                </div>
+                <span class="delete-btn" onclick="event.stopPropagation(); deleteChat('${chat.id}')">✕</span>
+            </button>
         `;
     });
     
@@ -591,10 +598,10 @@ function loadChat(chatId) {
     const savedChats = JSON.parse(localStorage.getItem('diviner_saved_chats') || '[]');
     const chat = savedChats.find(c => c.id === chatId);
     
-    if (!chat) {
-        addLocalAssistantMessage('⚠️ 未找到该对话记录。');
-        return;
-    }
+    if (!chat) return;
+    
+    // 设置当前对话ID（用于后续自动更新）
+    currentChatId = chatId;
     
     // 清空当前聊天界面
     chatContainer.innerHTML = '';
