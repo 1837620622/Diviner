@@ -19,10 +19,15 @@ const ROUTES = {
 export async function onRequestPost(context) {
     const { request, env } = context;
     
-    // 获取用户IP地址
-    const clientIP = request.headers.get('CF-Connecting-IP') || 
-                     request.headers.get('X-Forwarded-For')?.split(',')[0] || 
-                     'unknown';
+    // 获取用户IP地址（优先IPv4）
+    let clientIP = request.headers.get('CF-Connecting-IP') || 
+                   request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 
+                   'unknown';
+    
+    // 如果是IPv6映射的IPv4地址，提取IPv4部分
+    if (clientIP.startsWith('::ffff:')) {
+        clientIP = clientIP.substring(7);
+    }
     
     // 从环境变量获取API密钥
     const API_KEY = env.MODELSCOPE_API_KEY;
