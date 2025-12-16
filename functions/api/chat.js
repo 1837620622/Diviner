@@ -174,7 +174,7 @@ export async function onRequestPost(context) {
                 suggest_route: currentMapping.backup,
                 choices: [{
                     message: {
-                        content: `🔮 **${currentLabel}繁忙**\n\n当前线路请求人数较多，建议您切换到**${currentMapping.backupLabel}**继续问卦。\n\n如果${currentMapping.backupLabel}也繁忙，可以尝试**${currentMapping.nextLabel}**或其对应备用线路。\n\n👆 点击右上角的线路按钮即可切换。`
+                        content: `🔮 **${currentLabel}繁忙**\n\n当前线路请求人数较多，建议您切换到**${currentMapping.backupLabel}**继续问卦。\n\n如果${currentMapping.backupLabel}也繁忙，可以尝试**${currentMapping.nextLabel}**。\n\n👆 点击右上角的线路按钮即可切换。\n\n💡 **多线路体验**：每条线路使用不同的AI模型，回答风格各异，同一问题可尝试多条线路获得不同角度的解读！`
                     }
                 }]
             }), {
