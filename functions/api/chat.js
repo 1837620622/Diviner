@@ -19,7 +19,7 @@ const ROUTES = {
 export async function onRequestPost(context) {
     const { request, env } = context;
     
-    // 获取用户IP地址（仅支持IPv4）
+    // 获取用户IP地址（首选IPv4）
     let clientIP = request.headers.get('CF-Connecting-IP') || 
                    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 
                    'unknown';
@@ -29,26 +29,26 @@ export async function onRequestPost(context) {
         clientIP = clientIP.substring(7);
     }
     
-    // 检测是否为IPv6地址（包含冒号且不是IPv4映射）
-    const isIPv6 = clientIP.includes(':') && !clientIP.match(/^\d+\.\d+\.\d+\.\d+$/);
-    if (isIPv6) {
-        return new Response(JSON.stringify({
-            error: '请使用IPv4网络访问本服务',
-            message: '检测到您正在使用IPv6网络，请切换至IPv4网络后重试。'
-        }), {
-            status: 403,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
+    // 使用第三方API查询IP地理位置（支持IPv4和IPv6）
+    let location = '未知位置';
+    try {
+        const geoResponse = await fetch(`https://api.ip.sb/geoip/${clientIP}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
         });
+        if (geoResponse.ok) {
+            const geoData = await geoResponse.json();
+            const country = geoData.country || '';
+            const region = geoData.region || '';
+            const city = geoData.city || '';
+            const isp = geoData.isp || '';
+            location = [country, region, city, isp].filter(Boolean).join(' · ');
+        }
+    } catch (e) {
+        // 地理位置查询失败，使用Cloudflare提供的信息
+        const cfCountry = request.headers.get('CF-IPCountry') || '';
+        const cfCity = request.cf?.city || '';
+        location = [cfCountry, cfCity].filter(Boolean).join(' · ') || '未知位置';
     }
-    
-    // 获取Cloudflare提供的地理位置信息
-    const country = request.headers.get('CF-IPCountry') || 'unknown';
-    const city = request.cf?.city || 'unknown';
-    const region = request.cf?.region || 'unknown';
-    const location = `${country}/${region}/${city}`;
     
     // 从环境变量获取API密钥
     const API_KEY = env.MODELSCOPE_API_KEY;
