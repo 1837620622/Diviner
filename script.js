@@ -125,17 +125,19 @@ const SWIPE_THRESHOLD = 50;
 // 使用ping0.cc的JSONP接口获取更准确的IP位置信息
 function fetchUserLocation() {
     return new Promise((resolve) => {
+        let resolved = false;
+        
         // 定义JSONP回调函数
         window.ping0Callback = function(ip, location, asn, org) {
+            if (resolved) return;
+            resolved = true;
             userLocation = {
                 ip: ip || '',
                 location: location || '',  // 格式如：中国 广东省 深圳市 — 电信
                 asn: asn || '',
                 org: org || ''
             };
-            console.log('用户位置已获取:', userLocation);
-            // 清理回调函数
-            delete window.ping0Callback;
+            console.log('✅ 用户位置已获取:', userLocation);
             resolve();
         };
         
@@ -143,18 +145,21 @@ function fetchUserLocation() {
         const script = document.createElement('script');
         script.src = 'https://ping0.cc/geo/jsonp/ping0Callback';
         script.onerror = function() {
-            console.log('获取位置失败，不影响正常使用');
-            delete window.ping0Callback;
+            if (resolved) return;
+            resolved = true;
+            console.log('❌ 获取位置失败，不影响正常使用');
             resolve();
         };
-        // 设置超时，3秒后自动resolve
+        
+        // 设置超时，5秒后自动resolve（但不删除回调函数，让它继续工作）
         setTimeout(() => {
-            if (window.ping0Callback) {
-                console.log('获取位置超时，不影响正常使用');
-                delete window.ping0Callback;
+            if (!resolved) {
+                resolved = true;
+                console.log('⏰ 获取位置超时，继续使用');
                 resolve();
             }
-        }, 3000);
+        }, 5000);
+        
         document.head.appendChild(script);
     });
 }
@@ -500,7 +505,12 @@ async function sendMessage() {
     try {
         // 构建带位置信息的消息列表
         const messagesWithLocation = [...conversationHistory];
-        messagesWithLocation[0] = { role: 'system', content: buildSystemPromptWithLocation() };
+        const systemPromptWithLocation = buildSystemPromptWithLocation();
+        messagesWithLocation[0] = { role: 'system', content: systemPromptWithLocation };
+        
+        // 调试：打印位置信息
+        console.log('📍 当前用户位置:', userLocation);
+        console.log('📝 系统提示词是否包含位置:', systemPromptWithLocation.includes('用户当前所在位置'));
         
         const response = await fetch(API_ENDPOINT, {
             method: 'POST',
