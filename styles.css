@@ -594,27 +594,15 @@ body {
     border-left: 3px solid var(--gold);
     padding: 10px 15px;
     margin: 10px 0;
-    border-radius: 0 10px 10px 0;
+    border-radius: 0 8px 8px 0;
 }
 
-.message-text .section-title {
-    color: var(--accent-color);
-    font-weight: bold;
-    font-size: 1.05rem;
-    margin: 15px 0 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.message .divider {
+    border: none;
+    border-top: 1px dashed rgba(255, 255, 255, 0.2);
+    margin: 15px 0;
+    width: 100%;
 }
-
-.message-text .divination-result {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px dashed rgba(142, 45, 226, 0.4);
-    padding: 12px 15px;
-    border-radius: 10px;
-    margin: 10px 0;
-}
-
 .fortune-saying {
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
     border: 1px solid rgba(255, 215, 0, 0.3);

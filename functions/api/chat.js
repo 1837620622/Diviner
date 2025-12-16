@@ -6,28 +6,26 @@
 const MAIN_ROUTES = {
     1: { name: 'DeepSeek-V3', model: 'deepseek-ai/DeepSeek-V3.2', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
     2: { name: 'Qwen3-80B', model: 'Qwen/Qwen3-Next-80B-A3B-Instruct', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
-    3: { name: 'Qwen2.5-72B', model: 'Qwen/Qwen2.5-72B-Instruct', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
-    4: { name: 'Qwen2.5-32B', model: 'Qwen/Qwen2.5-32B-Instruct', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
-    5: { name: 'DeepSeek-R1', model: 'deepseek-ai/DeepSeek-R1-0528', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
-    6: { name: 'Qwen3-235B', model: 'Qwen/Qwen3-235B-A22B', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' }
+    3: { name: 'DeepSeek-R1', model: 'deepseek-ai/DeepSeek-R1-0528', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
+    4: { name: 'Qwen3-235B', model: 'Qwen/Qwen3-235B-A22B', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' }
 };
 
 // 备用线路配置（iFlow）
 const BACKUP_ROUTES = {
-    1: { name: 'DeepSeek-V3', model: 'deepseek-v3', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
-    2: { name: 'Qwen3-235B', model: 'qwen3-235b', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
-    3: { name: 'DeepSeek-R1', model: 'deepseek-r1', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
-    4: { name: 'DeepSeek-V3', model: 'deepseek-v3', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' }
+    1: { name: '备用-DeepSeek', model: 'deepseek-v3', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
+    2: { name: '备用-Qwen3', model: 'qwen3-235b', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
+    3: { name: '备用-R1', model: 'deepseek-r1', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
+    4: { name: '备用-Qwen235B', model: 'qwen3-235b', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' }
 };
 
 // 合并所有线路
 const ROUTES = {
     ...MAIN_ROUTES,
-    // 备用线路从7开始
-    7: BACKUP_ROUTES[1],
-    8: BACKUP_ROUTES[2],
-    9: BACKUP_ROUTES[3],
-    10: BACKUP_ROUTES[4]
+    // 备用线路从5开始，与主线路一一对应
+    5: BACKUP_ROUTES[1],
+    6: BACKUP_ROUTES[2],
+    7: BACKUP_ROUTES[3],
+    8: BACKUP_ROUTES[4]
 };
 
 export async function onRequestPost(context) {

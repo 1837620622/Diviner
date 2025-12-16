@@ -11,18 +11,16 @@ let userLocation = null;
 const MAIN_ROUTES = {
     1: { label: '线路1', desc: 'DeepSeek-V3' },
     2: { label: '线路2', desc: 'Qwen3-80B' },
-    3: { label: '线路3', desc: 'Qwen2.5-72B' },
-    4: { label: '线路4', desc: 'Qwen2.5-32B' },
-    5: { label: '线路5', desc: 'DeepSeek-R1' },
-    6: { label: '线路6', desc: 'Qwen3-235B' }
+    3: { label: '线路3', desc: 'DeepSeek-R1' },
+    4: { label: '线路4', desc: 'Qwen3-235B' }
 };
 
 // 备用线路配置（iFlow）
 const BACKUP_ROUTES = {
-    7: { label: '备用1', desc: 'DeepSeek-V3' },
-    8: { label: '备用2', desc: 'Qwen3-235B' },
-    9: { label: '备用3', desc: 'DeepSeek-R1' },
-    10: { label: '备用4', desc: 'DeepSeek-V3' }
+    5: { label: '备用1', desc: 'DeepSeek-V3' },
+    6: { label: '备用2', desc: 'Qwen3-235B' },
+    7: { label: '备用3', desc: 'DeepSeek-R1' },
+    8: { label: '备用4', desc: 'Qwen3-235B' }
 };
 
 // 合并所有线路
@@ -437,6 +435,7 @@ function addWelcomeMessage() {
                     </ul>
                     <p>📱 <strong>手机用户</strong>：从屏幕左边缘向右滑动可打开玄学宝典，向左滑动关闭。</p>
                     <p>💻 <strong>电脑用户</strong>：点击左上角 <strong>☰</strong> 打开玄学宝典。</p>
+                    <p>🔄 <strong>多线路体验</strong>：点击右上角线路按钮可切换不同AI，<mark>每条线路风格各异</mark>，同一问题可尝试不同线路获得多角度解读！</p>
                     <p>若需精准推算，可告知<strong>出生年月日时</strong>（公历或农历皆可）。</p>
                     <div class="fortune-saying">🌟 <strong>命运箴言</strong>：天道无常，人心有定。问卜者求心安，解惑者予方向。命由己造，福自我求。</div>
                 </div>
@@ -482,6 +481,10 @@ function formatContent(content) {
     } while (formatted !== prevFormatted);
     // 0.4 清理✦符号后的换行（会在后面统一添加）
     formatted = formatted.replace(/✦\s*【/g, '【');
+    
+    // 0.5 处理特殊符号行
+    formatted = formatted.replace(/\n+• --\n+/g, '\n\n<hr class="divider">\n\n');
+    formatted = formatted.replace(/\n+--\n+/g, '\n\n<hr class="divider">\n\n');
     
     // 1. 处理 ### 标题格式 (在换行处理之前)
     formatted = formatted.replace(/^###\s*(.+)$/gm, '【$1】');
@@ -539,6 +542,8 @@ function formatContent(content) {
     formatted = formatted.replace(/<p><\/p>/g, '');
     formatted = formatted.replace(/<p>(<div)/g, '$1');
     formatted = formatted.replace(/(<\/div>)<\/p>/g, '$1');
+    formatted = formatted.replace(/<p>(<hr)/g, '$1');
+    formatted = formatted.replace(/(divider">)<\/p>/g, '$1');
     
     return formatted;
 }
@@ -706,16 +711,16 @@ function updateRouteUI() {
     if (routeBtn) {
         const route = ROUTES[currentRoute];
         const label = route ? route.label : `线路${currentRoute}`;
-        const isBackup = currentRoute >= 7;
+        const isBackup = currentRoute >= 5;
         routeBtn.innerHTML = label;
         routeBtn.className = `route-btn ${isBackup ? 'route-backup' : 'route-main'}`;
-        routeBtn.title = route ? `${label} (${route.desc})，点击切换` : `当前线路${currentRoute}，点击切换`;
+        routeBtn.title = route ? `${label} (${route.desc})，点击切换线路体验不同风格` : `当前线路${currentRoute}，点击切换`;
     }
 }
 
 function toggleRoute() {
-    // 10个线路循环切换：1-6主线路，7-10备用线路
-    const newRoute = currentRoute >= 10 ? 1 : currentRoute + 1;
+    // 8个线路循环切换：1-4主线路，5-8备用线路
+    const newRoute = currentRoute >= 8 ? 1 : currentRoute + 1;
     switchRoute(newRoute);
 }
 
