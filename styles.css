@@ -137,6 +137,7 @@ body {
     margin-bottom: 10px;
     padding-bottom: 5px;
     border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    text-align: center;
 }
 
 .sidebar-items {
