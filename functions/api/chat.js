@@ -15,8 +15,8 @@ const ROUTES = {
         endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
     },
     3: {
-        name: 'Qwen3-32B',
-        model: 'Qwen/Qwen3-32B',
+        name: 'Qwen3-30B',
+        model: 'Qwen/Qwen3-30B-A3B',
         endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions'
     }
 };
