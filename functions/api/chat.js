@@ -2,32 +2,32 @@
 // API密钥存储在Cloudflare环境变量中，不会暴露在前端代码
 // 支持多线路：线路1(DeepSeek) 和 线路2(Qwen3)
 
-// 线路配置
+// 主线路配置（ModelScope）
+const MAIN_ROUTES = {
+    1: { name: 'DeepSeek-V3', model: 'deepseek-ai/DeepSeek-V3.2', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
+    2: { name: 'Qwen3-80B', model: 'Qwen/Qwen3-Next-80B-A3B-Instruct', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
+    3: { name: 'Qwen2.5-72B', model: 'Qwen/Qwen2.5-72B-Instruct', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
+    4: { name: 'Qwen2.5-32B', model: 'Qwen/Qwen2.5-32B-Instruct', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
+    5: { name: 'DeepSeek-R1', model: 'deepseek-ai/DeepSeek-R1-0528', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
+    6: { name: 'Qwen3-235B', model: 'Qwen/Qwen3-235B-A22B', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' }
+};
+
+// 备用线路配置（Hugging Face Cerebras）
+const BACKUP_ROUTES = {
+    1: { name: 'Llama-3.3-70B', model: 'llama-3.3-70b', endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions', provider: 'huggingface' },
+    2: { name: 'Qwen3-32B', model: 'qwen-3-32b', endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions', provider: 'huggingface' },
+    3: { name: 'Qwen3-235B', model: 'qwen-3-235b-a22b-instruct-2507', endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions', provider: 'huggingface' },
+    4: { name: 'Llama3.1-8B', model: 'llama3.1-8b', endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions', provider: 'huggingface' }
+};
+
+// 合并所有线路
 const ROUTES = {
-    1: {
-        name: 'DeepSeek',
-        model: 'deepseek-ai/DeepSeek-V3.2',
-        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions',
-        provider: 'modelscope'
-    },
-    2: {
-        name: 'Qwen3-80B',
-        model: 'Qwen/Qwen3-Next-80B-A3B-Instruct',
-        endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions',
-        provider: 'modelscope'
-    },
-    3: {
-        name: 'Llama-70B',
-        model: 'llama-3.3-70b',
-        endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions',
-        provider: 'huggingface'
-    },
-    4: {
-        name: 'Qwen3-32B',
-        model: 'qwen-3-32b',
-        endpoint: 'https://router.huggingface.co/cerebras/v1/chat/completions',
-        provider: 'huggingface'
-    }
+    ...MAIN_ROUTES,
+    // 备用线路从7开始
+    7: BACKUP_ROUTES[1],
+    8: BACKUP_ROUTES[2],
+    9: BACKUP_ROUTES[3],
+    10: BACKUP_ROUTES[4]
 };
 
 export async function onRequestPost(context) {

@@ -7,13 +7,26 @@ const API_ENDPOINT = '/api/chat';
 // 用户地理位置信息（通过IP获取）
 let userLocation = null;
 
-// 线路配置
-const ROUTES = {
-    1: { label: '线路1' },
-    2: { label: '线路2' },
-    3: { label: '线路3' },
-    4: { label: '线路4' }
+// 主线路配置（ModelScope）
+const MAIN_ROUTES = {
+    1: { label: '线路1', desc: 'DeepSeek-V3' },
+    2: { label: '线路2', desc: 'Qwen3-80B' },
+    3: { label: '线路3', desc: 'Qwen2.5-72B' },
+    4: { label: '线路4', desc: 'Qwen2.5-32B' },
+    5: { label: '线路5', desc: 'DeepSeek-R1' },
+    6: { label: '线路6', desc: 'Qwen3-235B' }
 };
+
+// 备用线路配置（Hugging Face）
+const BACKUP_ROUTES = {
+    7: { label: '备用1', desc: 'Llama-70B' },
+    8: { label: '备用2', desc: 'Qwen3-32B' },
+    9: { label: '备用3', desc: 'Qwen3-235B' },
+    10: { label: '备用4', desc: 'Llama-8B' }
+};
+
+// 合并所有线路
+const ROUTES = { ...MAIN_ROUTES, ...BACKUP_ROUTES };
 
 // 当前选择的线路（默认线路1）
 let currentRoute = parseInt(localStorage.getItem('diviner_route') || '1');
@@ -672,15 +685,18 @@ function switchRoute(routeId) {
 function updateRouteUI() {
     const routeBtn = document.getElementById('routeBtn');
     if (routeBtn) {
-        routeBtn.innerHTML = `线路${currentRoute}`;
-        routeBtn.className = `route-btn route-${currentRoute}`;
-        routeBtn.title = `当前线路${currentRoute}，点击切换`;
+        const route = ROUTES[currentRoute];
+        const label = route ? route.label : `线路${currentRoute}`;
+        const isBackup = currentRoute >= 7;
+        routeBtn.innerHTML = label;
+        routeBtn.className = `route-btn ${isBackup ? 'route-backup' : 'route-main'}`;
+        routeBtn.title = route ? `${label} (${route.desc})，点击切换` : `当前线路${currentRoute}，点击切换`;
     }
 }
 
 function toggleRoute() {
-    // 4个线路循环切换：1 -> 2 -> 3 -> 4 -> 1
-    const newRoute = currentRoute >= 4 ? 1 : currentRoute + 1;
+    // 10个线路循环切换：1-6主线路，7-10备用线路
+    const newRoute = currentRoute >= 10 ? 1 : currentRoute + 1;
     switchRoute(newRoute);
 }
 
