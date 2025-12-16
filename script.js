@@ -759,18 +759,44 @@ function loadSavedChats() {
     let html = '';
     savedChats.forEach(chat => {
         html += `
-            <button class="history-btn" onclick="loadChat('${chat.id}')">
+            <button class="history-btn" data-chat-id="${chat.id}">
                 <span class="btn-icon">💬</span>
                 <div class="btn-info">
                     <div class="btn-title">${escapeHtml(chat.title)}</div>
                     <div class="btn-time">${chat.time}</div>
                 </div>
-                <span class="delete-btn" onclick="event.stopPropagation(); deleteChat('${chat.id}')">✕</span>
+                <span class="delete-btn" data-delete-id="${chat.id}">✕</span>
             </button>
         `;
     });
     
     historyList.innerHTML = html;
+    
+    // 使用事件委托绑定点击事件
+    historyList.querySelectorAll('.history-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            // 如果点击的是删除按钮，不触发加载
+            if (e.target.classList.contains('delete-btn')) {
+                return;
+            }
+            const chatId = this.getAttribute('data-chat-id');
+            if (chatId) {
+                console.log('🖱️ 点击加载对话:', chatId);
+                loadChat(chatId);
+            }
+        });
+    });
+    
+    // 绑定删除按钮事件
+    historyList.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const chatId = this.getAttribute('data-delete-id');
+            if (chatId && confirm('确定要删除这条对话记录吗？')) {
+                deleteChat(chatId);
+            }
+        });
+    });
 }
 
 // 加载指定对话
@@ -823,9 +849,3 @@ function deleteChat(chatId) {
     loadSavedChats();
 }
 
-// HTML转义函数
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
