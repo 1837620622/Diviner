@@ -809,6 +809,15 @@ function loadChat(chatId) {
         return;
     }
     
+    // 先保存当前对话（如果有内容且不是同一个对话）
+    if (currentChatId !== chatId) {
+        const hasUserMessage = conversationHistory.some(m => m.role === 'user');
+        if (hasUserMessage) {
+            forceAutoSaveChat();
+            console.log('💾 已自动保存当前对话');
+        }
+    }
+    
     console.log('📂 正在加载对话:', chatId, '消息数:', chat.messages.length);
     
     // 设置当前对话ID（用于后续自动更新）
