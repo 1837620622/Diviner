@@ -1,5 +1,6 @@
 // Cloudflare Pages Function - 管理后台API
 // 用于获取对话记录
+// 优化：默认只读取当天数据，减少KV读取次数
 
 const ADMIN_PASSWORD = 'chuankangkk';
 
@@ -38,12 +39,26 @@ export async function onRequestGet(context) {
             });
         }
         
-        // 获取所有记录的键
-        const keys = await CHAT_LOGS.list();
+        // 解析URL参数
+        const url = new URL(request.url);
+        const loadAll = url.searchParams.get('all') === 'true';
+        const today = new Date().toISOString().split('T')[0];
+        
+        // 根据参数决定读取范围
+        // 新格式key: chat_YYYY-MM-DD_timestamp_random
+        // 旧格式key: chat_timestamp_random
+        let keys;
+        if (loadAll) {
+            // 读取全部：获取所有以chat_开头的记录
+            keys = await CHAT_LOGS.list({ prefix: 'chat_' });
+        } else {
+            // 默认只读取当天：使用日期前缀筛选（新格式）
+            keys = await CHAT_LOGS.list({ prefix: `chat_${today}_` });
+        }
+        
         const records = [];
         const ipSet = new Set();
         let todayCount = 0;
-        const today = new Date().toISOString().split('T')[0];
         
         // 获取每条记录
         for (const key of keys.keys) {
@@ -59,12 +74,22 @@ export async function onRequestGet(context) {
             }
         }
         
+        // 获取总记录数（用于统计显示）
+        let totalCount = records.length;
+        if (!loadAll) {
+            // 如果只读取了当天数据，额外获取总数
+            const allKeys = await CHAT_LOGS.list({ prefix: 'chat_' });
+            totalCount = allKeys.keys.length;
+        }
+        
         return new Response(JSON.stringify({
             records: records,
             stats: {
-                total: records.length,
+                total: totalCount,
                 today: todayCount,
-                uniqueIPs: ipSet.size
+                uniqueIPs: ipSet.size,
+                loaded: records.length,
+                loadAll: loadAll
             }
         }), {
             status: 200,

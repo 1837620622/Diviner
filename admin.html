@@ -554,8 +554,11 @@
 
         <div class="records-container">
             <div class="records-header">
-                <h2>📝 对话记录</h2>
-                <button class="refresh-btn" onclick="loadRecords()">🔄 刷新</button>
+                <h2>📝 对话记录 <span id="loadModeLabel" style="font-size: 0.8rem; color: #ffd700; font-weight: normal;">(今日)</span></h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="refresh-btn" onclick="loadRecords(false)" id="todayBtn">📅 今日数据</button>
+                    <button class="refresh-btn" onclick="loadRecords(true)" id="allBtn" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a);">📚 全部数据</button>
+                </div>
             </div>
             <div id="recordsList">
                 <div class="loading">
@@ -615,19 +618,37 @@
         }
 
         // ==================== 加载对话记录 ====================
-        async function loadRecords() {
+        // loadAll: true=加载全部数据, false=只加载今日数据（默认）
+        async function loadRecords(loadAll = false) {
             if (!isLoggedIn) return;
 
             const recordsList = document.getElementById('recordsList');
+            const loadModeLabel = document.getElementById('loadModeLabel');
+            const todayBtn = document.getElementById('todayBtn');
+            const allBtn = document.getElementById('allBtn');
+            
+            // 更新按钮状态
+            if (loadAll) {
+                loadModeLabel.textContent = '(全部)';
+                todayBtn.style.opacity = '0.6';
+                allBtn.style.opacity = '1';
+            } else {
+                loadModeLabel.textContent = '(今日)';
+                todayBtn.style.opacity = '1';
+                allBtn.style.opacity = '0.6';
+            }
+            
             recordsList.innerHTML = `
                 <div class="loading">
                     <div class="loading-spinner"></div>
-                    <p>加载中...</p>
+                    <p>${loadAll ? '加载全部数据中...' : '加载今日数据中...'}</p>
                 </div>
             `;
 
             try {
-                const response = await fetch('/api/admin/records', {
+                // 根据参数决定是否加载全部数据
+                const apiUrl = loadAll ? '/api/admin/records?all=true' : '/api/admin/records';
+                const response = await fetch(apiUrl, {
                     headers: {
                         'X-Admin-Password': ADMIN_PASSWORD
                     }
@@ -638,7 +659,7 @@
                 }
 
                 const data = await response.json();
-                displayRecords(data);
+                displayRecords(data, loadAll);
             } catch (error) {
                 recordsList.innerHTML = `
                     <div class="no-records">
@@ -650,7 +671,7 @@
         }
 
         // ==================== 显示对话记录 ====================
-        function displayRecords(data) {
+        function displayRecords(data, loadAll = false) {
             const recordsList = document.getElementById('recordsList');
             const records = data.records || [];
 
@@ -663,7 +684,7 @@
                 recordsList.innerHTML = `
                     <div class="no-records">
                         <div class="icon">📭</div>
-                        <p>暂无对话记录</p>
+                        <p>${loadAll ? '暂无对话记录' : '今日暂无对话记录，点击「全部数据」查看历史记录'}</p>
                     </div>
                 `;
                 return;

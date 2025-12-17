@@ -195,8 +195,9 @@ export async function onRequestPost(context) {
                 const lastUserMessage = userMessages[userMessages.length - 1]?.content || '';
                 const assistantResponse = data.choices[0].message.content;
                 
-                // 生成唯一ID
-                const recordId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                // 生成唯一ID（包含日期前缀，便于按日期筛选节省KV读取次数）
+                const today = new Date().toISOString().split('T')[0];
+                const recordId = `chat_${today}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 
                 // 生成友好的线路标签
                 const routeLabel = routeId <= 4 ? `线路${routeId}` : `备用${routeId - 4}`;
