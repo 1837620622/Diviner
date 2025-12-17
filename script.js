@@ -466,41 +466,160 @@ function handleKeyDown(e) {
 }
 
 // ==================== 消息格式化（正则表达式处理） ====================
+// 根据当前线路应用不同的格式化策略
 function formatContent(content) {
+    const routeId = currentRoute || 1;
+    return formatContentByRoute(content, routeId);
+}
+
+// 分线路格式化函数
+function formatContentByRoute(content, routeId) {
     let formatted = content;
     
-    // 0. 预处理：修复AI输出的各种格式问题
-    // 0.1 修复 ✦\n【标题\n】 这种格式
-    formatted = formatted.replace(/✦\s*\n+\s*【/g, '✦【');
-    // 0.2 修复【标题\n】格式
+    // 根据线路ID应用不同的预处理策略
+    switch(routeId) {
+        case 1: // DeepSeek-V3 - 主要问题：✦符号分离
+        case 5: // 备用1 (DeepSeek备用)
+            formatted = preprocessDeepSeekFormat(formatted);
+            break;
+        case 2: // Qwen3-80B - 格式较清晰
+            formatted = preprocessQwenFormat(formatted);
+            break;
+        case 3: // DeepSeek-R1 - 格式较好
+        case 7: // 备用3 (DeepSeek-R1备用)
+            formatted = preprocessR1Format(formatted);
+            break;
+        case 4: // Qwen3-235B - 特殊符号
+        case 6: // 备用2
+        case 8: // 备用4
+            formatted = preprocessQwen235Format(formatted);
+            break;
+        default:
+            formatted = preprocessGenericFormat(formatted);
+    }
+    
+    // 应用通用格式化处理
+    return applyCommonFormatting(formatted);
+}
+
+// DeepSeek系列（线路1, 备用1）预处理 - 主要解决✦符号分离问题
+function preprocessDeepSeekFormat(content) {
+    let formatted = content;
+    
+    // 1. 重点修复✦符号和标题的各种分离情况
+    formatted = formatted.replace(/✦\s*\n+\s*【/g, '✦【'); // ✦换行【 -> ✦【
+    formatted = formatted.replace(/✦\s+【/g, '✦【'); // ✦ 【 -> ✦【
+    formatted = formatted.replace(/^\s*✦\s*$/gm, ''); // 单独一行的✦符号删除
+    formatted = formatted.replace(/(?<!【[^】]*)✦(?!【)/g, ''); // 不在【】内的单独✦符号
+    
+    // 2. 修复标题内换行（DeepSeek容易出现这种问题）
     formatted = formatted.replace(/【([^】\n]*)\n+([^】\n]*)】/g, '【$1$2】');
     formatted = formatted.replace(/【([^】\n]*)\n+】/g, '【$1】');
     formatted = formatted.replace(/【\n+([^】]+)】/g, '【$1】');
-    // 0.3 循环处理直到没有换行
-    let prevFormatted;
+    
+    // 3. 循环清理复杂的标题内换行
+    let prevFormatted, iterations = 0;
     do {
         prevFormatted = formatted;
         formatted = formatted.replace(/【([^】]*)\n+([^】]*)】/g, '【$1 $2】');
-    } while (formatted !== prevFormatted);
-    // 0.4 清理✦符号后的换行（会在后面统一添加）
-    formatted = formatted.replace(/✦\s*【/g, '【');
+        iterations++;
+    } while (formatted !== prevFormatted && iterations < 5);
     
-    // 0.5 处理特殊符号行
-    formatted = formatted.replace(/\n+• --\n+/g, '\n\n<hr class="divider">\n\n');
-    formatted = formatted.replace(/\n+--\n+/g, '\n\n<hr class="divider">\n\n');
+    return formatted;
+}
+
+// Qwen3-80B（线路2）预处理 - 格式较清晰，轻度优化
+function preprocessQwenFormat(content) {
+    let formatted = content;
     
-    // 1. 处理 ### 标题格式 (在换行处理之前)
+    // 轻度处理，主要清理多余装饰符号
+    formatted = formatted.replace(/^\s*[✦🔹◆•]\s*【/gm, '【');
+    formatted = formatted.replace(/【([^】]+)】/g, function(match, p1) {
+        return '【' + p1.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim() + '】';
+    });
+    
+    return formatted;
+}
+
+// DeepSeek-R1（线路3, 备用3）预处理 - 格式较好，最小优化
+function preprocessR1Format(content) {
+    let formatted = content;
+    
+    // 最小处理，主要统一标题格式
+    formatted = formatted.replace(/^\s*(✦|🔹)\s*【/gm, '【');
+    
+    return formatted;
+}
+
+// Qwen3-235B系列（线路4, 备用2, 备用4）预处理 - 处理特殊符号
+function preprocessQwen235Format(content) {
+    let formatted = content;
+    
+    // 1. 处理🔹符号和标题
+    formatted = formatted.replace(/🔹\s*\n+\s*【/g, '🔹【');
+    formatted = formatted.replace(/🔹\s+【/g, '🔹【');
+    formatted = formatted.replace(/^\s*🔹\s*$/gm, ''); // 单独的🔹符号
+    
+    // 2. 处理数字符号（1️⃣2️⃣3️⃣）
+    formatted = formatted.replace(/([1-9]️⃣)\s*\n+/g, '$1 ');
+    formatted = formatted.replace(/([1-9]️⃣)\s+(.)/g, '$1 $2');
+    
+    // 3. 处理嵌套的mark结构
+    formatted = formatted.replace(/【([^】]*)\n+([^】]*)】/g, '【$1 $2】');
+    
+    // 4. 统一🔹为✦（保持一致的图标）
+    formatted = formatted.replace(/🔹【/g, '【');
+    
+    return formatted;
+}
+
+// 通用格式预处理（默认）
+function preprocessGenericFormat(content) {
+    let formatted = content;
+    
+    // 通用处理逻辑
+    formatted = formatted.replace(/^\s*[✦🔹◆•]\s*【/gm, '【');
+    formatted = formatted.replace(/(\n|^)\s*[✦🔹◆•]\s*【/g, '$1【');
+    formatted = formatted.replace(/【([^】]*)\n+([^】]*)】/g, '【$1 $2】');
+    
+    return formatted;
+}
+
+// 通用格式化处理（应用于所有线路）
+function applyCommonFormatting(content) {
+    let formatted = content;
+    
+    // 处理特殊分割线
+    formatted = formatted.replace(/\n+[•·]\s*--+\n+/g, '\n\n<hr class="divider">\n\n');
+    formatted = formatted.replace(/\n+--+\n+/g, '\n\n<hr class="divider">\n\n');
+    formatted = formatted.replace(/\n+━+\n+/g, '\n\n<hr class="divider">\n\n');
+    
+    // 处理Markdown标题格式
     formatted = formatted.replace(/^###\s*(.+)$/gm, '【$1】');
     formatted = formatted.replace(/^##\s*(.+)$/gm, '【$1】');
     formatted = formatted.replace(/^#\s*(.+)$/gm, '【$1】');
     
+    // 处理其他常见的标题格式
+    formatted = formatted.replace(/^(\d+[.、])\s*【/gm, '【'); // 序号+标题
+    formatted = formatted.replace(/^[✦🔹◆•]\s*(.+)$/gm, '【$1】'); // 符号开头的标题
+    
+    // 处理数字符号标题（针对Qwen3-235B）
+    formatted = formatted.replace(/([1-9]️⃣)\s*([^\n]+)/g, '【$2】');
+    
     // 2. 处理换行
     formatted = formatted.replace(/\n/g, '<br>');
     
-    // 3. 处理【标题】格式 -> 带样式的标题（同时清理内部可能残留的<br>）
+    // 处理【标题】格式 -> 带样式的标题（增强版清理）
     formatted = formatted.replace(/【([^】]+)】/g, function(match, p1) {
-        const cleanTitle = p1.replace(/<br>/g, ' ').replace(/\s+/g, ' ').trim();
-        return '<div class="section-title"><span class="title-icon">✦</span> ' + cleanTitle + '</div>';
+        let cleanTitle = p1.replace(/<br>/g, ' ') // 清理<br>标签
+                          .replace(/\s+/g, ' ') // 压缩多个空格
+                          .replace(/^[✦🔹◆•⭐🌟🎯💫\s]+/, '') // 清理开头的装饰符号（扩展）
+                          .replace(/[✦🔹◆•⭐🌟🎯💫\s]+$/, '') // 清理结尾的装饰符号（扩展）
+                          .replace(/^(第[一二三四五六七八九十\d]+[重关步])[：:]/g, '$1：') // 规范化序号格式
+                          .trim();
+        // 根据内容选择合适的图标
+        const icon = getIconByContent(cleanTitle);
+        return '<div class="section-title"><span class="title-icon">' + icon + '</span> ' + cleanTitle + '</div>';
     });
     
     // 4. 处理「重点词」格式 -> 高亮标记
@@ -533,22 +652,52 @@ function formatContent(content) {
     formatted = formatted.replace(/([金木水火土])行/g, '<span class="wuxing-$1">$1</span>行');
     formatted = formatted.replace(/五行/g, '五行');
     
-    // 10. 处理列表格式
-    formatted = formatted.replace(/<br>[-•]\s*/g, '</p><p class="list-item">• ');
-    formatted = formatted.replace(/<br>\d+[.、]\s*/g, function(match) {
-        const num = match.match(/\d+/)[0];
+    // 处理列表格式（全面增强版）
+    // 处理无序列表的各种符号
+    formatted = formatted.replace(/<br>\s*[-•·→▪◆]\s*/g, '</p><p class="list-item">• ');
+    formatted = formatted.replace(/<br>\s*🔹\s*/g, '</p><p class="list-item">🔹 ');
+    
+    // 处理有序列表的各种格式
+    formatted = formatted.replace(/<br>\s*(\d+)[.、)]\s*/g, function(match, num) {
         return '</p><p class="list-item"><span class="list-num">' + num + '.</span> ';
     });
     
-    // 11. 包裹段落
+    // 处理数字符号列表（针对Qwen3-235B）
+    formatted = formatted.replace(/<br>\s*([1-9]️⃣)\s*/g, function(match, emoji) {
+        const num = emoji.replace('️⃣', '');
+        return '</p><p class="list-item"><span class="list-num">' + num + '️⃣</span> ';
+    });
+    
+    // 处理特殊项目符号
+    formatted = formatted.replace(/<br>\s*(\([^)]+\))\s*/g, '</p><p class="list-item">$1 ');
+    
+    // 11. 包裹段落（增强版）
+    // 11.1 先清理多余的换行
+    formatted = formatted.replace(/<br>\s*<br>\s*<br>/g, '<br><br>'); // 三个以上连续<br>压缩为两个
+    
+    // 11.2 包裹段落
     formatted = '<p>' + formatted.replace(/<br><br>/g, '</p><p>') + '</p>';
-    formatted = formatted.replace(/<p><\/p>/g, '');
-    formatted = formatted.replace(/<p>(<div)/g, '$1');
-    formatted = formatted.replace(/(<\/div>)<\/p>/g, '$1');
-    formatted = formatted.replace(/<p>(<hr)/g, '$1');
-    formatted = formatted.replace(/(divider">)<\/p>/g, '$1');
+    
+    // 11.3 清理空段落和修复结构
+    formatted = formatted.replace(/<p>\s*<\/p>/g, ''); // 清理空段落
+    formatted = formatted.replace(/<p>\s*(<div[^>]*>)/g, '$1'); // div前的p标签
+    formatted = formatted.replace(/(<\/div>)\s*<\/p>/g, '$1'); // div后的p标签
+    formatted = formatted.replace(/<p>\s*(<hr[^>]*>)/g, '$1'); // hr前的p标签
+    formatted = formatted.replace(/(divider">)\s*<\/p>/g, '$1'); // hr后的p标签
+    formatted = formatted.replace(/<p>\s*(<generic[^>]*>)/g, '$1'); // generic前的p标签
     
     return formatted;
+}
+
+// 根据标题内容选择合适的图标
+function getIconByContent(title) {
+    if (title.includes('八字') || title.includes('命局') || title.includes('排盘')) return '🎯';
+    if (title.includes('感情') || title.includes('情路') || title.includes('姻缘')) return '💕';
+    if (title.includes('运势') || title.includes('大运') || title.includes('流年')) return '⭐';
+    if (title.includes('箴言') || title.includes('赠言') || title.includes('启示')) return '🌟';
+    if (title.includes('破局') || title.includes('要诀') || title.includes('方法')) return '🔑';
+    if (title.includes('重') || title.includes('关') || title.includes('步')) return '🔹';
+    return '✦'; // 默认图标
 }
 
 // ==================== 添加消息到界面 ====================
@@ -916,4 +1065,158 @@ function deleteChat(chatId) {
     localStorage.setItem('diviner_saved_chats', JSON.stringify(savedChats));
     loadSavedChats();
 }
+
+// ==================== 更新通知弹窗管理 ====================
+function initUpdateModal() {
+    const overlay = document.getElementById('updateOverlay');
+    const closeBtn = document.getElementById('updateClose');
+    const confirmBtn = document.getElementById('updateConfirm');
+    const copyBtn = document.getElementById('copyWechat');
+    
+    // 检查是否已经看过这个版本的更新通知
+    const currentVersion = '2025-12-17-16:00';
+    const lastSeenVersion = localStorage.getItem('lastSeenUpdate');
+    
+    if (lastSeenVersion !== currentVersion) {
+        // 显示更新通知
+        setTimeout(() => {
+            overlay.classList.add('active');
+        }, 1000); // 延迟1秒显示
+    }
+    
+    // 关闭弹窗
+    function closeModal() {
+        overlay.classList.remove('active');
+        localStorage.setItem('lastSeenUpdate', currentVersion);
+    }
+    
+    // 绑定事件
+    closeBtn?.addEventListener('click', closeModal);
+    confirmBtn?.addEventListener('click', closeModal);
+    
+    // 点击背景关闭
+    overlay?.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    });
+    
+    // 复制微信号
+    copyBtn?.addEventListener('click', function() {
+        const wechat = this.getAttribute('data-wechat');
+        
+        // 优先使用现代浏览器API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(wechat).then(() => {
+                showCopySuccess();
+            }).catch(() => {
+                fallbackCopy(wechat);
+            });
+        } else {
+            fallbackCopy(wechat);
+        }
+    });
+    
+    // 显示复制成功提示
+    function showCopySuccess() {
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '✓ 已复制';
+        copyBtn.style.background = 'linear-gradient(45deg, #4CAF50, #66BB6A)';
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+            copyBtn.style.background = 'linear-gradient(45deg, #4CAF50, #45a049)';
+        }, 2000);
+        
+        // 显示全局提示
+        showGlobalToast('📋 微信号已复制到剪贴板：1837620622', 'success');
+    }
+    
+    // 备用复制方法
+    function fallbackCopy(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            document.execCommand('copy');
+            showCopySuccess();
+        } catch (err) {
+            console.error('复制失败:', err);
+            showGlobalToast('复制失败，请手动复制微信号：1837620622', 'error');
+        }
+        
+        document.body.removeChild(textArea);
+    }
+}
+
+// 显示全局提示
+function showGlobalToast(message, type = 'info') {
+    // 移除旧的提示
+    const existingToast = document.querySelector('.global-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // 创建新提示
+    const toast = document.createElement('div');
+    toast.className = `global-toast ${type}`;
+    toast.innerHTML = message;
+    
+    // 添加样式
+    Object.assign(toast.style, {
+        position: 'fixed',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: type === 'success' ? 'linear-gradient(45deg, #4CAF50, #45a049)' : 
+                   type === 'error' ? 'linear-gradient(45deg, #f44336, #d32f2f)' : 
+                   'linear-gradient(45deg, #2196F3, #1976D2)',
+        color: 'white',
+        padding: '12px 24px',
+        borderRadius: '25px',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+        zIndex: '20000',
+        opacity: '0',
+        transition: 'all 0.3s ease'
+    });
+    
+    document.body.appendChild(toast);
+    
+    // 动画显示
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+    }, 100);
+    
+    // 自动隐藏
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    }, 3000);
+}
+
+// ==================== 页面加载完成初始化 ====================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎆 玄机子系统初始化完成');
+    
+    initializeRoute();
+    getLocationAndWeather();
+    initUpdateModal(); // 初始化更新通知弹窗
+    
+    // 选择默认路由
+    selectRoute(currentRoute);
+});
 

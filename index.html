@@ -9,6 +9,51 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- 更新通知弹窗 -->
+    <div class="update-overlay" id="updateOverlay">
+        <div class="update-modal">
+            <div class="update-header">
+                <span class="update-icon">🔧</span>
+                <h2>系统更新通知</h2>
+                <button class="update-close" id="updateClose">✕</button>
+            </div>
+            <div class="update-content">
+                <div class="update-title">
+                    <span class="update-badge">NEW</span>
+                    <strong>修复线路并优化输出</strong>
+                </div>
+                <div class="update-time">
+                    📅 更新时间：2025年12月17日下午16点
+                </div>
+                <div class="update-details">
+                    <h3>✨ 本次更新内容：</h3>
+                    <ul>
+                        <li>🔧 <strong>修复8条API线路格式问题</strong> - 解决输出乱码显示</li>
+                        <li>🎨 <strong>优化正则表达式处理</strong> - 针对每个线路量身定制</li>
+                        <li>📱 <strong>改善手机端显示效果</strong> - 统一格式化标准</li>
+                        <li>⚡ <strong>提升系统稳定性</strong> - 增强错误处理机制</li>
+                        <li>🎯 <strong>智能图标匹配</strong> - 根据内容自动选择图标</li>
+                    </ul>
+                </div>
+                <div class="update-contact">
+                    <div class="contact-info">
+                        <span class="contact-icon">👨‍💻</span>
+                        <div class="contact-text">
+                            <strong>作者微信：1837620622</strong>
+                            <p>遇到问题可复制微信号联系作者反馈改进</p>
+                        </div>
+                    </div>
+                    <button class="copy-wechat" id="copyWechat" data-wechat="1837620622">
+                        📋 复制微信号
+                    </button>
+                </div>
+                <div class="update-footer">
+                    <button class="update-confirm" id="updateConfirm">知道了</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- 背景星空效果 -->
     <div class="stars"></div>
     <div class="twinkling"></div>
