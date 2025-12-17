@@ -511,7 +511,9 @@ function preprocessDeepSeekFormat(content) {
     formatted = formatted.replace(/✦\s*\n+\s*【/g, '【'); // ✦换行【 -> 【（移除✦）
     formatted = formatted.replace(/✦\s+【/g, '【'); // ✦ 【 -> 【
     formatted = formatted.replace(/^\s*✦\s*$/gm, ''); // 单独一行的✦符号删除
-    formatted = formatted.replace(/(?<!【[^】]*)✦(?!【)/g, ''); // 不在【】内的单独✦符号
+    // 修复iOS/Android兼容性问题：替换负向后行断言为兼容的写法
+    formatted = formatted.replace(/【([^】]*)】\s*✦/g, '【$1】'); // 标题后的✦符号
+    formatted = formatted.replace(/✦\s*(?!\n*【)/g, ''); // 不在标题前的✦符号（简化版）
     
     // 2. 修复标题内换行（DeepSeek容易出现这种问题）- 增强版
     formatted = formatted.replace(/【([^】\n]*)\n+([^】\n]*)】/g, '【$1$2】');
@@ -1097,23 +1099,17 @@ function closeUpdateNotification() {
         notification.classList.remove('show');
         // 恢复页面滚动
         document.body.style.overflow = '';
-        // 标记已显示过
-        localStorage.setItem('diviner_update_shown', '2025-12-17');
+        // 不再标记已显示过，确保每次刷新都会弹出
     }
 }
 
 // 检查是否需要显示更新通知
 function checkUpdateNotification() {
-    const lastShown = localStorage.getItem('diviner_update_shown');
-    const today = new Date().toISOString().split('T')[0];
-    
-    // 如果今天没有显示过，则显示通知
-    if (lastShown !== '2025-12-17') {
-        // 延迟1秒显示，让页面先加载完成
-        setTimeout(() => {
-            showUpdateNotification();
-        }, 1000);
-    }
+    // 每次页面加载都显示通知
+    // 延迟1秒显示，让页面先加载完成
+    setTimeout(() => {
+        showUpdateNotification();
+    }, 1000);
 }
 
 // 绑定弹窗关闭事件

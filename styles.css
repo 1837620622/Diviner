@@ -25,9 +25,11 @@ html, body {
 }
 
 body {
-    font-family: 'Noto Serif SC', serif;
+    font-family: 'Noto Serif SC', 'Source Han Serif SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'STHeiti', 'SimSun', sans-serif;
     background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-medium) 50%, var(--bg-light) 100%);
     color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* ==================== 星空背景动画 ==================== */
@@ -754,6 +756,18 @@ body {
 }
 
 /* ==================== 响应式设计 ==================== */
+/* iPad 和小平板 */
+@media (max-width: 1024px) {
+    .chat-container {
+        padding: 10px;
+    }
+    
+    .message-content {
+        max-width: 85%;
+    }
+}
+
+/* 手机横屏和小平板 */
 @media (max-width: 768px) {
     :root {
         --sidebar-width: 80vw;
@@ -899,6 +913,7 @@ body {
     }
 }
 
+/* iPhone SE 等小屏手机 */
 @media (max-width: 375px) {
     .nav-title h1 {
         font-size: 1.3rem;
@@ -917,6 +932,41 @@ body {
     
     .message-text {
         font-size: 0.85rem;
+    }
+}
+
+/* 大屏手机优化 */
+@media (min-width: 376px) and (max-width: 414px) {
+    .message-content {
+        max-width: 87%;
+    }
+    
+    .message-text {
+        font-size: 0.9rem;
+    }
+}
+
+/* iPad Pro 和大屏设备 */
+@media (min-width: 1025px) and (max-width: 1366px) {
+    .chat-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .message-content {
+        max-width: 75%;
+    }
+}
+
+/* 超大屏幕优化 */
+@media (min-width: 1367px) {
+    .chat-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    .message-content {
+        max-width: 70%;
     }
 }
 
@@ -960,14 +1010,18 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.95) 100%);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 10000;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* 确保在iOS上的滚动行为 */
+    -webkit-overflow-scrolling: touch;
 }
 
 .update-notification.show {
@@ -976,25 +1030,76 @@ body {
 }
 
 .notification-content {
-    background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-medium) 100%);
-    border: 2px solid var(--primary-color);
-    border-radius: var(--border-radius);
-    max-width: 500px;
+    background: linear-gradient(135deg, rgba(36, 36, 62, 0.98) 0%, rgba(48, 43, 99, 0.98) 50%, rgba(142, 45, 226, 0.15) 100%);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 20px;
+    max-width: 520px;
     width: 90%;
-    max-height: 80vh;
+    max-height: 85vh;
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(142, 45, 226, 0.3);
-    animation: slideIn 0.3s ease;
+    box-shadow: 
+        0 0 0 1px rgba(142, 45, 226, 0.3),
+        0 20px 60px rgba(142, 45, 226, 0.4),
+        0 0 120px rgba(142, 45, 226, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: notificationSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
 }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(-50px);
+.notification-content::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-color), var(--primary-color));
+    border-radius: 20px;
+    z-index: -1;
+    animation: borderGlow 3s ease-in-out infinite;
+    opacity: 0.8;
+}
+
+@keyframes notificationSlideIn {
+    0% {
+        transform: translateY(-100px) scale(0.8) rotateX(15deg);
         opacity: 0;
+        filter: blur(10px);
     }
-    to {
-        transform: translateY(0);
+    50% {
+        transform: translateY(20px) scale(1.02) rotateX(-2deg);
+        opacity: 0.8;
+        filter: blur(2px);
+    }
+    100% {
+        transform: translateY(0) scale(1) rotateX(0deg);
         opacity: 1;
+        filter: blur(0);
+    }
+}
+
+@keyframes borderGlow {
+    0%, 100% {
+        opacity: 0.8;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(180deg);
+    }
+}
+
+@keyframes notificationSlideOut {
+    0% {
+        transform: translateY(0) scale(1) rotateX(0deg);
+        opacity: 1;
+        filter: blur(0);
+    }
+    100% {
+        transform: translateY(-100px) scale(0.8) rotateX(15deg);
+        opacity: 0;
+        filter: blur(10px);
     }
 }
 
@@ -1002,43 +1107,75 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 25px;
-    border-bottom: 1px solid rgba(142, 45, 226, 0.3);
-    background: rgba(142, 45, 226, 0.1);
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    padding: 25px 30px;
+    border-bottom: 1px solid rgba(142, 45, 226, 0.2);
+    background: linear-gradient(135deg, rgba(142, 45, 226, 0.15) 0%, rgba(0, 198, 255, 0.1) 100%);
+    border-radius: 18px 18px 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.notification-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+    animation: shimmer 2s ease-in-out infinite;
 }
 
 .notification-icon {
-    font-size: 24px;
-    margin-right: 12px;
+    font-size: 28px;
+    margin-right: 15px;
+    animation: iconPulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(142, 45, 226, 0.6));
 }
 
 .notification-header h3 {
-    font-size: 20px;
+    font-size: 22px;
     color: var(--text-primary);
     flex: 1;
     margin: 0;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, var(--text-primary), var(--accent-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .notification-close {
-    background: none;
-    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     color: var(--text-secondary);
-    font-size: 20px;
+    font-size: 18px;
     cursor: pointer;
-    padding: 5px;
+    padding: 8px;
     border-radius: 50%;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .notification-close:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.2);
     color: var(--text-primary);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 20px rgba(142, 45, 226, 0.4);
 }
 
 .notification-body {
-    padding: 25px;
+    padding: 30px;
     color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0 0 18px 18px;
 }
 
 .notification-body p {
@@ -1057,20 +1194,38 @@ body {
 }
 
 .author-contact {
-    margin-top: 20px;
-    padding: 15px;
-    background: rgba(0, 198, 255, 0.1);
+    margin-top: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(0, 198, 255, 0.15) 0%, rgba(142, 45, 226, 0.1) 100%);
     border: 1px solid rgba(0, 198, 255, 0.3);
-    border-radius: 8px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.author-contact::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(0, 198, 255, 0.1), transparent);
+    animation: contactShimmer 3s ease-in-out infinite;
 }
 
 .author-contact p {
-    margin: 5px 0;
+    margin: 8px 0;
     color: var(--accent-color);
+    position: relative;
+    z-index: 1;
+    font-weight: 500;
 }
 
 .author-contact strong {
     color: var(--text-primary);
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* 底部作者信息样式 */
@@ -1087,15 +1242,49 @@ body {
     margin-top: 5px !important;
 }
 
+/* 新增动画效果 */
+@keyframes shimmer {
+    0%, 100% {
+        transform: translateX(-100%);
+    }
+    50% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes contactShimmer {
+    0%, 100% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
     .notification-content {
         width: 95%;
         margin: 10px;
+        border-radius: 16px;
+    }
+    
+    .notification-content::before {
+        border-radius: 16px;
     }
     
     .notification-header {
-        padding: 15px 20px;
+        padding: 20px 25px;
+        border-radius: 14px 14px 0 0;
     }
     
     .notification-header h3 {
@@ -1103,10 +1292,21 @@ body {
     }
     
     .notification-body {
-        padding: 20px;
+        padding: 25px;
+        border-radius: 0 0 14px 14px;
     }
     
     .notification-body p {
         font-size: 14px;
+    }
+    
+    .notification-icon {
+        font-size: 24px;
+        margin-right: 12px;
+    }
+    
+    .author-contact {
+        padding: 15px;
+        border-radius: 10px;
     }
 }

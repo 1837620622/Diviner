@@ -3,6 +3,7 @@
 
 name = "diviner"
 compatibility_date = "2024-01-01"
+pages_build_output_dir = "."
 
 # KV命名空间绑定
 # 需要在Cloudflare Dashboard中创建KV命名空间后，将ID填入下方
