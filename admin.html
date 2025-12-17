@@ -671,13 +671,11 @@
             }
         }
 
-        // 首次加载（加载全部以获取日期范围）
+        // 首次加载（默认加载今日数据，后端会返回日期范围）
         async function initialLoad() {
-            await loadRecords(null, true);
-            // 加载完成后设置日历为今天
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('dateSelector').value = today;
-            document.getElementById('loadModeLabel').textContent = '(全部数据)';
+            await loadRecords(today);
         }
 
         // 核心加载函数
