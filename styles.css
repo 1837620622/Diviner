@@ -1135,15 +1135,11 @@ body {
 
 .notification-header h3 {
     font-size: 22px;
-    color: var(--text-primary);
+    color: #ffffff;
     flex: 1;
     margin: 0;
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(135deg, var(--text-primary), var(--accent-color));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .notification-close {
@@ -1173,7 +1169,7 @@ body {
 
 .notification-body {
     padding: 30px;
-    color: var(--text-primary);
+    color: #ffffff;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 0 0 18px 18px;
 }
@@ -1181,6 +1177,7 @@ body {
 .notification-body p {
     margin-bottom: 15px;
     line-height: 1.6;
+    color: #f0f0f0;
 }
 
 .notification-body ul {
@@ -1191,6 +1188,7 @@ body {
 .notification-body li {
     margin-bottom: 8px;
     line-height: 1.5;
+    color: #e0e0e0;
 }
 
 .author-contact {
@@ -1216,14 +1214,14 @@ body {
 
 .author-contact p {
     margin: 8px 0;
-    color: var(--accent-color);
+    color: #00c6ff;
     position: relative;
     z-index: 1;
     font-weight: 500;
 }
 
 .author-contact strong {
-    color: var(--text-primary);
+    color: #ffffff;
     font-weight: 700;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
