@@ -843,25 +843,11 @@ async function sendMessage() {
         // 显示助手回复
         addMessage('assistant', assistantMessage);
         
-        // 等待消息完全显示后再触发赞赏码弹窗
-        // 使用更长的延迟确保用户有时间阅读完整回答
+        // 每次收到消息后都触发赞赏码弹窗
+        // 延迟3秒让用户有时间阅读回答
         setTimeout(() => {
-            // 20%概率弹出赞赏码，降低频率避免打扰用户
-            if (Math.random() < 0.2) {
-                // 检查用户是否还在查看当前消息（通过滚动位置判断）
-                const messages = document.querySelectorAll('.message.assistant');
-                if (messages.length > 0) {
-                    const lastMessage = messages[messages.length - 1];
-                    const rect = lastMessage.getBoundingClientRect();
-                    const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
-                    
-                    // 只有当最后一条消息在视窗内时才弹出赞赏码
-                    if (isVisible) {
-                        showDonationModal();
-                    }
-                }
-            }
-        }, 5000); // 延迟5秒，给用户充足时间阅读
+            showDonationModal();
+        }, 3000);
         
     } catch (error) {
         console.error('API调用错误:', error);
@@ -1100,66 +1086,6 @@ function deleteChat(chatId) {
     localStorage.setItem('diviner_saved_chats', JSON.stringify(savedChats));
     loadSavedChats();
 }
-
-// ==================== 修复通知弹窗功能 ====================
-// 显示修复通知弹窗
-function showUpdateNotification() {
-    const notification = document.getElementById('updateNotification');
-    if (notification) {
-        notification.classList.add('show');
-        // 防止页面滚动
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-// 关闭修复通知弹窗
-function closeUpdateNotification() {
-    const notification = document.getElementById('updateNotification');
-    if (notification) {
-        notification.classList.remove('show');
-        // 恢复页面滚动
-        document.body.style.overflow = '';
-        // 不再标记已显示过，确保每次刷新都会弹出
-    }
-}
-
-// 检查是否需要显示更新通知
-function checkUpdateNotification() {
-    // 每次页面加载都显示通知
-    // 延迟1秒显示，让页面先加载完成
-    setTimeout(() => {
-        showUpdateNotification();
-    }, 1000);
-}
-
-// 绑定弹窗关闭事件
-document.addEventListener('DOMContentLoaded', function() {
-    // 关闭按钮点击事件
-    const closeBtn = document.getElementById('notificationClose');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeUpdateNotification);
-    }
-    
-    // 点击背景关闭弹窗
-    const notification = document.getElementById('updateNotification');
-    if (notification) {
-        notification.addEventListener('click', function(e) {
-            if (e.target === notification) {
-                closeUpdateNotification();
-            }
-        });
-    }
-    
-    // ESC键关闭弹窗
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeUpdateNotification();
-        }
-    });
-    
-    // 检查是否需要显示更新通知
-    checkUpdateNotification();
-});
 
 // ==================== 赞赏码弹窗功能 ====================
 
