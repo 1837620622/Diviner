@@ -506,24 +506,37 @@ function formatContentByRoute(content, routeId) {
 function preprocessDeepSeekFormat(content) {
     let formatted = content;
     
-    // 1. 重点修复✦符号和标题的各种分离情况
+    // 1. 重点修复✦符号和标题的各种分离情况（增强版）
     formatted = formatted.replace(/✦\s*\n+\s*【/g, '✦【'); // ✦换行【 -> ✦【
-    formatted = formatted.replace(/✦\s+【/g, '✦【'); // ✦ 【 -> ✦【
+    formatted = formatted.replace(/✦\s*\n+\s*【/g, '【'); // ✦换行【 -> 【（移除✦）
+    formatted = formatted.replace(/✦\s+【/g, '【'); // ✦ 【 -> 【
     formatted = formatted.replace(/^\s*✦\s*$/gm, ''); // 单独一行的✦符号删除
     formatted = formatted.replace(/(?<!【[^】]*)✦(?!【)/g, ''); // 不在【】内的单独✦符号
     
-    // 2. 修复标题内换行（DeepSeek容易出现这种问题）
+    // 2. 修复标题内换行（DeepSeek容易出现这种问题）- 增强版
     formatted = formatted.replace(/【([^】\n]*)\n+([^】\n]*)】/g, '【$1$2】');
     formatted = formatted.replace(/【([^】\n]*)\n+】/g, '【$1】');
     formatted = formatted.replace(/【\n+([^】]+)】/g, '【$1】');
     
-    // 3. 循环清理复杂的标题内换行
+    // 2.1 特殊处理：标题结尾的换行
+    formatted = formatted.replace(/【([^】]+)\n+】/g, '【$1】');
+    formatted = formatted.replace(/【([^】]+)\s+】/g, '【$1】');
+    
+    // 3. 循环清理复杂的标题内换行（增加迭代次数）
     let prevFormatted, iterations = 0;
     do {
         prevFormatted = formatted;
         formatted = formatted.replace(/【([^】]*)\n+([^】]*)】/g, '【$1 $2】');
         iterations++;
-    } while (formatted !== prevFormatted && iterations < 5);
+    } while (formatted !== prevFormatted && iterations < 8);
+    
+    // 4. 处理特殊分割线格式（• --）
+    formatted = formatted.replace(/•\s*--\s*\n+/g, '');
+    formatted = formatted.replace(/\n+•\s*--\s*/g, '\n\n<hr class="divider">\n\n');
+    
+    // 5. 清理多余的空行和空格
+    formatted = formatted.replace(/\n{3,}/g, '\n\n'); // 多个连续换行压缩为2个
+    formatted = formatted.replace(/^\s+|\s+$/gm, ''); // 行首行尾空格
     
     return formatted;
 }
@@ -1066,157 +1079,69 @@ function deleteChat(chatId) {
     loadSavedChats();
 }
 
-// ==================== 更新通知弹窗管理 ====================
-function initUpdateModal() {
-    const overlay = document.getElementById('updateOverlay');
-    const closeBtn = document.getElementById('updateClose');
-    const confirmBtn = document.getElementById('updateConfirm');
-    const copyBtn = document.getElementById('copyWechat');
-    
-    // 检查是否已经看过这个版本的更新通知
-    const currentVersion = '2025-12-17-16:00';
-    const lastSeenVersion = localStorage.getItem('lastSeenUpdate');
-    
-    if (lastSeenVersion !== currentVersion) {
-        // 显示更新通知
-        setTimeout(() => {
-            overlay.classList.add('active');
-        }, 1000); // 延迟1秒显示
-    }
-    
-    // 关闭弹窗
-    function closeModal() {
-        overlay.classList.remove('active');
-        localStorage.setItem('lastSeenUpdate', currentVersion);
-    }
-    
-    // 绑定事件
-    closeBtn?.addEventListener('click', closeModal);
-    confirmBtn?.addEventListener('click', closeModal);
-    
-    // 点击背景关闭
-    overlay?.addEventListener('click', function(e) {
-        if (e.target === overlay) {
-            closeModal();
-        }
-    });
-    
-    // 复制微信号
-    copyBtn?.addEventListener('click', function() {
-        const wechat = this.getAttribute('data-wechat');
-        
-        // 优先使用现代浏览器API
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(wechat).then(() => {
-                showCopySuccess();
-            }).catch(() => {
-                fallbackCopy(wechat);
-            });
-        } else {
-            fallbackCopy(wechat);
-        }
-    });
-    
-    // 显示复制成功提示
-    function showCopySuccess() {
-        const originalText = copyBtn.innerHTML;
-        copyBtn.innerHTML = '✓ 已复制';
-        copyBtn.style.background = 'linear-gradient(45deg, #4CAF50, #66BB6A)';
-        
-        setTimeout(() => {
-            copyBtn.innerHTML = originalText;
-            copyBtn.style.background = 'linear-gradient(45deg, #4CAF50, #45a049)';
-        }, 2000);
-        
-        // 显示全局提示
-        showGlobalToast('📋 微信号已复制到剪贴板：1837620622', 'success');
-    }
-    
-    // 备用复制方法
-    function fallbackCopy(text) {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        try {
-            document.execCommand('copy');
-            showCopySuccess();
-        } catch (err) {
-            console.error('复制失败:', err);
-            showGlobalToast('复制失败，请手动复制微信号：1837620622', 'error');
-        }
-        
-        document.body.removeChild(textArea);
+// ==================== 修复通知弹窗功能 ====================
+// 显示修复通知弹窗
+function showUpdateNotification() {
+    const notification = document.getElementById('updateNotification');
+    if (notification) {
+        notification.classList.add('show');
+        // 防止页面滚动
+        document.body.style.overflow = 'hidden';
     }
 }
 
-// 显示全局提示
-function showGlobalToast(message, type = 'info') {
-    // 移除旧的提示
-    const existingToast = document.querySelector('.global-toast');
-    if (existingToast) {
-        existingToast.remove();
+// 关闭修复通知弹窗
+function closeUpdateNotification() {
+    const notification = document.getElementById('updateNotification');
+    if (notification) {
+        notification.classList.remove('show');
+        // 恢复页面滚动
+        document.body.style.overflow = '';
+        // 标记已显示过
+        localStorage.setItem('diviner_update_shown', '2025-12-17');
     }
-    
-    // 创建新提示
-    const toast = document.createElement('div');
-    toast.className = `global-toast ${type}`;
-    toast.innerHTML = message;
-    
-    // 添加样式
-    Object.assign(toast.style, {
-        position: 'fixed',
-        top: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: type === 'success' ? 'linear-gradient(45deg, #4CAF50, #45a049)' : 
-                   type === 'error' ? 'linear-gradient(45deg, #f44336, #d32f2f)' : 
-                   'linear-gradient(45deg, #2196F3, #1976D2)',
-        color: 'white',
-        padding: '12px 24px',
-        borderRadius: '25px',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-        zIndex: '20000',
-        opacity: '0',
-        transition: 'all 0.3s ease'
-    });
-    
-    document.body.appendChild(toast);
-    
-    // 动画显示
-    setTimeout(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateX(-50%) translateY(0)';
-    }, 100);
-    
-    // 自动隐藏
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(-50%) translateY(-20px)';
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.remove();
-            }
-        }, 300);
-    }, 3000);
 }
 
-// ==================== 页面加载完成初始化 ====================
+// 检查是否需要显示更新通知
+function checkUpdateNotification() {
+    const lastShown = localStorage.getItem('diviner_update_shown');
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 如果今天没有显示过，则显示通知
+    if (lastShown !== '2025-12-17') {
+        // 延迟1秒显示，让页面先加载完成
+        setTimeout(() => {
+            showUpdateNotification();
+        }, 1000);
+    }
+}
+
+// 绑定弹窗关闭事件
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎆 玄机子系统初始化完成');
+    // 关闭按钮点击事件
+    const closeBtn = document.getElementById('notificationClose');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeUpdateNotification);
+    }
     
-    initializeRoute();
-    getLocationAndWeather();
-    initUpdateModal(); // 初始化更新通知弹窗
+    // 点击背景关闭弹窗
+    const notification = document.getElementById('updateNotification');
+    if (notification) {
+        notification.addEventListener('click', function(e) {
+            if (e.target === notification) {
+                closeUpdateNotification();
+            }
+        });
+    }
     
-    // 选择默认路由
-    selectRoute(currentRoute);
+    // ESC键关闭弹窗
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeUpdateNotification();
+        }
+    });
+    
+    // 检查是否需要显示更新通知
+    checkUpdateNotification();
 });
 

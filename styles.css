@@ -753,276 +753,6 @@ body {
     font-style: italic;
 }
 
-/* ==================== 更新通知弹窗 ==================== */
-.update-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(5px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-}
-
-.update-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-.update-modal {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    border-radius: 20px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    transform: scale(0.8) translateY(-50px);
-    transition: transform 0.3s ease;
-}
-
-.update-overlay.active .update-modal {
-    transform: scale(1) translateY(0);
-}
-
-.update-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 25px 15px;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-}
-
-.update-icon {
-    font-size: 24px;
-    margin-right: 10px;
-}
-
-.update-header h2 {
-    color: #ffd700;
-    font-size: 20px;
-    margin: 0;
-    flex: 1;
-    text-align: center;
-    font-family: 'Ma Shan Zheng', cursive;
-}
-
-.update-close {
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 20px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.update-close:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffd700;
-}
-
-.update-content {
-    padding: 20px 25px 25px;
-}
-
-.update-title {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.update-badge {
-    background: linear-gradient(45deg, #ff6b6b, #ffd93d);
-    color: #000;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: bold;
-    margin-right: 10px;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
-.update-title strong {
-    color: #ffd700;
-    font-size: 18px;
-}
-
-.update-time {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 14px;
-    margin-bottom: 20px;
-    padding: 10px;
-    background: rgba(255, 215, 0, 0.1);
-    border-radius: 8px;
-    border-left: 3px solid #ffd700;
-}
-
-.update-details h3 {
-    color: #ffd700;
-    font-size: 16px;
-    margin-bottom: 10px;
-}
-
-.update-details ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.update-details li {
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 14px;
-    line-height: 1.4;
-}
-
-.update-details li:last-child {
-    border-bottom: none;
-}
-
-.update-contact {
-    margin: 20px 0;
-    padding: 15px;
-    background: rgba(255, 215, 0, 0.1);
-    border-radius: 10px;
-    border: 1px solid rgba(255, 215, 0, 0.3);
-}
-
-.contact-info {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 12px;
-}
-
-.contact-icon {
-    font-size: 24px;
-    margin-right: 12px;
-    margin-top: 2px;
-}
-
-.contact-text strong {
-    color: #ffd700;
-    display: block;
-    margin-bottom: 5px;
-    font-size: 16px;
-}
-
-.contact-text p {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.4;
-}
-
-.copy-wechat {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin: 0 auto;
-}
-
-.copy-wechat:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-}
-
-.copy-wechat:active {
-    transform: translateY(0);
-}
-
-.update-footer {
-    text-align: center;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.update-confirm {
-    background: linear-gradient(45deg, #ffd700, #ffed4e);
-    color: #000;
-    border: none;
-    padding: 12px 30px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    font-family: 'Noto Serif SC', serif;
-}
-
-.update-confirm:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
-}
-
-/* 手机端适配 */
-@media (max-width: 768px) {
-    .update-modal {
-        max-width: 95%;
-        margin: 20px;
-    }
-    
-    .update-header {
-        padding: 15px 20px 12px;
-    }
-    
-    .update-content {
-        padding: 15px 20px 20px;
-    }
-    
-    .update-header h2 {
-        font-size: 18px;
-    }
-    
-    .update-title strong {
-        font-size: 16px;
-    }
-    
-    .update-details li {
-        font-size: 13px;
-    }
-    
-    .contact-info {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .contact-icon {
-        margin: 0 auto 8px;
-    }
-}
-
 /* ==================== 响应式设计 ==================== */
 @media (max-width: 768px) {
     :root {
@@ -1221,4 +951,162 @@ body {
 @keyframes blink {
     0%, 50% { opacity: 1; }
     51%, 100% { opacity: 0; }
+}
+
+/* ==================== 修复通知弹窗 ==================== */
+.update-notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.update-notification.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.notification-content {
+    background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-medium) 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(142, 45, 226, 0.3);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 25px;
+    border-bottom: 1px solid rgba(142, 45, 226, 0.3);
+    background: rgba(142, 45, 226, 0.1);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.notification-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.notification-header h3 {
+    font-size: 20px;
+    color: var(--text-primary);
+    flex: 1;
+    margin: 0;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.notification-body {
+    padding: 25px;
+    color: var(--text-primary);
+}
+
+.notification-body p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.notification-body ul {
+    margin: 15px 0;
+    padding-left: 20px;
+}
+
+.notification-body li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.author-contact {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(0, 198, 255, 0.1);
+    border: 1px solid rgba(0, 198, 255, 0.3);
+    border-radius: 8px;
+}
+
+.author-contact p {
+    margin: 5px 0;
+    color: var(--accent-color);
+}
+
+.author-contact strong {
+    color: var(--text-primary);
+}
+
+/* 底部作者信息样式 */
+.bottom-info {
+    text-align: center;
+    padding: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.author-wechat {
+    color: var(--accent-color) !important;
+    font-weight: bold;
+    margin-top: 5px !important;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .notification-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .notification-header {
+        padding: 15px 20px;
+    }
+    
+    .notification-header h3 {
+        font-size: 18px;
+    }
+    
+    .notification-body {
+        padding: 20px;
+    }
+    
+    .notification-body p {
+        font-size: 14px;
+    }
 }
