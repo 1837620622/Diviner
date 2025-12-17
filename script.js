@@ -843,6 +843,13 @@ async function sendMessage() {
         // 显示助手回复
         addMessage('assistant', assistantMessage);
         
+        // 触发赞赏码弹窗（30%概率）
+        if (Math.random() < 0.3) {
+            setTimeout(() => {
+                showDonationModal();
+            }, 3000); // 延迟3秒，给用户时间阅读回答
+        }
+        
     } catch (error) {
         console.error('API调用错误:', error);
         const errorMessage = `天机晦涩，连接中断...\n\n错误信息：${error.message}\n\n请稍后重试，或刷新页面。`;
@@ -1140,4 +1147,155 @@ document.addEventListener('DOMContentLoaded', function() {
     // 检查是否需要显示更新通知
     checkUpdateNotification();
 });
+
+// ==================== 赞赏码弹窗功能 ====================
+
+// 获取DOM元素
+const donationBtn = document.getElementById('donationBtn');
+const donationModal = document.getElementById('donationModal');
+const donationClose = document.getElementById('donationClose');
+
+// 显示赞赏码弹窗
+function showDonationModal() {
+    if (donationModal) {
+        donationModal.classList.add('show');
+        document.body.style.overflow = 'hidden'; // 防止背景滚动
+        
+        // 添加显示动画类
+        setTimeout(() => {
+            const content = donationModal.querySelector('.donation-content');
+            if (content) {
+                content.style.animation = 'donationSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            }
+        }, 10);
+    }
+}
+
+// 关闭赞赏码弹窗
+function closeDonationModal() {
+    if (donationModal) {
+        const content = donationModal.querySelector('.donation-content');
+        if (content) {
+            content.style.animation = 'donationSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) reverse';
+        }
+        
+        setTimeout(() => {
+            donationModal.classList.remove('show');
+            document.body.style.overflow = ''; // 恢复滚动
+        }, 300);
+    }
+}
+
+// 绑定赞赏按钮点击事件
+if (donationBtn) {
+    donationBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showDonationModal();
+        
+        // 添加按钮点击动画反馈
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            this.style.transform = '';
+        }, 200);
+    });
+}
+
+// 绑定关闭按钮点击事件
+if (donationClose) {
+    donationClose.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeDonationModal();
+    });
+}
+
+// 点击背景关闭弹窗
+if (donationModal) {
+    donationModal.addEventListener('click', function(e) {
+        if (e.target === donationModal) {
+            closeDonationModal();
+        }
+    });
+}
+
+// ESC键关闭弹窗
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && donationModal && donationModal.classList.contains('show')) {
+        closeDonationModal();
+    }
+});
+
+// 在问答结束后自动弹出赞赏码
+function showDonationAfterResponse() {
+    // 延迟3秒后自动弹出，给用户时间阅读回答
+    setTimeout(() => {
+        showDonationModal();
+    }, 3000);
+}
+
+// 修改原有的sendMessage函数，在收到回复后自动弹出赞赏码
+const originalSendMessage = window.sendMessage;
+if (typeof originalSendMessage === 'function') {
+    window.sendMessage = async function(message) {
+        const result = await originalSendMessage.call(this, message);
+        
+        // 检查是否收到了完整的AI回复
+        if (result && !result.isLoading) {
+            // 随机决定是否弹出赞赏码（50%概率，避免过于频繁）
+            if (Math.random() < 0.5) {
+                showDonationAfterResponse();
+            }
+        }
+        
+        return result;
+    };
+}
+
+// 监听消息完成事件（用于自动弹出赞赏码）
+document.addEventListener('messageComplete', function(e) {
+    // 检查是否是真实的用户问题（不是系统消息）
+    const isUserQuestion = e.detail && e.detail.isUserMessage;
+    
+    if (isUserQuestion) {
+        // 30%概率弹出赞赏码，降低频率
+        if (Math.random() < 0.3) {
+            showDonationAfterResponse();
+        }
+    }
+});
+
+// 添加触摸优化（移动端）
+if (donationBtn) {
+    donationBtn.addEventListener('touchstart', function(e) {
+        this.style.transform = 'scale(0.95)';
+    }, { passive: true });
+    
+    donationBtn.addEventListener('touchend', function(e) {
+        setTimeout(() => {
+            this.style.transform = '';
+        }, 200);
+    }, { passive: true });
+}
+
+// 防止赞赏码图片拖拽
+const qrCode = document.querySelector('.qr-code');
+if (qrCode) {
+    qrCode.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+    });
+    
+    // 添加长按保存提示（移动端）
+    let pressTimer;
+    qrCode.addEventListener('touchstart', function(e) {
+        pressTimer = setTimeout(() => {
+            // 可以在这里添加长按保存图片的功能
+            console.log('长按赞赏码，可以保存图片');
+        }, 800);
+    }, { passive: true });
+    
+    qrCode.addEventListener('touchend', function() {
+        clearTimeout(pressTimer);
+    }, { passive: true });
+}
 

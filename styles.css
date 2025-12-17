@@ -1310,3 +1310,345 @@ body {
         border-radius: 10px;
     }
 }
+
+/* ==================== 赞赏按钮 ==================== */
+.donation-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 15px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, rgba(255, 99, 132, 0.8) 0%, rgba(255, 154, 0, 0.8) 100%);
+    border: 2px solid transparent;
+    border-radius: 25px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.donation-btn::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #ff6384, #ff9a00, #ff6384);
+    border-radius: 25px;
+    z-index: -1;
+    animation: donationBtnGlow 3s ease-in-out infinite;
+    opacity: 0.8;
+}
+
+.donation-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(255, 99, 132, 0.4);
+    background: linear-gradient(135deg, rgba(255, 99, 132, 0.9) 0%, rgba(255, 154, 0, 0.9) 100%);
+}
+
+.donation-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.donation-icon {
+    font-size: 18px;
+    animation: heartBeat 1.5s ease-in-out infinite;
+}
+
+/* ==================== 赞赏码弹窗 ==================== */
+.donation-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.95) 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    -webkit-overflow-scrolling: touch;
+}
+
+.donation-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.donation-content {
+    background: linear-gradient(135deg, rgba(36, 36, 62, 0.98) 0%, rgba(48, 43, 99, 0.98) 50%, rgba(255, 99, 132, 0.15) 100%);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 25px;
+    max-width: 450px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 
+        0 0 0 1px rgba(255, 99, 132, 0.3),
+        0 20px 60px rgba(255, 99, 132, 0.4),
+        0 0 120px rgba(255, 154, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: donationSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+}
+
+.donation-content::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #ff6384, #ff9a00, #ff6384);
+    border-radius: 25px;
+    z-index: -1;
+    animation: donationBorderGlow 3s ease-in-out infinite;
+    opacity: 0.8;
+}
+
+@keyframes donationSlideIn {
+    0% {
+        transform: translateY(-100px) scale(0.8) rotateX(15deg);
+        opacity: 0;
+        filter: blur(10px);
+    }
+    50% {
+        transform: translateY(20px) scale(1.02) rotateX(-2deg);
+        opacity: 0.8;
+        filter: blur(2px);
+    }
+    100% {
+        transform: translateY(0) scale(1) rotateX(0deg);
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+@keyframes donationBorderGlow {
+    0%, 100% {
+        opacity: 0.8;
+        transform: rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: rotate(180deg);
+    }
+}
+
+@keyframes donationBtnGlow {
+    0%, 100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
+@keyframes heartBeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+.donation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 25px 30px;
+    border-bottom: 1px solid rgba(255, 99, 132, 0.2);
+    background: linear-gradient(135deg, rgba(255, 99, 132, 0.15) 0%, rgba(255, 154, 0, 0.1) 100%);
+    border-radius: 23px 23px 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.donation-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #ff9a00, transparent);
+    animation: shimmer 2s ease-in-out infinite;
+}
+
+.donation-modal-icon {
+    font-size: 28px;
+    margin-right: 15px;
+    animation: heartBeat 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(255, 99, 132, 0.6));
+}
+
+.donation-header h3 {
+    font-size: 22px;
+    color: var(--text-primary);
+    flex: 1;
+    margin: 0;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, var(--text-primary), #ff9a00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.donation-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.donation-close:hover {
+    background: rgba(255, 99, 132, 0.2);
+    color: var(--text-primary);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 99, 132, 0.4);
+}
+
+.donation-body {
+    padding: 30px;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0 0 23px 23px;
+    text-align: center;
+}
+
+.donation-text {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    color: var(--text-secondary);
+}
+
+.qr-code-container {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-code-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 99, 132, 0.1), transparent);
+    animation: contactShimmer 3s ease-in-out infinite;
+}
+
+.qr-code {
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
+    position: relative;
+    z-index: 1;
+}
+
+.scan-tip {
+    margin-top: 15px;
+    font-size: 14px;
+    color: var(--accent-color);
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+}
+
+.donation-footer {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 99, 132, 0.2);
+}
+
+.author-info {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.thanks-text {
+    font-size: 16px;
+    color: #ff6384;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .donation-btn {
+        padding: 10px 20px;
+        font-size: 13px;
+        border-radius: 20px;
+    }
+    
+    .donation-btn::before {
+        border-radius: 20px;
+    }
+    
+    .donation-content {
+        width: 95%;
+        border-radius: 20px;
+    }
+    
+    .donation-content::before {
+        border-radius: 20px;
+    }
+    
+    .donation-header {
+        padding: 20px 25px;
+        border-radius: 18px 18px 0 0;
+    }
+    
+    .donation-header h3 {
+        font-size: 18px;
+    }
+    
+    .donation-body {
+        padding: 25px;
+        border-radius: 0 0 18px 18px;
+    }
+    
+    .qr-code {
+        width: 180px;
+        height: 180px;
+    }
+    
+    .donation-text {
+        font-size: 14px;
+    }
+}
