@@ -187,6 +187,27 @@
             transform: scale(1.05);
         }
 
+        .date-input {
+            padding: 8px 12px;
+            border: 1px solid rgba(142, 45, 226, 0.5);
+            border-radius: 8px;
+            background: rgba(142, 45, 226, 0.2);
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .date-input::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .date-input:hover {
+            border-color: rgba(142, 45, 226, 0.8);
+            background: rgba(142, 45, 226, 0.3);
+        }
+
         /* IP分组样式 */
         .ip-group {
             background: rgba(0, 0, 0, 0.2);
@@ -554,10 +575,11 @@
 
         <div class="records-container">
             <div class="records-header">
-                <h2>📝 对话记录 <span id="loadModeLabel" style="font-size: 0.8rem; color: #ffd700; font-weight: normal;">(今日)</span></h2>
-                <div style="display: flex; gap: 10px;">
-                    <button class="refresh-btn" onclick="loadRecords(false)" id="todayBtn">📅 今日数据</button>
-                    <button class="refresh-btn" onclick="loadRecords(true)" id="allBtn" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a);">📚 全部数据</button>
+                <h2>📝 对话记录 <span id="loadModeLabel" style="font-size: 0.8rem; color: #ffd700; font-weight: normal;"></span></h2>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="date" id="dateSelector" class="date-input" onchange="loadRecordsByDate()">
+                    <button class="refresh-btn" onclick="loadTodayRecords()">📅 今日</button>
+                    <button class="refresh-btn" onclick="loadAllRecords()" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a);">📚 全部</button>
                 </div>
             </div>
             <div id="recordsList">
@@ -584,7 +606,8 @@
                 sessionStorage.setItem('adminLoggedIn', 'true');
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('adminContainer').style.display = 'block';
-                loadRecords();
+                initDateSelector();
+                loadTodayRecords();
             } else {
                 errorMsg.style.display = 'block';
                 document.getElementById('passwordInput').value = '';
@@ -614,40 +637,76 @@
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('adminContainer').style.display = 'block';
             isLoggedIn = true;
-            loadRecords();
+            initDateSelector();
+            loadTodayRecords();
         }
 
         // ==================== 加载对话记录 ====================
-        // loadAll: true=加载全部数据, false=只加载今日数据（默认）
-        async function loadRecords(loadAll = false) {
+        // 初始化日期选择器为今天
+        function initDateSelector() {
+            const dateSelector = document.getElementById('dateSelector');
+            const today = new Date().toISOString().split('T')[0];
+            dateSelector.value = today;
+            dateSelector.max = today;
+        }
+
+        // 加载今日数据
+        function loadTodayRecords() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateSelector').value = today;
+            loadRecords(today);
+        }
+
+        // 加载全部数据
+        function loadAllRecords() {
+            document.getElementById('dateSelector').value = '';
+            loadRecords(null, true);
+        }
+
+        // 按日期加载
+        function loadRecordsByDate() {
+            const date = document.getElementById('dateSelector').value;
+            if (date) {
+                loadRecords(date);
+            }
+        }
+
+        // 核心加载函数
+        // date: 指定日期(YYYY-MM-DD)或null
+        // loadAll: true=加载全部数据
+        async function loadRecords(date = null, loadAll = false) {
             if (!isLoggedIn) return;
 
             const recordsList = document.getElementById('recordsList');
             const loadModeLabel = document.getElementById('loadModeLabel');
-            const todayBtn = document.getElementById('todayBtn');
-            const allBtn = document.getElementById('allBtn');
             
-            // 更新按钮状态
+            // 更新标签显示
             if (loadAll) {
-                loadModeLabel.textContent = '(全部)';
-                todayBtn.style.opacity = '0.6';
-                allBtn.style.opacity = '1';
+                loadModeLabel.textContent = '(全部数据)';
+            } else if (date) {
+                loadModeLabel.textContent = `(${date})`;
             } else {
-                loadModeLabel.textContent = '(今日)';
-                todayBtn.style.opacity = '1';
-                allBtn.style.opacity = '0.6';
+                const today = new Date().toISOString().split('T')[0];
+                date = today;
+                loadModeLabel.textContent = `(${today})`;
             }
             
             recordsList.innerHTML = `
                 <div class="loading">
                     <div class="loading-spinner"></div>
-                    <p>${loadAll ? '加载全部数据中...' : '加载今日数据中...'}</p>
+                    <p>${loadAll ? '加载全部数据中...' : `加载 ${date} 数据中...`}</p>
                 </div>
             `;
 
             try {
-                // 根据参数决定是否加载全部数据
-                const apiUrl = loadAll ? '/api/admin/records?all=true' : '/api/admin/records';
+                // 构建API URL
+                let apiUrl = '/api/admin/records';
+                if (loadAll) {
+                    apiUrl += '?all=true';
+                } else if (date) {
+                    apiUrl += `?date=${date}`;
+                }
+                
                 const response = await fetch(apiUrl, {
                     headers: {
                         'X-Admin-Password': ADMIN_PASSWORD
@@ -659,7 +718,7 @@
                 }
 
                 const data = await response.json();
-                displayRecords(data, loadAll);
+                displayRecords(data, loadAll, date);
             } catch (error) {
                 recordsList.innerHTML = `
                     <div class="no-records">
@@ -671,7 +730,7 @@
         }
 
         // ==================== 显示对话记录 ====================
-        function displayRecords(data, loadAll = false) {
+        function displayRecords(data, loadAll = false, date = null) {
             const recordsList = document.getElementById('recordsList');
             const records = data.records || [];
 
@@ -681,10 +740,13 @@
             document.getElementById('uniqueIPs').textContent = data.stats?.uniqueIPs || 0;
 
             if (records.length === 0) {
+                const emptyMsg = loadAll 
+                    ? '暂无对话记录' 
+                    : `${date || '今日'}暂无对话记录，选择其他日期或点击「全部」查看`;
                 recordsList.innerHTML = `
                     <div class="no-records">
                         <div class="icon">📭</div>
-                        <p>${loadAll ? '暂无对话记录' : '今日暂无对话记录，点击「全部数据」查看历史记录'}</p>
+                        <p>${emptyMsg}</p>
                     </div>
                 `;
                 return;

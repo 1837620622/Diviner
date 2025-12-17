@@ -42,7 +42,11 @@ export async function onRequestGet(context) {
         // 解析URL参数
         const url = new URL(request.url);
         const loadAll = url.searchParams.get('all') === 'true';
+        const dateParam = url.searchParams.get('date');
         const today = new Date().toISOString().split('T')[0];
+        
+        // 确定要查询的日期
+        const targetDate = dateParam || today;
         
         // 根据参数决定读取范围
         // 新格式key: chat_YYYY-MM-DD_timestamp_random
@@ -52,8 +56,8 @@ export async function onRequestGet(context) {
             // 读取全部：获取所有以chat_开头的记录
             keys = await CHAT_LOGS.list({ prefix: 'chat_' });
         } else {
-            // 默认只读取当天：使用日期前缀筛选（新格式）
-            keys = await CHAT_LOGS.list({ prefix: `chat_${today}_` });
+            // 读取指定日期：使用日期前缀筛选（新格式）
+            keys = await CHAT_LOGS.list({ prefix: `chat_${targetDate}_` });
         }
         
         const records = [];
