@@ -607,7 +607,7 @@
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('adminContainer').style.display = 'block';
                 initDateSelector();
-                loadTodayRecords();
+                initialLoad();
             } else {
                 errorMsg.style.display = 'block';
                 document.getElementById('passwordInput').value = '';
@@ -638,16 +638,16 @@
             document.getElementById('adminContainer').style.display = 'block';
             isLoggedIn = true;
             initDateSelector();
-            loadTodayRecords();
+            initialLoad();
         }
 
         // ==================== 加载对话记录 ====================
-        // 初始化日期选择器为今天
+        // 初始化日期选择器
         function initDateSelector() {
             const dateSelector = document.getElementById('dateSelector');
             const today = new Date().toISOString().split('T')[0];
             dateSelector.value = today;
-            dateSelector.max = today;
+            // 不设置 min/max，等后端返回日期范围后再设置
         }
 
         // 加载今日数据
@@ -669,6 +669,15 @@
             if (date) {
                 loadRecords(date);
             }
+        }
+
+        // 首次加载（加载全部以获取日期范围）
+        async function initialLoad() {
+            await loadRecords(null, true);
+            // 加载完成后设置日历为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateSelector').value = today;
+            document.getElementById('loadModeLabel').textContent = '(全部数据)';
         }
 
         // 核心加载函数
@@ -738,6 +747,17 @@
             document.getElementById('totalRecords').textContent = data.stats?.total || records.length;
             document.getElementById('todayRecords').textContent = data.stats?.today || 0;
             document.getElementById('uniqueIPs').textContent = data.stats?.uniqueIPs || 0;
+            
+            // 更新日历范围（根据后端返回的日期范围）
+            if (data.dateRange) {
+                const dateSelector = document.getElementById('dateSelector');
+                if (data.dateRange.min) {
+                    dateSelector.min = data.dateRange.min;
+                }
+                if (data.dateRange.max) {
+                    dateSelector.max = data.dateRange.max;
+                }
+            }
 
             if (records.length === 0) {
                 const emptyMsg = loadAll 

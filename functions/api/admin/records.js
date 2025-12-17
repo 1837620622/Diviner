@@ -1,6 +1,7 @@
 // Cloudflare Pages Function - 管理后台API
 // 用于获取对话记录
 // 优化：默认只读取当天数据，减少KV读取次数
+// 兼容新旧key格式
 
 const ADMIN_PASSWORD = 'chuankangkk';
 
@@ -29,6 +30,7 @@ export async function onRequestGet(context) {
             return new Response(JSON.stringify({
                 records: [],
                 stats: { total: 0, today: 0, uniqueIPs: 0 },
+                dateRange: { min: null, max: null },
                 message: 'KV存储未配置，请在Cloudflare Dashboard中创建CHAT_LOGS KV命名空间并绑定'
             }), {
                 status: 200,
@@ -48,43 +50,73 @@ export async function onRequestGet(context) {
         // 确定要查询的日期
         const targetDate = dateParam || today;
         
+        // 获取所有keys（用于统计和日期范围）
+        const allKeys = await CHAT_LOGS.list({ prefix: 'chat_' });
+        const totalCount = allKeys.keys.length;
+        
+        // 收集所有日期（用于日历范围）
+        const allDates = new Set();
+        
         // 根据参数决定读取范围
         // 新格式key: chat_YYYY-MM-DD_timestamp_random
         // 旧格式key: chat_timestamp_random
-        let keys;
-        if (loadAll) {
-            // 读取全部：获取所有以chat_开头的记录
-            keys = await CHAT_LOGS.list({ prefix: 'chat_' });
-        } else {
-            // 读取指定日期：使用日期前缀筛选（新格式）
-            keys = await CHAT_LOGS.list({ prefix: `chat_${targetDate}_` });
-        }
-        
         const records = [];
         const ipSet = new Set();
         let todayCount = 0;
         
-        // 获取每条记录
-        for (const key of keys.keys) {
-            const record = await CHAT_LOGS.get(key.name, { type: 'json' });
-            if (record) {
-                records.push(record);
-                if (record.ip) {
-                    ipSet.add(record.ip);
+        for (const key of allKeys.keys) {
+            // 解析key中的日期（新格式）
+            const keyParts = key.name.split('_');
+            let keyDate = null;
+            
+            // 新格式: chat_2024-12-17_timestamp_random
+            if (keyParts.length >= 3 && keyParts[1].match(/^\d{4}-\d{2}-\d{2}$/)) {
+                keyDate = keyParts[1];
+            }
+            
+            // 判断是否需要加载这条记录
+            let shouldLoad = false;
+            if (loadAll) {
+                shouldLoad = true;
+            } else if (keyDate === targetDate) {
+                // 新格式匹配日期
+                shouldLoad = true;
+            } else if (!keyDate) {
+                // 旧格式：需要读取记录来判断日期
+                // 为了节省KV读取，旧格式数据只在加载全部时显示
+                // 或者在第一次加载时迁移
+                shouldLoad = loadAll;
+            }
+            
+            if (shouldLoad) {
+                const record = await CHAT_LOGS.get(key.name, { type: 'json' });
+                if (record) {
+                    records.push(record);
+                    if (record.ip) {
+                        ipSet.add(record.ip);
+                    }
+                    // 从timestamp获取日期
+                    if (record.timestamp) {
+                        const recordDate = record.timestamp.split('T')[0];
+                        allDates.add(recordDate);
+                        if (recordDate === today) {
+                            todayCount++;
+                        }
+                    }
                 }
-                if (record.timestamp && record.timestamp.startsWith(today)) {
-                    todayCount++;
-                }
+            } else if (keyDate) {
+                // 新格式但不需要加载，仍然记录日期用于日历范围
+                allDates.add(keyDate);
             }
         }
         
-        // 获取总记录数（用于统计显示）
-        let totalCount = records.length;
-        if (!loadAll) {
-            // 如果只读取了当天数据，额外获取总数
-            const allKeys = await CHAT_LOGS.list({ prefix: 'chat_' });
-            totalCount = allKeys.keys.length;
-        }
+        // 计算日期范围
+        const sortedDates = Array.from(allDates).sort();
+        const dateRange = {
+            min: sortedDates[0] || today,
+            max: sortedDates[sortedDates.length - 1] || today,
+            available: sortedDates
+        };
         
         return new Response(JSON.stringify({
             records: records,
@@ -94,7 +126,8 @@ export async function onRequestGet(context) {
                 uniqueIPs: ipSet.size,
                 loaded: records.length,
                 loadAll: loadAll
-            }
+            },
+            dateRange: dateRange
         }), {
             status: 200,
             headers: {
