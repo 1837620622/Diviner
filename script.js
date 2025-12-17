@@ -843,12 +843,25 @@ async function sendMessage() {
         // 显示助手回复
         addMessage('assistant', assistantMessage);
         
-        // 触发赞赏码弹窗（30%概率）
-        if (Math.random() < 0.3) {
-            setTimeout(() => {
-                showDonationModal();
-            }, 3000); // 延迟3秒，给用户时间阅读回答
-        }
+        // 等待消息完全显示后再触发赞赏码弹窗
+        // 使用更长的延迟确保用户有时间阅读完整回答
+        setTimeout(() => {
+            // 20%概率弹出赞赏码，降低频率避免打扰用户
+            if (Math.random() < 0.2) {
+                // 检查用户是否还在查看当前消息（通过滚动位置判断）
+                const messages = document.querySelectorAll('.message.assistant');
+                if (messages.length > 0) {
+                    const lastMessage = messages[messages.length - 1];
+                    const rect = lastMessage.getBoundingClientRect();
+                    const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+                    
+                    // 只有当最后一条消息在视窗内时才弹出赞赏码
+                    if (isVisible) {
+                        showDonationModal();
+                    }
+                }
+            }
+        }, 5000); // 延迟5秒，给用户充足时间阅读
         
     } catch (error) {
         console.error('API调用错误:', error);
@@ -1223,45 +1236,6 @@ if (donationModal) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && donationModal && donationModal.classList.contains('show')) {
         closeDonationModal();
-    }
-});
-
-// 在问答结束后自动弹出赞赏码
-function showDonationAfterResponse() {
-    // 延迟3秒后自动弹出，给用户时间阅读回答
-    setTimeout(() => {
-        showDonationModal();
-    }, 3000);
-}
-
-// 修改原有的sendMessage函数，在收到回复后自动弹出赞赏码
-const originalSendMessage = window.sendMessage;
-if (typeof originalSendMessage === 'function') {
-    window.sendMessage = async function(message) {
-        const result = await originalSendMessage.call(this, message);
-        
-        // 检查是否收到了完整的AI回复
-        if (result && !result.isLoading) {
-            // 随机决定是否弹出赞赏码（50%概率，避免过于频繁）
-            if (Math.random() < 0.5) {
-                showDonationAfterResponse();
-            }
-        }
-        
-        return result;
-    };
-}
-
-// 监听消息完成事件（用于自动弹出赞赏码）
-document.addEventListener('messageComplete', function(e) {
-    // 检查是否是真实的用户问题（不是系统消息）
-    const isUserQuestion = e.detail && e.detail.isUserMessage;
-    
-    if (isUserQuestion) {
-        // 30%概率弹出赞赏码，降低频率
-        if (Math.random() < 0.3) {
-            showDonationAfterResponse();
-        }
     }
 });
 
