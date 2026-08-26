@@ -67,7 +67,7 @@ html, body {
   overflow: hidden;
   background: var(--bg-app);
   color: var(--text-main);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Noto Serif SC", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Noto Serif SC", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -313,10 +313,12 @@ html, body {
 .main-content {
   flex: 1;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   min-width: 0;
   position: relative;
+  overflow: hidden;
   background: radial-gradient(circle at 50% 0%, #151838 0%, #0c0e1e 100%);
 }
 
@@ -375,6 +377,7 @@ html, body {
 /* 消息视窗 */
 .chat-container {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

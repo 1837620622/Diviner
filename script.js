@@ -155,9 +155,10 @@ function formatMessageContent(raw) {
   let s = String(raw || '').replace(/\r\n/g, '\n');
   s = escapeHtml(s);
 
-  // 分节标题
+  // 分节标题 (仅当整行单独为【...】或以 ### 开头时才转为大标题，避免行内打断语句)
   s = s.replace(/^#{1,3}\s*(.+)$/gm, '【$1】');
-  s = s.replace(/【([^】]+)】/g, '<div class="section-title"><i data-lucide="compass" style="width:15px;height:15px"></i> $1</div>');
+  s = s.replace(/^\s*【([^】\n]+)】\s*$/gm, '<div class="section-title"><i data-lucide="compass" style="width:15px;height:15px"></i> $1</div>');
+  s = s.replace(/【([^】\n]+)】/g, '<strong style="color:var(--vermilion);font-weight:700">【$1】</strong>');
   
   // 箴言古训
   s = s.replace(/箴言[：:]([^\n]+)/g, '<div class="fortune-box"><i data-lucide="sparkles"></i> 箴言：$1</div>');

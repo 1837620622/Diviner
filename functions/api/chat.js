@@ -110,19 +110,19 @@ export async function onRequestPost(context) {
 
   const textCandidates = Array.from(new Set([
     configuredText,
-    'gpt-4o-mini',
-    'deepseek-chat',
     'nemotron-3-ultra-free',
     'mimo-v2.5-free',
     'laguna-s-2.1-free',
+    'gpt-4o-mini',
+    'deepseek-chat',
     'gpt-3.5-turbo',
   ])).filter(Boolean);
 
   const visionCandidates = Array.from(new Set([
     configuredVision,
-    'gpt-4o-mini',
     'mimo-v2.5-free',
     'nemotron-3-ultra-free',
+    'gpt-4o-mini',
     'gemini-2.0-flash',
     'laguna-s-2.1-free',
   ])).filter(Boolean);
@@ -162,23 +162,16 @@ export async function onRequestPost(context) {
         break;
       }
 
-      const isRetryable = resp.status === 429 || resp.status >= 500 || resp.status === 400;
       lastError = { status: resp.status, data };
       lastData = data;
-
-      if (resp.status === 400 && String(JSON.stringify(data)).toLowerCase().includes('image')) {
-        if (i < candidates.length - 1) continue;
-      }
-
-      if (!isRetryable) break;
       if (i < candidates.length - 1) {
-        await new Promise((r) => setTimeout(r, 350 * (i + 1)));
+        await new Promise((r) => setTimeout(r, 200));
         continue;
       }
     } catch (e) {
       lastError = { status: 0, message: e.message || String(e) };
       if (i < candidates.length - 1) {
-        await new Promise((r) => setTimeout(r, 350 * (i + 1)));
+        await new Promise((r) => setTimeout(r, 200));
         continue;
       }
     }
