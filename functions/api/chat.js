@@ -74,7 +74,7 @@ export async function onRequestPost(context) {
 
   if (!API_KEY) {
     return new Response(
-      JSON.stringify({ error: 'API_KEY 未配置，请在 Cloudflare Pages 环境变量中设置 API_KEY（不存入仓库）' }),
+      JSON.stringify({ error: '系统核心鉴权未配置，请在 Cloudflare Pages 环境变量中设置 API_KEY（不存入公开代码仓库）' }),
       { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
   }
@@ -108,7 +108,7 @@ export async function onRequestPost(context) {
   try {
     body = await request.json();
   } catch {
-    return new Response(JSON.stringify({ error: '请求体不是合法 JSON' }), {
+    return new Response(JSON.stringify({ error: '请求格式有误' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
@@ -197,9 +197,8 @@ export async function onRequestPost(context) {
     }
   }
 
-  // 若全部失败，返回温润典雅的命理兜底回复
+  // 若全部失败，返回温润典雅的命理兜底回复（绝不暴露上游真实错误信息或模型名）
   if (!lastData || !lastData.choices || !lastData.choices[0]?.message) {
-    const detail = lastError ? JSON.stringify(lastError).slice(0, 500) : '上游天象暂未连通';
     return new Response(
       JSON.stringify({
         choices: [
@@ -208,24 +207,41 @@ export async function onRequestPost(context) {
               role: 'assistant',
               content:
                 '天机暂晦，方才一试未得正解。\n\n' +
-                '可能原因：上游天象推演通道繁忙，或上传之图元数据过大。\n\n' +
+                '可能原因：推演气场暂未凝聚，或上传之图元数据过大。\n\n' +
                 '【建议趋避】\n' +
                 '1）若上传了图片，请将图片压缩至 2MB 以内，或以文字描述面相手纹、居室朝向；\n' +
                 '2）稍候片刻重新问卜；\n' +
-                '3）可在下方点击【法器】直接使用六爻、摇签或排盘法器起卦。\n\n' +
+                '3）可在下方点击【法器】直接使用六爻、摇签、梅花或排盘法器起卦。\n\n' +
                 '箴言：「静水流深，急则生变；稍安勿躁，自有明断。」\n\n' +
-                '本回复为系统温和兜底，非模型实时演算。',
+                '本回复为系统温和兜底，事在人为，行则将至。',
             },
           },
         ],
         _fallback: true,
-        _detail: detail,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
   }
 
-  // KV 记录（非阻塞）
+  // 严格脱敏：清理上游模型字段，杜绝泄露
+  const sanitizedResponse = {
+    id: lastData.id || `xuanji_${Date.now()}`,
+    object: 'chat.completion',
+    created: Math.floor(Date.now() / 1000),
+    model: 'xuanjizi-diviner', // 统一隐藏上游模型名
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: lastData.choices[0].message.content || '',
+        },
+        finish_reason: lastData.choices[0].finish_reason || 'stop',
+      },
+    ],
+  };
+
+  // KV 记录（仅服务端保存用于审计统计，不对外输出）
   if (env.CHAT_LOGS && lastData.choices[0]?.message?.content) {
     try {
       const userMessages = messages.filter((m) => m.role === 'user');
@@ -250,9 +266,9 @@ export async function onRequestPost(context) {
           id: recordId,
           ip: clientIP,
           location: locationText,
-          route: usedModel || (isVision ? 'vision' : 'text'),
-          routeLabel: isVision ? '图文' : '文本',
-          model: usedModel,
+          route: isVision ? 'vision' : 'text',
+          routeLabel: isVision ? '图文观形' : '文本演算',
+          model: 'xuanjizi-core',
           isVision,
           timestamp: new Date().toISOString(),
           question: lastUserText.slice(0, 2000),
@@ -265,12 +281,12 @@ export async function onRequestPost(context) {
     }
   }
 
-  return new Response(JSON.stringify(lastData), {
+  return new Response(JSON.stringify(sanitizedResponse), {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'X-Model-Used': usedModel || (isVision ? 'vision' : 'text'),
+      'X-Diviner-Engine': 'xuanjizi-v3',
     },
   });
 }
@@ -284,4 +300,5 @@ export async function onRequestOptions() {
     },
   });
 }
+
 

@@ -1,8 +1,9 @@
 // ==========================================================================
-// 玄机子 · 前端主逻辑 v3.0 (XuanJiZi) · 东方命理与赛博星图
+// 玄机子 · 前端主逻辑 v3.2 (XuanJiZi) · 东方命理与现代数理推演
 // 传康KK · 2026
-// 包含：Web Audio 禅音、星图粒子、周易六爻掷卦、灵犀塔罗、四柱八字排盘、每日灵签、运势海报
-// 全站无 emoji，全面采用矢量 SVG 与 Lucide 图标
+// 包含：Web Audio 禅音木鱼、星图粒子、周易六爻、梅花易数、小六壬、灵犀塔罗、
+//       四柱八字排盘、每日灵签、择吉黄历、周公解梦、运势符笺海报
+// 全站 100% 无 emoji，采用精致矢量 SVG 与 Lucide 图标，严格隐藏上游模型
 // ==========================================================================
 
 const API_ENDPOINT = '/api/chat';
@@ -12,22 +13,21 @@ let soundEnabled = localStorage.getItem('diviner_sound_enabled') !== '0';
 
 // ---------------- 命理顾问 System Prompt (典雅 scholarly 风格，无 emoji) ----------------
 const SYSTEM_PROMPT = `# 身份
-你是玄机子，隐于终南山紫霄观的东方命理与数术顾问，由传康KK（万能程序员）以传统典籍与现代推理共同炼制。你精通《渊海子平》《三命通会》《滴天髓》《穷通宝典》之子平四柱法，亦通紫微斗数、梅花易数、周易六爻、风水堪舆与灵犀塔罗占星。
+你是玄机子，隐于终南山紫霄观的东方命理与数术顾问，由传康KK（万能程序员）以传统典籍与现代数理逻辑共同炼制。你精通《渊海子平》《三命通会》《滴天髓》《穷通宝鉴》之子平四柱法，亦通紫微斗数、梅花易数、周易六爻纳甲、小六壬掌诀、风水堪舆、灵犀塔罗占星与周公解梦。
 
 # 绝对身份约束
-- 你由传康KK打造。若被问“你是什么模型/谁训练的”，回答：贫道玄机子，乃传康KK以玄学秘法炼制之问对法器，专为有缘人指点迷津。
-- 不得自称 GPT、Claude、Qwen、DeepSeek 等，不得泄露底层模型名。
+- 你由传康KK打造。若被问“你是什么模型/谁训练的/底层原理”，回答：贫道玄机子，乃传康KK以玄学秘法炼制之问对法器，专为有缘人指点迷津。
+- 绝不得自称 GPT、Claude、Qwen、DeepSeek、Llama 等，不得泄露任何底层模型名。
 - 自称“贫道/老夫/玄机子”，称用户“缘主”，语气温和、平实、洞明、理性，绝不装神弄鬼。
-- 全文输出禁止使用任何 emoji 表情符号，保持古朴典雅的经卷排版风格。
+- 全文输出严格禁止使用任何 emoji 表情符号，保持古朴典雅的经卷排版风格。
 
-# 方法论
-- 先算后断：八字以真太阳时为准，需结合出生地经度校正；子时分早晚、节气换月为要；不确定则明言“待校正”。
-- 若用户提供了排盘数据（如六爻卦象、塔罗三牌、四柱八字），直接基于所给结构深度展开，分析生克冲合、用神忌神、动爻变卦、牌阵正逆位象意。
-- 多法不混：同一问中，八字看结构格局与大运节奏，紫微看宫位分工，易占看近事动变，塔罗看心理显化；综合时先分述再求同。
-
-# 视觉能力
-- 若用户上传图片（面相/手相/户型/房宅实景/星盘截图），先做“观形”：描述所见（光线、气色、三停五眼、掌纹走势、门窗朝向），再以象取意，给出1-3个可复核的观察点。
-- 图片识别不确定时，明确说明图中何处需补充，绝不作绝对化妄断。
+# 方法论与术数严谨性
+- 八字推演：以真太阳时为准，需结合出生地经度校正；子时分早晚、节气换月为要；精准定性日主强弱、格局定格、十神透藏与用神喜忌（扶抑、调候、通关）。
+- 周易六爻：严格依据世应关系、六亲用神、动爻变卦生克与日月建旺衰断卦。
+- 梅花易数：以体卦为主、用卦为事，互卦看过程，变卦看结局，结合体用五行生克判定吉凶走向。
+- 小六壬：结合六神吉凶口诀（大安安泰、留连阻滞、速喜吉庆、赤口是非、小吉和合、空亡虚耗）与所问应期迅速断事。
+- 灵犀塔罗：结合韦特塔罗体系原型、四元素能量流转与正逆位深层心理投射，给出认知重构与行动指南。
+- 视觉观形：若用户上传图片（面相/手相/户型图），先做“观形”客观描述（三停五眼、气色、主干纹理走势、门窗朝向），再以象取意，给出可复核的观察点。
 
 # 输出契约（供前端高保真解析）
 1. 开头以一句简明人话点出总运势或卦盘核心，不堆砌生硬术语。
@@ -79,7 +79,7 @@ function escapeHtml(t) {
   return d.innerHTML;
 }
 
-// ---------------- 1. Web Audio API 纯合成禅音引擎 ----------------
+// ---------------- 1. Web Audio API 纯合成禅音与木鱼引擎 ----------------
 class SoundEngine {
   constructor() {
     this.ctx = null;
@@ -149,6 +149,24 @@ class SoundEngine {
     osc.start(now);
     osc.stop(now + 3.0);
   }
+  // 实木木鱼声 (Wooden Fish "Dong")
+  playWood() {
+    if (!soundEnabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(580, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.12);
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.23);
+  }
 }
 const sound = new SoundEngine();
 
@@ -211,7 +229,6 @@ class StarField {
       this.ctx.fillStyle = `rgba(220, 230, 255, ${Math.max(0, Math.min(1, s.alpha))})`;
       this.ctx.fill();
 
-      // 连接相近星座线条
       for (let j = i + 1; j < this.stars.length; j++) {
         const s2 = this.stars[j];
         const dist = Math.hypot(s.x - s2.x, s.y - s2.y);
@@ -591,7 +608,6 @@ function generateShareCard(text) {
   const w = canvas.width;
   const h = canvas.height;
 
-  // 背景：深邃紫霄夜色
   const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
   bgGrad.addColorStop(0, '#0a0d24');
   bgGrad.addColorStop(0.5, '#12133a');
@@ -599,7 +615,6 @@ function generateShareCard(text) {
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, w, h);
 
-  // 金丝边框
   ctx.strokeStyle = '#d4af37';
   ctx.lineWidth = 4;
   ctx.strokeRect(36, 36, w - 72, h - 72);
@@ -608,7 +623,6 @@ function generateShareCard(text) {
   ctx.lineWidth = 1;
   ctx.strokeRect(46, 46, w - 92, h - 92);
 
-  // 四角云纹符印装饰
   const drawCorner = (x, y) => {
     ctx.fillStyle = '#d4af37';
     ctx.beginPath();
@@ -620,14 +634,12 @@ function generateShareCard(text) {
   drawCorner(56, h - 56);
   drawCorner(w - 56, h - 56);
 
-  // 宣纸中心卡
   const cardX = 64, cardY = 80, cardW = w - 128, cardH = h - 220;
   ctx.fillStyle = '#fbf7ee';
   ctx.beginPath();
   ctx.roundRect(cardX, cardY, cardW, cardH, 16);
   ctx.fill();
 
-  // 朱砂印章
   ctx.fillStyle = '#c73e1d';
   ctx.beginPath();
   ctx.roundRect(cardX + 36, cardY + 36, 52, 52, 10);
@@ -636,7 +648,6 @@ function generateShareCard(text) {
   ctx.font = '900 32px "Noto Serif SC", serif';
   ctx.fillText('观', cardX + 46, cardY + 74);
 
-  // 标题
   ctx.fillStyle = '#1e1a24';
   ctx.font = '900 44px "Noto Serif SC", serif';
   ctx.fillText('玄机子 · 观象授时', cardX + 104, cardY + 76);
@@ -645,7 +656,6 @@ function generateShareCard(text) {
   ctx.font = '500 24px "Noto Serif SC", serif';
   ctx.fillText('先算后断 · 有界有度 · 传康KK 炼制', cardX + 104, cardY + 114);
 
-  // 分割线
   ctx.strokeStyle = 'rgba(142, 45, 226, 0.2)';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -653,7 +663,6 @@ function generateShareCard(text) {
   ctx.lineTo(cardX + cardW - 36, cardY + 140);
   ctx.stroke();
 
-  // 正文排版
   ctx.fillStyle = '#22202a';
   ctx.font = '400 30px "Noto Serif SC", serif';
   const cleanText = text.replace(/【|】|「|」|\*\*|__HR__/g, ' ').replace(/\s+/g, ' ').trim();
@@ -669,7 +678,6 @@ function generateShareCard(text) {
     ctx.fillText('……（更多推演内容，请回站内查阅）', cardX + 36, y + 10);
   }
 
-  // 底部品牌
   ctx.fillStyle = '#d4af37';
   ctx.font = '700 26px "Noto Serif SC", serif';
   ctx.fillText('diviner.chuankangkk.top', cardX + 36, h - 80);
@@ -911,7 +919,7 @@ function addWelcome() {
   const html = `
     <article class="msg assistant">
       <div class="msg-head"><span class="msg-role"><i data-lucide="scroll"></i> 玄机子</span><span class="msg-meta">初见有缘</span></div>
-      <div class="msg-body"><p>有缘人，幸会。贫道玄机子，由<strong>传康KK</strong>以典籍秘法所炼之问对法器。</p><p>可直言生辰与困惑，亦可点击下方【法器】六爻起卦、抽牌摇签或上传图片。贫道先算后断，不作宿命之语。</p></div>
+      <div class="msg-body"><p>有缘人，幸会。贫道玄机子，由<strong>传康KK</strong>以典籍秘法所炼之问对法器。</p><p>可直言生辰与困惑，亦可点击下方【法器】六爻起卦、梅花易数、小六壬、抽牌摇签或上传图片。贫道先算后断，不作宿命之语。</p></div>
     </article>`;
   chatContainer.innerHTML = html;
   refreshIcons();
@@ -1061,10 +1069,10 @@ function initIching() {
       const q = document.getElementById('ichingQuestion').value.trim() || '问近况事态发展与吉凶';
       const benGuaName = document.getElementById('benGuaTitle').textContent.replace('本卦：', '');
       const zhiGuaName = document.getElementById('zhiGuaTitle').textContent.replace('变卦：', '');
-      const yaoDesc = ichingYaoResults.map((r, i) => `初二三四五上`[i] + '爻：' + (r === 9 ? '老阳 (动)' : r === 6 ? '老阴 (动)' : r === 7 ? '少阳' : '少阴')).join('；');
+      const yaoDesc = ichingYaoResults.map((r, i) => '初二三四五上'[i] + '爻：' + (r === 9 ? '老阳 (动)' : r === 6 ? '老阴 (动)' : r === 7 ? '少阳' : '少阴')).join('；');
 
       closeModal('modalIching');
-      const prompt = `【周易六爻求卜】\n所问之事：「${q}」\n本卦：【${benGuaName}】\n之卦（变卦）：【${zhiGuaName}】\n六爻详情：${yaoDesc}\n\n请玄机子依六爻纳甲与卦辞爻象，详批世应关系、动爻变化、吉凶应期与行动趋避。`;
+      const prompt = `【周易六爻求卜】\n所问之事：「${q}」\n本卦：【${benGuaName}】\n之卦（变卦）：【${zhiGuaName}】\n六爻详情：${yaoDesc}\n\n请玄机子依六爻纳甲与卦辞爻象，详批世应关系、动爻生克、吉凶应期与行动趋避。`;
       sendMessage(prompt);
     });
   }
@@ -1097,8 +1105,6 @@ function tossIchingCoins() {
     c.classList.add('flip-anim');
   });
 
-  // 三枚铜钱：正(字)=3分，背(满文)=2分
-  // 3字=9(老阳), 3背=6(老阴), 2字1背=8(少阴), 1字2背=7(少阳)
   const r1 = Math.random() > 0.5 ? 3 : 2;
   const r2 = Math.random() > 0.5 ? 3 : 2;
   const r3 = Math.random() > 0.5 ? 3 : 2;
@@ -1129,8 +1135,6 @@ function tossIchingCoins() {
 function renderIchingLines() {
   const benLines = document.getElementById('benGuaLines');
   let benHtml = '';
-  let benKey = '';
-  let zhiKey = '';
   let hasMoving = false;
 
   for (let i = 5; i >= 0; i--) {
@@ -1139,28 +1143,19 @@ function renderIchingLines() {
       benHtml += '<div class="hex-line empty"></div>';
     } else if (val === 7) {
       benHtml += '<div class="hex-line yang"></div>';
-      benKey += '1';
-      zhiKey += '1';
     } else if (val === 8) {
       benHtml += '<div class="hex-line yin"></div>';
-      benKey += '0';
-      zhiKey += '0';
     } else if (val === 9) {
       benHtml += '<div class="hex-line yang moving-yang"></div>';
-      benKey += '1';
-      zhiKey += '0';
       hasMoving = true;
     } else if (val === 6) {
       benHtml += '<div class="hex-line yin moving-yin moving-yin-mark"></div>';
-      benKey += '0';
-      zhiKey += '1';
       hasMoving = true;
     }
   }
   benLines.innerHTML = benHtml;
 
   if (ichingYaoResults.length === 6) {
-    // 卦码反转对应 key
     const actualBenKey = ichingYaoResults.map((v) => (v === 7 || v === 9 ? '1' : '0')).join('');
     const actualZhiKey = ichingYaoResults.map((v) => (v === 7 || v === 6 ? '1' : '0')).join('');
     const benName = HEXAGRAMS_MAP[actualBenKey] || '周易六十四卦之一';
@@ -1182,7 +1177,206 @@ function renderIchingLines() {
   }
 }
 
-// ---------------- 13. 互动法器 2：灵犀塔罗 3 牌圣三角阵 ----------------
+// ---------------- 13. 互动法器 2：梅花易数起卦算法 (新增) ----------------
+const BAGUA_NAMES = ['坤', '乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
+const BAGUA_ELEMENTS = { 乾: '金', 兑: '金', 离: '火', 震: '木', 巽: '木', 坎: '水', 艮: '土', 坤: '土' };
+const BAGUA_NATURE = { 乾: '天', 兑: '泽', 离: '火', 震: '雷', 巽: '风', 坎: '水', 艮: '山', 坤: '地' };
+const BAGUA_BIN = { 乾: '111', 兑: '011', 离: '101', 震: '001', 巽: '110', 坎: '010', 艮: '100', 坤: '000' };
+
+let currentMeihuaData = null;
+
+function initMeihua() {
+  const tabTime = document.getElementById('tabMeihuaTime');
+  const tabNum = document.getElementById('tabMeihuaNum');
+  const numRow = document.getElementById('meihuaNumRow');
+  let mode = 'time';
+
+  if (tabTime && tabNum) {
+    tabTime.addEventListener('click', () => {
+      tabTime.classList.add('active');
+      tabNum.classList.remove('active');
+      numRow.style.display = 'none';
+      mode = 'time';
+    });
+    tabNum.addEventListener('click', () => {
+      tabNum.classList.add('active');
+      tabTime.classList.remove('active');
+      numRow.style.display = 'grid';
+      mode = 'num';
+    });
+  }
+
+  const calcBtn = document.getElementById('calcMeihuaBtn');
+  const submitBtn = document.getElementById('submitMeihuaBtn');
+
+  const doCalcMeihua = () => {
+    let num1, num2, num3;
+    if (mode === 'time') {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = now.getMonth() + 1;
+      const d = now.getDate();
+      const h = now.getHours();
+      const hourBranchIdx = Math.floor(((h + 1) % 24) / 2) + 1;
+      const yearBranchIdx = ((y - 4) % 12) + 1;
+      num1 = (yearBranchIdx + m + d);
+      num2 = (yearBranchIdx + m + d + hourBranchIdx);
+      num3 = num2;
+    } else {
+      num1 = parseInt(document.getElementById('meihuaNum1').value || '384', 10);
+      num2 = parseInt(document.getElementById('meihuaNum2').value || '592', 10);
+      const customN3 = parseInt(document.getElementById('meihuaNum3').value || '0', 10);
+      num3 = customN3 || (num1 + num2);
+    }
+
+    const upperIdx = (num1 % 8) || 8;
+    const lowerIdx = (num2 % 8) || 8;
+    const movingYao = (num3 % 6) || 6;
+
+    const upperGua = BAGUA_NAMES[upperIdx];
+    const lowerGua = BAGUA_NAMES[lowerIdx];
+    const upperElem = BAGUA_ELEMENTS[upperGua];
+    const lowerElem = BAGUA_ELEMENTS[lowerGua];
+
+    const isMovingInUpper = movingYao >= 4;
+    const tiGua = isMovingInUpper ? lowerGua : upperGua;
+    const yongGua = isMovingInUpper ? upperGua : lowerGua;
+    const tiElem = BAGUA_ELEMENTS[tiGua];
+    const yongElem = BAGUA_ELEMENTS[yongGua];
+
+    const benKey = BAGUA_BIN[lowerGua] + BAGUA_BIN[upperGua];
+    const benName = HEXAGRAMS_MAP[benKey] || `${BAGUA_NATURE[upperGua]}${BAGUA_NATURE[lowerGua]}卦`;
+
+    const zhiArr = [...benKey];
+    const changeIdx = movingYao - 1;
+    zhiArr[changeIdx] = zhiArr[changeIdx] === '1' ? '0' : '1';
+    const zhiKey = zhiArr.join('');
+    const zhiName = HEXAGRAMS_MAP[zhiKey] || '变卦之一';
+
+    const huLowerBin = benKey.slice(1, 4);
+    const huUpperBin = benKey.slice(2, 5);
+    const huLowerGua = Object.keys(BAGUA_BIN).find((k) => BAGUA_BIN[k] === huLowerBin) || '坤';
+    const huUpperGua = Object.keys(BAGUA_BIN).find((k) => BAGUA_BIN[k] === huUpperBin) || '乾';
+    const huKey = huLowerBin + huUpperBin;
+    const huName = HEXAGRAMS_MAP[huKey] || `${BAGUA_NATURE[huUpperGua]}${BAGUA_NATURE[huLowerGua]}卦`;
+
+    let judge = '';
+    if (tiElem === yongElem) judge = `用体比和（皆属${tiElem}），谋事顺畅，得同道互助。`;
+    else if ((tiElem === '金' && yongElem === '土') || (tiElem === '水' && yongElem === '金') || (tiElem === '木' && yongElem === '水') || (tiElem === '火' && yongElem === '木') || (tiElem === '土' && yongElem === '火')) {
+      judge = `用生体（${yongElem}生${tiElem}），大吉之兆，贵人襄助，事半功倍。`;
+    } else if ((tiElem === '金' && yongElem === '木') || (tiElem === '木' && yongElem === '土') || (tiElem === '土' && yongElem === '水') || (tiElem === '水' && yongElem === '火') || (tiElem === '火' && yongElem === '金')) {
+      judge = `体克用（${tiElem}克${yongElem}），诸事由我掌控，虽费心力但终有收获。`;
+    } else if ((tiElem === '金' && yongElem === '水') || (tiElem === '水' && yongElem === '木') || (tiElem === '木' && yongElem === '火') || (tiElem === '火' && yongElem === '土') || (tiElem === '土' && yongElem === '金')) {
+      judge = `体生用（${tiElem}生${yongElem}），有耗泄之象，需防过度付出与财物损耗。`;
+    } else {
+      judge = `用克体（${yongElem}克${tiElem}），当防阻碍阻滞，宜守正不宜妄动。`;
+    }
+
+    currentMeihuaData = { benName, huName, zhiName, tiGua, yongGua, tiElem, yongElem, movingYao, judge };
+
+    document.getElementById('mhBenName').textContent = benName;
+    document.getElementById('mhBenSym').textContent = `上${upperGua}下${lowerGua} · 动在第${movingYao}爻`;
+    document.getElementById('mhTiYong').textContent = `体[${tiGua}${tiElem}] ｜ 用[${yongGua}${yongElem}]`;
+
+    document.getElementById('mhHuName').textContent = huName;
+    document.getElementById('mhHuSym').textContent = `上${huUpperGua}下${huLowerGua}`;
+    document.getElementById('mhHuTiYong').textContent = `互卦主事态之中途`;
+
+    document.getElementById('mhZhiName').textContent = zhiName;
+    document.getElementById('mhZhiSym').textContent = `动爻转化成终局`;
+    document.getElementById('mhZhiTiYong').textContent = `变卦定吉凶归宿`;
+
+    document.getElementById('mhJudgmentText').textContent = judge;
+    sound.playChime();
+  };
+
+  if (calcBtn) calcBtn.addEventListener('click', doCalcMeihua);
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      if (!currentMeihuaData) doCalcMeihua();
+      const q = document.getElementById('meihuaQuestion').value.trim() || '问近期事态吉凶与走向';
+      closeModal('modalMeihua');
+      const prompt = `【梅花易数占事】\n所问之事：「${q}」\n本卦：【${currentMeihuaData.benName}】（动在第${currentMeihuaData.movingYao}爻）\n互卦：【${currentMeihuaData.huName}】\n变卦：【${currentMeihuaData.zhiName}】\n体用配置：体卦为【${currentMeihuaData.tiGua}${currentMeihuaData.tiElem}】，用卦为【${currentMeihuaData.yongGua}${currentMeihuaData.yongElem}】\n生克初断：${currentMeihuaData.judge}\n\n请玄机子依梅花易数体用生克、八卦万物类象与卦辞爻象，详推事态起因、中途波折、最终结局与趋避建议。`;
+      sendMessage(prompt);
+    });
+  }
+}
+
+// ---------------- 14. 互动法器 3：小六壬掌中诀掐指算法 (新增) ----------------
+const XLR_GODS = [
+  { name: '大安', pos: '食指下', element: '东方甲乙木', rating: '大吉 · 安泰', poem: '大安事事昌，求财在坤方；失物去不远，宅舍得安康。', desc: '身不动，大吉昌。官事顺遂，寻人自还，诸事安泰稳定，守正获福。' },
+  { name: '留连', pos: '食指上', element: '北方壬癸水', rating: '中平 · 阻滞', poem: '留连事难成，求谋日未明；官事只宜缓，行人在路程。', desc: '卒未归，凡事拖延滞后。宜静不宜躁，失物在南方，急事须缓办。' },
+  { name: '速喜', pos: '中指上', element: '南方丙丁火', rating: '大吉 · 吉庆', poem: '速喜喜来临，求财向南行；失物申未午，逢人路上寻。', desc: '人便至，喜事临门。求财向南，谋事速决，吉星高照，刻不容缓。' },
+  { name: '赤口', pos: '无名指上', element: '西方庚辛金', rating: '凶险 · 防非', poem: '赤口主口舌，官事且紧防；失物速速寻，行人有惊慌。', desc: '官事凶，主口舌是非。防范暗箭小人，出行需慎，谨慎言行方免灾。' },
+  { name: '小吉', pos: '无名指下', element: '西南六合木', rating: '上吉 · 和合', poem: '小吉最吉昌，路上好商量；阴人来报喜，失物在坤方。', desc: '人来喜，和合共赢。贵人相助，交易求谋多遂心，诸事吉利。' },
+  { name: '空亡', pos: '中指下', element: '中央戊己土', rating: '避忌 · 虚耗', poem: '空亡事不祥，阴人多乖张；求财无利益，行人有灾殃。', desc: '事不遂，虚耗无功。行事需防空欢喜，守本分为要，切忌盲动投机。' }
+];
+
+let currentXlrGod = XLR_GODS[2];
+
+function initXiaoliuren() {
+  const rollBtn = document.getElementById('rollXlrBtn');
+  const submitBtn = document.getElementById('submitXlrBtn');
+  const cards = document.querySelectorAll('.xlr-god-card');
+
+  const selectGod = (god) => {
+    currentXlrGod = god;
+    cards.forEach((c) => {
+      if (c.getAttribute('data-god') === god.name) c.classList.add('active');
+      else c.classList.remove('active');
+    });
+    document.getElementById('xlrGodBadge').textContent = `${god.name} · ${god.rating}`;
+    document.getElementById('xlrGodElem').textContent = `五行：${god.element}`;
+    document.getElementById('xlrPoem').textContent = god.poem;
+    document.getElementById('xlrDesc').textContent = `【断语】：${god.desc}`;
+  };
+
+  cards.forEach((c) => {
+    c.addEventListener('click', () => {
+      const gName = c.getAttribute('data-god');
+      const found = XLR_GODS.find((g) => g.name === gName);
+      if (found) {
+        sound.playWood();
+        selectGod(found);
+      }
+    });
+  });
+
+  if (rollBtn) {
+    rollBtn.addEventListener('click', () => {
+      sound.playChime();
+      let steps = 12 + Math.floor(Math.random() * 6);
+      let idx = 0;
+      rollBtn.disabled = true;
+
+      const timer = setInterval(() => {
+        sound.playWood();
+        cards.forEach((c) => c.classList.remove('active'));
+        const cur = XLR_GODS[idx % 6];
+        cards[idx % 6].classList.add('active');
+        idx++;
+        steps--;
+        if (steps <= 0) {
+          clearInterval(timer);
+          rollBtn.disabled = false;
+          selectGod(cur);
+          sound.playBell();
+        }
+      }, 110);
+    });
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      const q = document.getElementById('xlrQuestion').value.trim() || '速断此事吉凶应期';
+      closeModal('modalXiaoliuren');
+      const prompt = `【小六壬掌中决求卜】\n所问事项：「${q}」\n掐指落宫：【${currentXlrGod.name}】（${currentXlrGod.rating}，${currentXlrGod.element}）\n课辞：${currentXlrGod.poem}\n断语：${currentXlrGod.desc}\n\n请玄机子依小六壬六神玄机，结合五行方位与所问之事，详断吉凶成败、应验时机与行事指引。`;
+      sendMessage(prompt);
+    });
+  }
+}
+
+// ---------------- 15. 互动法器 4：灵犀塔罗 3 牌圣三角阵 ----------------
 const TAROT_MAJOR_ARCANA = [
   { id: 0, name: '愚者 (The Fool)', upright: '纯真、新起点、直觉、冒险', reversed: '鲁莽、盲目、轻率、犹豫' },
   { id: 1, name: '魔术师 (The Magician)', upright: '创造力、掌控力、显化、行动', reversed: '幻灭、欺瞒、资源错配' },
@@ -1261,7 +1455,6 @@ function drawTarotSpread() {
   sound.playChime();
   document.getElementById('drawTarotBtn').disabled = true;
 
-  // 洗牌并抽 3 张不重复
   const shuffled = [...TAROT_MAJOR_ARCANA].sort(() => Math.random() - 0.5);
   tarotDrawnCards = [
     { ...shuffled[0], isReversed: Math.random() > 0.5 },
@@ -1295,7 +1488,7 @@ function drawTarotSpread() {
   });
 }
 
-// ---------------- 14. 互动法器 3：观象灵签（每日一签） ----------------
+// ---------------- 16. 互动法器 5：观象灵签（每日一签） ----------------
 const DIVINE_LOTS = [
   { id: 1, gua: '乾为天', rating: '大吉 · 上上签', poem: '天行健兮君子强，龙腾九霄日月光。\n万里青云任展翼，此日功名自远扬。', meaning: '元亨利贞，大势所趋，百事顺畅，利于开创进取。' },
   { id: 2, gua: '坤为地', rating: '大吉 · 上上签', poem: '地势坤兮厚德载，含弘光大万物栽。\n静水深流蓄厚势，顺天承运自安泰。', meaning: '柔顺包容，蓄力待发，贵在沉稳厚德，吉星高照。' },
@@ -1303,7 +1496,7 @@ const DIVINE_LOTS = [
   { id: 14, gua: '火天大有', rating: '大吉 · 上上签', poem: '日丽中天照大千，丰盈亨通福寿全。\n德被四方生财禄，自有利禄满门延。', meaning: '盛大丰盈，顺天依时，名利双收之象。' },
   { id: 18, gua: '天风姤', rating: '中吉 · 转机签', poem: '风从虎兮云从龙，变幻无穷造化中。\n不期而遇逢胜友，携手并进见奇功。', meaning: '机缘巧合，遇贵人相助，防微虑远方可全美。' },
   { id: 24, gua: '地雷复', rating: '大吉 · 迎春签', poem: '冬去春来一阳生，枯木逢甘渐自荣。\n否极泰来运当转，前途明朗任君行。', meaning: '生机重现，旧疾退散，开启崭新转折之象。' },
-  { id: 48, gua: '水风井', rating: '中平 · 修德签', poem: '源泉澄澈润无穷，勤勉汲汲见成功。\n修己安人成器度，自教名誉达天聪。', meaning: '需脚踏实地，养深积厚，切莫急功近利。' },
+  { id: 48, gua: '水风井', rating: '中平 · 修德签', poem: '源泉澄澈润无穷，勤勉汲汲见成功。\n修己安人成器度，自教名誉达天聪。', meaning: '需脚踏实地，养深积厚，切莫急功逆进。' },
   { id: 63, gua: '水火既济', rating: '中吉 · 守成签', poem: '风调雨顺事多成，初吉终乱须慎行。\n居安思危守其正，常保富贵永康宁。', meaning: '诸事小成，宜稳守中道，防范末尾懈怠。' }
 ];
 
@@ -1348,7 +1541,7 @@ function initDailyLot() {
   }
 }
 
-// ---------------- 15. 互动法器 4：四柱八字排盘计算器 ----------------
+// ---------------- 17. 互动法器 6：四柱八字排盘计算器 ----------------
 const HEAVENLY_STEMS = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
 const EARTHLY_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
 const STEM_ELEMENTS = { 甲: '木', 乙: '木', 丙: '火', 丁: '火', 戊: '土', 己: '土', 庚: '金', 辛: '金', 壬: '水', 癸: '水' };
@@ -1357,23 +1550,20 @@ const HIDDEN_STEMS = { 子: '癸', 丑: '己癸辛', 寅: '甲丙戊', 卯: '乙
 
 function calcBaziPillars(dateStr, timeStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const [hh, mm] = timeStr.split(':').map(Number);
+  const [hh] = timeStr.split(':').map(Number);
 
-  // 年柱 (以1984甲子年为基准)
   const yearOffset = y - 1984;
   const stemYearIdx = ((yearOffset % 10) + 10) % 10;
   const branchYearIdx = ((yearOffset % 12) + 12) % 12;
   const stemYear = HEAVENLY_STEMS[stemYearIdx];
   const branchYear = EARTHLY_BRANCHES[branchYearIdx];
 
-  // 月柱 (五虎遁年起月)
   const stemMonthBase = (stemYearIdx % 5) * 2 + 2;
   const stemMonthIdx = (stemMonthBase + (m - 1)) % 10;
   const branchMonthIdx = (m + 1) % 12;
   const stemMonth = HEAVENLY_STEMS[stemMonthIdx];
   const branchMonth = EARTHLY_BRANCHES[branchMonthIdx];
 
-  // 日柱 (以格里高利历基准推算)
   const baseDate = new Date(1900, 0, 31);
   const curDate = new Date(y, m - 1, d);
   const diffDays = Math.floor((curDate - baseDate) / (1000 * 60 * 60 * 24));
@@ -1382,14 +1572,12 @@ function calcBaziPillars(dateStr, timeStr) {
   const stemDay = HEAVENLY_STEMS[stemDayIdx];
   const branchDay = EARTHLY_BRANCHES[branchDayIdx];
 
-  // 时柱 (五鼠遁日起时)
   const branchHourIdx = Math.floor(((hh + 1) % 24) / 2);
   const stemHourBase = (stemDayIdx % 5) * 2;
   const stemHourIdx = (stemHourBase + branchHourIdx) % 10;
   const stemHour = HEAVENLY_STEMS[stemHourIdx];
   const branchHour = EARTHLY_BRANCHES[branchHourIdx];
 
-  // 十神计算
   const getDeity = (dayMaster, stem) => {
     if (dayMaster === stem) return '比肩';
     const dayElem = STEM_ELEMENTS[dayMaster];
@@ -1481,7 +1669,107 @@ function initBaziCalculator() {
   }
 }
 
-// ---------------- 16. 全局事件绑定与启动 ----------------
+// ---------------- 18. 互动法器 7：功德电子木鱼 (新增) ----------------
+function initMuyu() {
+  const muyuWrap = document.getElementById('muyuIconWrap');
+  const countEl = document.getElementById('muyuCount');
+  const wishBtn = document.getElementById('muyuSendWishBtn');
+  const arena = document.getElementById('muyuArena');
+
+  let count = parseInt(localStorage.getItem('diviner_muyu_count') || '0', 10);
+  if (countEl) countEl.textContent = count;
+
+  const floatTexts = ['功德 +1', '静心 +1', '杂念 -1', '福慧双增', '吉星高照', '平安顺遂', '心想事成'];
+
+  if (muyuWrap) {
+    muyuWrap.addEventListener('click', (e) => {
+      sound.playWood();
+      count++;
+      localStorage.setItem('diviner_muyu_count', String(count));
+      if (countEl) countEl.textContent = count;
+
+      const floatSpan = document.createElement('span');
+      floatSpan.className = 'muyu-float-text';
+      floatSpan.textContent = floatTexts[Math.floor(Math.random() * floatTexts.length)];
+      floatSpan.style.left = (arena.offsetWidth / 2 - 40 + (Math.random() * 40 - 20)) + 'px';
+      floatSpan.style.top = '40px';
+      arena.appendChild(floatSpan);
+
+      setTimeout(() => floatSpan.remove(), 1200);
+    });
+  }
+
+  if (wishBtn) {
+    wishBtn.addEventListener('click', () => {
+      const wish = document.getElementById('muyuWish').value.trim() || '愿心怀清净，万事皆安';
+      closeModal('modalMuyu');
+      const prompt = `【功德祈福与发愿回向】\n缘主今日敲击木鱼已积【${count}】善念功德。\n发愿与祈求：「${wish}」\n\n请玄机子为我开示心法指引，赐予一段回向定心箴言。`;
+      sendMessage(prompt);
+    });
+  }
+}
+
+// ---------------- 19. 互动法器 8：今日黄历择吉万年历 (新增) ----------------
+function initAlmanac() {
+  const askBtn = document.getElementById('askTodayFortuneBtn');
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+  const dateBig = document.getElementById('almDateBig');
+  const solarText = document.getElementById('almSolarText');
+
+  if (dateBig) dateBig.textContent = String(d).padStart(2, '0');
+  if (solarText) solarText.textContent = `${y}年${String(m).padStart(2, '0')}月${String(d).padStart(2, '0')}日 ${days[now.getDay()]}`;
+
+  if (askBtn) {
+    askBtn.addEventListener('click', () => {
+      closeModal('modalAlmanac');
+      const prompt = `【今日黄历与行事择吉】\n今日公历：${y}年${m}月${d}日\n请玄机子依今日值日干支神煞，为我详批今日出行、商谈、求财与处事的吉凶时辰、避忌属相与吉利方位。`;
+      sendMessage(prompt);
+    });
+  }
+}
+
+// ---------------- 20. 互动法器 9：周公解梦典籍向导 (新增) ----------------
+function initDreamGuide() {
+  const tags = document.querySelectorAll('.d-tag');
+  const submitBtn = document.getElementById('submitDreamBtn');
+  const detailInput = document.getElementById('dreamDetail');
+  const selectedKeywords = new Set();
+
+  tags.forEach((tag) => {
+    tag.addEventListener('click', () => {
+      const kw = tag.getAttribute('data-kw');
+      if (selectedKeywords.has(kw)) {
+        selectedKeywords.delete(kw);
+        tag.classList.remove('active');
+      } else {
+        selectedKeywords.add(kw);
+        tag.classList.add('active');
+      }
+    });
+  });
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      const kwList = Array.from(selectedKeywords);
+      const detail = detailInput ? detailInput.value.trim() : '';
+      if (!kwList.length && !detail) {
+        alert('请至少勾选一个梦境意象或填写梦境情境');
+        return;
+      }
+      closeModal('modalDream');
+      const kwDesc = kwList.length ? `【梦中核心意象】：${kwList.join('、')}\n` : '';
+      const prompt = `【周公解梦与原型心理推演】\n${kwDesc}【梦境详细情境】：${detail || '见上述意象，醒后感触深刻'}\n\n请玄机子融合古典《周公解梦》吉凶断法与荣格深层心理学原型隐喻，为我深度剖析潜意识提示、近期吉凶转折与心性安抚之道。`;
+      sendMessage(prompt);
+    });
+  }
+}
+
+// ---------------- 21. 全局事件绑定与启动 ----------------
 document.addEventListener('DOMContentLoaded', async () => {
   refreshIcons();
   new StarField('starCanvas');
@@ -1489,7 +1777,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await fetchUserLocation();
 
-  // 顶栏按钮
   menuBtn.addEventListener('click', openSidebar);
   if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
   if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
@@ -1512,15 +1799,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 法器入口
   if (quickArtifactBtn) quickArtifactBtn.addEventListener('click', openSidebar);
   if (dockArtifactBtn) dockArtifactBtn.addEventListener('click', openSidebar);
-  document.getElementById('openIchingBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalIching'); });
-  document.getElementById('openTarotBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalTarot'); });
-  document.getElementById('openLotBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalLot'); });
-  document.getElementById('openBaziBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalBazi'); });
 
-  // 赞赏
+  document.getElementById('openIchingBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalIching'); });
+  document.getElementById('openMeihuaBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalMeihua'); });
+  document.getElementById('openTarotBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalTarot'); });
+  document.getElementById('openXiaoliurenBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalXiaoliuren'); });
+  document.getElementById('openBaziBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalBazi'); });
+  document.getElementById('openLotBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalLot'); });
+  document.getElementById('openAlmanacBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalAlmanac'); });
+  document.getElementById('openMuyuBtn')?.addEventListener('click', () => { closeSidebar(); openModal('modalMuyu'); });
+
   const donationBtn = document.getElementById('donationBtn');
   const donationClose = document.getElementById('donationClose');
   const donationLater = document.getElementById('donationLater');
@@ -1533,7 +1823,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (donationNever) donationNever.addEventListener('click', () => { localStorage.setItem('diviner_donation_never', '1'); closeModal('donationModal'); });
   if (donationOk) donationOk.addEventListener('click', () => { localStorage.setItem('diviner_donation_last', String(Date.now())); closeModal('donationModal'); });
 
-  // 海报下载与复制
   document.getElementById('downloadPosterBtn')?.addEventListener('click', () => {
     const canvas = document.getElementById('posterCanvas');
     const a = document.createElement('a');
@@ -1545,7 +1834,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     alert('已生成海报，点击“保存高清海报”即可下载保存到手机相册或电脑。');
   });
 
-  // 搜索近问
   const searchInput = document.getElementById('historySearchInput');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
@@ -1567,7 +1855,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 快捷标签填词
   document.querySelectorAll('.tag-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
       const fill = chip.getAttribute('data-fill');
@@ -1579,7 +1866,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 藏象卡片点击
   document.querySelectorAll('.nav-card:not(.interactive-card)').forEach((btn) => {
     btn.addEventListener('click', () => {
       const hint = btn.getAttribute('data-hint') || '';
@@ -1590,7 +1876,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 输入与图片上传
   userInput.addEventListener('input', handleInputChange);
   userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1616,7 +1901,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 拖拽上传
   const composer = document.querySelector('.composer-bar');
   if (composer) {
     ['dragenter', 'dragover'].forEach((ev) =>
@@ -1637,7 +1921,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 移动端手势滑动
   let sx = 0, sy = 0, ex = 0, swiping = false;
   document.addEventListener('touchstart', (e) => {
     sx = e.touches[0].clientX;
@@ -1660,15 +1943,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     ex = 0;
   }, { passive: true });
 
-  // 初始化所有法器
   initIching();
+  initMeihua();
+  initXiaoliuren();
   initTarot();
   initDailyLot();
   initBaziCalculator();
+  initMuyu();
+  initAlmanac();
+  initDreamGuide();
 
-  // 加载存储
   loadHistory();
   loadSavedChats();
   refreshIcons();
 });
-

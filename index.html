@@ -86,11 +86,32 @@
               <small>乾隆通宝掷卦</small>
             </div>
           </button>
+          <button class="nav-card interactive-card" id="openMeihuaBtn">
+            <i data-lucide="flower-2"></i>
+            <div>
+              <strong>梅花易数</strong>
+              <small>时辰报数起卦</small>
+            </div>
+          </button>
           <button class="nav-card interactive-card" id="openTarotBtn">
             <i data-lucide="layers"></i>
             <div>
               <strong>灵犀塔罗</strong>
               <small>三牌圣三角阵</small>
+            </div>
+          </button>
+          <button class="nav-card interactive-card" id="openXiaoliurenBtn">
+            <i data-lucide="hand-metal"></i>
+            <div>
+              <strong>小六壬</strong>
+              <small>掌中诀掐指速断</small>
+            </div>
+          </button>
+          <button class="nav-card interactive-card" id="openBaziBtn">
+            <i data-lucide="calendar-range"></i>
+            <div>
+              <strong>八字排盘</strong>
+              <small>真太阳时向导</small>
             </div>
           </button>
           <button class="nav-card interactive-card" id="openLotBtn">
@@ -100,11 +121,18 @@
               <small>六十四卦灵签</small>
             </div>
           </button>
-          <button class="nav-card interactive-card" id="openBaziBtn">
-            <i data-lucide="calendar-range"></i>
+          <button class="nav-card interactive-card" id="openAlmanacBtn">
+            <i data-lucide="calendar-check"></i>
             <div>
-              <strong>八字排盘</strong>
-              <small>真太阳时向导</small>
+              <strong>今日黄历</strong>
+              <small>择吉宜忌神煞</small>
+            </div>
+          </button>
+          <button class="nav-card interactive-card" id="openMuyuBtn">
+            <i data-lucide="bell-ring"></i>
+            <div>
+              <strong>功德木鱼</strong>
+              <small>静心祈福回向</small>
             </div>
           </button>
         </div>
@@ -120,7 +148,7 @@
           <button class="nav-card" data-hint="紫微斗数排盘：需精确到分钟的出生时间、性别、出生地。请说明想深入探查的宫位（如官禄、命宫、夫妻、财帛）。示例：1994年5月20日 14:30，女，上海，详看官禄与夫妻。">
             <i data-lucide="sparkles"></i><span>紫微斗数</span>
           </button>
-          <button class="nav-card" data-hint="梅花易数：先静心定一问，再报两组数（1-100）或直接以当下时辰起卦。示例：问下半年换工作吉凶，报数 28、76。">
+          <button class="nav-card" onclick="openModal('modalMeihua')">
             <i data-lucide="flower-2"></i><span>梅花易数</span>
           </button>
           <button class="nav-card" data-hint="奇门遁甲择吉：说明事项、期望时间窗、所在城市与方向。用于开业、远行、商谈择吉择方。示例：广州开业，期望4月上旬，宜选何日何方。">
@@ -133,7 +161,7 @@
       <section class="nav-group">
         <h3><i data-lucide="scan-face"></i> 观形堪舆</h3>
         <div class="nav-grid">
-          <button class="nav-card" data-hint="面相观形：可直接点击下方相机上传正面光线充足的照片（智能走视觉模型），或文字描述脸型、三停、眉眼、鼻相、口唇特征。">
+          <button class="nav-card" data-hint="面相观形：可直接点击下方相机上传正面光线充足的照片（智能走多模态视觉），或文字描述脸型、三停、眉眼、鼻相、口唇特征。">
             <i data-lucide="user-round"></i><span>面相</span>
           </button>
           <button class="nav-card" data-hint="手相推演：可直接上传掌心清晰照片（生命线、智慧线、感情线、事业线清晰可见），或文字描述掌形与主要纹路走势。">
@@ -153,7 +181,7 @@
           <button class="nav-card" data-hint="西洋占星全盘：需公历年月日时分、精确出生城市。说明想解析的行星相位、宫位或行运。">
             <i data-lucide="star"></i><span>星盘占星</span>
           </button>
-          <button class="nav-card" data-hint="周公解梦与心理隐喻：请详细描述梦境场景、主要人物、情节情绪与醒来感受，并附近期生活状态。">
+          <button class="nav-card" onclick="openModal('modalDream')">
             <i data-lucide="moon"></i><span>解梦释意</span>
           </button>
           <button class="nav-card" data-hint="流年运势推演：提供生辰，说明想重点了解的年度与议题。如：1990年5月15日午时男，看2026流年事业与财帛动向。">
@@ -162,7 +190,7 @@
           <button class="nav-card" data-hint="八字合婚与合盘：提供双方出生年月日时（不确定可注明），说明关系阶段与相处困惑。">
             <i data-lucide="heart-handshake"></i><span>八字合婚</span>
           </button>
-          <button class="nav-card" data-hint="择吉日吉时：说明事项（嫁娶/动土/开业/搬家）、时间范围、相关人属相与地点。">
+          <button class="nav-card" onclick="openModal('modalAlmanac')">
             <i data-lucide="calendar-check-2"></i><span>择吉择日</span>
           </button>
           <button class="nav-card" data-hint="八字起名与改名：提供姓氏、性别、生辰八字、五行喜忌偏好与长辈避讳字。">
@@ -206,15 +234,19 @@
         <div class="intro-features">
           <ul class="intro-points">
             <li><i data-lucide="ruler"></i><span><strong>先算后断</strong> — 结合真太阳时经度校正，十神五行分明</span></li>
-            <li><i data-lucide="camera"></i><span><strong>可传图片</strong> — 面相/手相/户型图自动走视觉模型</span></li>
+            <li><i data-lucide="camera"></i><span><strong>可传图片</strong> — 面相/手相/户型图自动走多模态视觉模型</span></li>
             <li><i data-lucide="shield-check"></i><span><strong>有界有度</strong> — 拒绝绝对化预测，附可验证时间点与行动建议</span></li>
           </ul>
           <!-- 快捷法器药引 -->
           <div class="quick-pills">
             <button class="pill-btn" onclick="openModal('modalLot')"><i data-lucide="scroll"></i> 每日灵签</button>
-            <button class="pill-btn" onclick="openModal('modalTarot')"><i data-lucide="layers"></i> 塔罗抽牌</button>
             <button class="pill-btn" onclick="openModal('modalIching')"><i data-lucide="coins"></i> 六爻掷卦</button>
+            <button class="pill-btn" onclick="openModal('modalMeihua')"><i data-lucide="flower-2"></i> 梅花易数</button>
+            <button class="pill-btn" onclick="openModal('modalTarot')"><i data-lucide="layers"></i> 灵犀塔罗</button>
+            <button class="pill-btn" onclick="openModal('modalXiaoliuren')"><i data-lucide="hand-metal"></i> 小六壬速断</button>
             <button class="pill-btn" onclick="openModal('modalBazi')"><i data-lucide="calendar-range"></i> 八字排盘</button>
+            <button class="pill-btn" onclick="openModal('modalAlmanac')"><i data-lucide="calendar-check"></i> 今日黄历</button>
+            <button class="pill-btn" onclick="openModal('modalMuyu')"><i data-lucide="bell-ring"></i> 功德木鱼</button>
           </div>
         </div>
       </div>
@@ -227,12 +259,12 @@
             <span class="msg-meta">初见有缘</span>
           </div>
           <div class="msg-body">
-            <p>有缘人，幸会。贫道玄机子，由<strong>传康KK</strong>以典籍秘法所炼之问对法器。通晓子平八字、紫微斗数、梅花六爻诸法，亦参西洋星曜与灵犀塔罗。</p>
+            <p>有缘人，幸会。贫道玄机子，由<strong>传康KK</strong>以典籍秘法所炼之问对法器。通晓子平八字、紫微斗数、梅花六爻、小六壬诸法，亦参西洋星曜与灵犀塔罗。</p>
             <p>想算得准，请与我如实相告：</p>
             <ul>
               <li><strong>八字/紫微</strong> — 年月日时与出生省市、性别；</li>
               <li><strong>面相/手相/风水</strong> — 可直接在下方上传图片，光线足、纹路清为佳；</li>
-              <li><strong>择吉/合婚/占事</strong> — 说明起因、当事人与期望时间窗。</li>
+              <li><strong>起卦/占事/择吉</strong> — 可点击上方法器阁直接掷币、抽牌或摇签。</li>
             </ul>
             <p>贫道不言“必定”，只言“象、理、势”。每答皆附推导与可验证之处，末有可行一二事。</p>
             <div class="callout">
@@ -256,7 +288,7 @@
           </div>
 
           <div class="input-row">
-            <button class="icon-btn tool-trigger-btn" id="dockArtifactBtn" aria-label="打开法器阁" title="起卦法器">
+            <button class="icon-btn tool-trigger-btn" id="dockArtifactBtn" aria-label="打开法器阁" title="起卦法器阁">
               <i data-lucide="sparkles"></i>
             </button>
             <button class="icon-btn" id="uploadBtn" aria-label="上传图片" title="上传图片（面相/手相/户型）">
@@ -289,7 +321,7 @@
     </div>
   </main>
 
-  <!-- ================= 互动法器模态框 ================= -->
+  <!-- ================= 互动法器模态框集合 ================= -->
 
   <!-- 1. 周易六爻掷卦模态框 -->
   <div class="modal" id="modalIching" aria-hidden="true">
@@ -340,7 +372,141 @@
     </div>
   </div>
 
-  <!-- 2. 灵犀塔罗抽牌模态框 -->
+  <!-- 2. 梅花易数 · 时间与报数起卦模态框 (新增) -->
+  <div class="modal" id="modalMeihua" aria-hidden="true">
+    <div class="modal-card modal-lg">
+      <div class="modal-head">
+        <h3><i data-lucide="flower-2"></i> 梅花易数 · 乾坤生克起卦</h3>
+        <button class="icon-btn" onclick="closeModal('modalMeihua')" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body meihua-body">
+        <div class="meihua-tabs">
+          <button class="meihua-tab active" id="tabMeihuaTime"><i data-lucide="clock"></i> 时辰起卦</button>
+          <button class="meihua-tab" id="tabMeihuaNum"><i data-lucide="binary"></i> 报数起卦</button>
+        </div>
+
+        <div class="form-group full-width" style="margin-top:12px">
+          <label for="meihuaQuestion">所问事项（定一事而占）：</label>
+          <input type="text" id="meihuaQuestion" class="input-styled" placeholder="例如：问本周项目签约能否顺利达成" />
+        </div>
+
+        <!-- 报数输入区 -->
+        <div id="meihuaNumRow" class="meihua-num-row" style="display:none">
+          <div class="form-group">
+            <label>上卦之数 (1-999)：</label>
+            <input type="number" id="meihuaNum1" class="input-styled" placeholder="如 384" value="384" />
+          </div>
+          <div class="form-group">
+            <label>下卦之数 (1-999)：</label>
+            <input type="number" id="meihuaNum2" class="input-styled" placeholder="如 592" value="592" />
+          </div>
+          <div class="form-group">
+            <label>动爻附数（可选）：</label>
+            <input type="number" id="meihuaNum3" class="input-styled" placeholder="如 7" />
+          </div>
+        </div>
+
+        <!-- 排盘呈现 -->
+        <div class="meihua-result-grid" id="meihuaResultGrid">
+          <div class="meihua-card">
+            <div class="m-badge">本卦 (事之初)</div>
+            <div class="m-gua-name" id="mhBenName">泽天夬</div>
+            <div class="m-gua-sym" id="mhBenSym">上兑下乾</div>
+            <div class="m-tiyong" id="mhTiYong">体：乾金 ｜ 用：兑金</div>
+          </div>
+          <div class="meihua-card">
+            <div class="m-badge">互卦 (事之中)</div>
+            <div class="m-gua-name" id="mhHuName">乾为天</div>
+            <div class="m-gua-sym" id="mhHuSym">重乾之象</div>
+            <div class="m-tiyong" id="mhHuTiYong">互体互用皆金</div>
+          </div>
+          <div class="meihua-card">
+            <div class="m-badge">变卦 (事之终)</div>
+            <div class="m-gua-name" id="mhZhiName">大壮卦</div>
+            <div class="m-gua-sym" id="mhZhiSym">动在二爻</div>
+            <div class="m-tiyong" id="mhZhiTiYong">体生用泄气</div>
+          </div>
+        </div>
+
+        <div class="meihua-judgment-box" id="mhJudgmentBox">
+          <strong>【体用生克简评】：</strong>
+          <span id="mhJudgmentText">用体比和，诸事顺遂，贵人相合之象。</span>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-primary" id="calcMeihuaBtn"><i data-lucide="sparkles"></i> 立即起卦排演</button>
+          <button class="btn-primary-alt" id="submitMeihuaBtn"><i data-lucide="pen-tool"></i> 请玄机子依梅花法详断</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 小六壬掌中诀速算模态框 (新增) -->
+  <div class="modal" id="modalXiaoliuren" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3><i data-lucide="hand-metal"></i> 小六壬 · 掌中决掐指速断</h3>
+        <button class="icon-btn" onclick="closeModal('modalXiaoliuren')" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body xiaoliuren-body">
+        <p class="muted">大安留连速喜，赤口小吉空亡。掐指一算，立见吉凶应期。</p>
+        <div class="form-group full-width">
+          <input type="text" id="xlrQuestion" class="input-styled" placeholder="所问事项：如出差出行、寻物、口信、速见吉凶" />
+        </div>
+
+        <!-- 掌诀六神轮盘 -->
+        <div class="xlr-palm-board">
+          <div class="xlr-god-card" data-god="大安">
+            <div class="xlr-pos">食指下</div>
+            <div class="xlr-name">大安</div>
+            <div class="xlr-status ok">身不动·大吉</div>
+          </div>
+          <div class="xlr-god-card" data-god="留连">
+            <div class="xlr-pos">食指上</div>
+            <div class="xlr-name">留连</div>
+            <div class="xlr-status warn">卒未归·阻滞</div>
+          </div>
+          <div class="xlr-god-card" data-god="速喜">
+            <div class="xlr-pos">中指上</div>
+            <div class="xlr-name">速喜</div>
+            <div class="xlr-status ok">人便至·吉庆</div>
+          </div>
+          <div class="xlr-god-card" data-god="赤口">
+            <div class="xlr-pos">无名指上</div>
+            <div class="xlr-name">赤口</div>
+            <div class="xlr-status bad">官事凶·是非</div>
+          </div>
+          <div class="xlr-god-card" data-god="小吉">
+            <div class="xlr-pos">无名指下</div>
+            <div class="xlr-name">小吉</div>
+            <div class="xlr-status ok">人来喜·和合</div>
+          </div>
+          <div class="xlr-god-card" data-god="空亡">
+            <div class="xlr-pos">中指下</div>
+            <div class="xlr-name">空亡</div>
+            <div class="xlr-status bad">事不遂·虚耗</div>
+          </div>
+        </div>
+
+        <!-- 结果详注 -->
+        <div class="xlr-result-panel" id="xlrResultPanel">
+          <div class="xlr-res-head">
+            <span class="xlr-badge" id="xlrGodBadge">速喜 · 大吉</span>
+            <span class="xlr-element" id="xlrGodElem">五行：南方丙丁火</span>
+          </div>
+          <div class="xlr-poem" id="xlrPoem">速喜喜来临，求财向南行；失物申未午，逢人路上寻。</div>
+          <div class="xlr-desc" id="xlrDesc">【断语】：时机已至，喜报将近。行事利在正南、东南，凡事速战速决为上策。</div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-primary" id="rollXlrBtn"><i data-lucide="hand"></i> 掌中掐指起课</button>
+          <button class="btn-primary-alt" id="submitXlrBtn"><i data-lucide="sparkles"></i> 请玄机子详断此课</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 灵犀塔罗抽牌模态框 -->
   <div class="modal" id="modalTarot" aria-hidden="true">
     <div class="modal-card modal-lg">
       <div class="modal-head">
@@ -395,7 +561,7 @@
     </div>
   </div>
 
-  <!-- 3. 观象摇签模态框 -->
+  <!-- 5. 观象摇签模态框 -->
   <div class="modal" id="modalLot" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-head">
@@ -432,7 +598,7 @@
     </div>
   </div>
 
-  <!-- 4. 四柱八字排盘向导模态框 -->
+  <!-- 6. 四柱八字排盘向导模态框 -->
   <div class="modal" id="modalBazi" aria-hidden="true">
     <div class="modal-card modal-lg">
       <div class="modal-head">
@@ -522,7 +688,159 @@
     </div>
   </div>
 
-  <!-- 5. 运势分享海报模态框 -->
+  <!-- 7. 今日黄历 · 择吉万年历模态框 (新增) -->
+  <div class="modal" id="modalAlmanac" aria-hidden="true">
+    <div class="modal-card modal-lg">
+      <div class="modal-head">
+        <h3><i data-lucide="calendar-check"></i> 今日黄历 · 择吉万年历</h3>
+        <button class="icon-btn" onclick="closeModal('modalAlmanac')" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body almanac-body">
+        <div class="almanac-header-card">
+          <div class="almanac-date-big" id="almDateBig">26</div>
+          <div class="almanac-date-meta">
+            <h4 id="almSolarText">2026年08月26日 星期三</h4>
+            <p id="almLunarText">农历丙午年 七月十四 · 处暑中候</p>
+            <div class="alm-ganzhi-badges">
+              <span class="alm-badge" id="almGanzhiYear">岁次 丙午</span>
+              <span class="alm-badge" id="almGanzhiMonth">月建 丙申</span>
+              <span class="alm-badge" id="almGanzhiDay">日辰 壬申</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="almanac-yiji-grid">
+          <div class="yiji-box yi-box">
+            <div class="yiji-title"><i data-lucide="check-circle-2"></i> 宜 (宜行之事)</div>
+            <div class="yiji-tags" id="almYiTags">
+              <span>祈福</span><span>开市</span><span>纳财</span><span>交易</span><span>出火</span><span>嫁娶</span><span>动土</span>
+            </div>
+          </div>
+          <div class="yiji-box ji-box">
+            <div class="yiji-title"><i data-lucide="x-circle"></i> 忌 (诸事避忌)</div>
+            <div class="yiji-tags" id="almJiTags">
+              <span>词讼</span><span>安葬</span><span>行丧</span><span>伐木</span><span>造桥</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="almanac-meta-grid">
+          <div class="alm-meta-item"><strong>吉神方位：</strong><span id="almJiShen">喜神正南 · 财神正南 · 福神东南</span></div>
+          <div class="alm-meta-item"><strong>冲煞岁破：</strong><span id="almChongSha">冲虎(丙寅)煞南 · 岁破在子</span></div>
+          <div class="alm-meta-item"><strong>彭祖百忌：</strong><span id="almPengZu">壬不泱水更难提防 申不安床鬼祟入房</span></div>
+          <div class="alm-meta-item"><strong>星宿执位：</strong><span id="almXingXiu">危月燕 · 开日 · 金匮黄道</span></div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-primary" id="askTodayFortuneBtn"><i data-lucide="sparkles"></i> 请玄机子批今日个人行事指南</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. 功德电子木鱼 · 祈福转运阁 (新增) -->
+  <div class="modal" id="modalMuyu" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3><i data-lucide="bell-ring"></i> 功德木鱼 · 祈福转运</h3>
+        <button class="icon-btn" onclick="closeModal('modalMuyu')" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body muyu-body">
+        <p class="muted">敲击木鱼，静心凝神。功德+1，福慧双增，百虑皆消。</p>
+
+        <div class="muyu-arena" id="muyuArena">
+          <div class="muyu-icon-wrap" id="muyuIconWrap">
+            <svg viewBox="0 0 100 100" class="muyu-svg" id="muyuSvg">
+              <path d="M50 12 C28 12 14 30 14 54 C14 74 30 88 50 88 C70 88 86 74 86 54 C86 30 72 12 50 12 Z" fill="#8c5828" stroke="#d4af37" stroke-width="3" />
+              <path d="M30 42 C40 34 60 34 70 42 C74 48 74 60 70 66 C60 74 40 74 30 66 C26 60 26 48 30 42 Z" fill="#543010" stroke="#d4af37" stroke-width="2" />
+              <circle cx="50" cy="54" r="8" fill="#d4af37" />
+              <circle cx="36" cy="54" r="4" fill="#d4af37" />
+              <circle cx="64" cy="54" r="4" fill="#d4af37" />
+            </svg>
+          </div>
+          <div class="muyu-count-box">
+            今日敲击功德：<span class="muyu-num" id="muyuCount">0</span>
+          </div>
+        </div>
+
+        <div class="form-group full-width" style="margin-top:14px">
+          <label for="muyuWish">发愿与祈福回向（选填）：</label>
+          <input type="text" id="muyuWish" class="input-styled" placeholder="例如：愿家人安康，工作顺遂，心无挂碍" />
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-primary" id="muyuSendWishBtn"><i data-lucide="sparkles"></i> 提交祈愿请玄机子开示</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 周公解梦意象典籍向导 (新增) -->
+  <div class="modal" id="modalDream" aria-hidden="true">
+    <div class="modal-card modal-lg">
+      <div class="modal-head">
+        <h3><i data-lucide="moon"></i> 周公解梦 · 梦境意象典籍速查</h3>
+        <button class="icon-btn" onclick="closeModal('modalDream')" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body dream-body">
+        <p class="muted">融合《周公解梦》古典原典与荣格深层心理学原型，点击选择梦中所见核心意象：</p>
+
+        <div class="dream-categories">
+          <div class="dream-cat">
+            <span class="d-cat-title"><i data-lucide="sun"></i> 天文天象：</span>
+            <div class="dream-tags">
+              <button class="d-tag" data-kw="日月同辉">日月同辉</button>
+              <button class="d-tag" data-kw="星辰坠落">星辰坠落</button>
+              <button class="d-tag" data-kw="雷电交加">雷电交加</button>
+              <button class="d-tag" data-kw="大雨磅礴">大雨磅礴</button>
+              <button class="d-tag" data-kw="彩虹当空">彩虹当空</button>
+            </div>
+          </div>
+          <div class="dream-cat">
+            <span class="d-cat-title"><i data-lucide="feather"></i> 飞禽走兽：</span>
+            <div class="dream-tags">
+              <button class="d-tag" data-kw="真龙腾空">真龙腾空</button>
+              <button class="d-tag" data-kw="灵蛇入怀">灵蛇入怀</button>
+              <button class="d-tag" data-kw="猛虎下山">猛虎下山</button>
+              <button class="d-tag" data-kw="锦鲤戏水">锦鲤戏水</button>
+              <button class="d-tag" data-kw="骏马奔腾">骏马奔腾</button>
+            </div>
+          </div>
+          <div class="dream-cat">
+            <span class="d-cat-title"><i data-lucide="mountain"></i> 山川地理：</span>
+            <div class="dream-tags">
+              <button class="d-tag" data-kw="登高绝顶">登高绝顶</button>
+              <button class="d-tag" data-kw="江河大水">江河大水</button>
+              <button class="d-tag" data-kw="森林密道">森林密道</button>
+              <button class="d-tag" data-kw="房屋倒塌">房屋倒塌</button>
+              <button class="d-tag" data-kw="故地重游">故地重游</button>
+            </div>
+          </div>
+          <div class="dream-cat">
+            <span class="d-cat-title"><i data-lucide="user"></i> 身体情志：</span>
+            <div class="dream-tags">
+              <button class="d-tag" data-kw="牙齿脱落">牙齿脱落</button>
+              <button class="d-tag" data-kw="凌空飞翔">凌空飞翔</button>
+              <button class="d-tag" data-kw="深渊坠落">深渊坠落</button>
+              <button class="d-tag" data-kw="重逢故人">重逢故人</button>
+              <button class="d-tag" data-kw="大喜或大悲">大喜或大悲</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group full-width" style="margin-top:14px">
+          <label for="dreamDetail">梦境详细情境描述（愈清晰推导愈精确）：</label>
+          <textarea id="dreamDetail" class="input-styled" rows="3" placeholder="例如：梦见清晨在一片大雾弥漫的森林中，突然遇到一条金色大蛇盘旋于古树上，并没有攻击我，醒来后心情平静..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-primary-alt" id="submitDreamBtn"><i data-lucide="sparkles"></i> 提交玄机子深度解梦</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. 运势分享海报模态框 -->
   <div class="modal" id="modalPoster" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-head">
@@ -541,7 +859,7 @@
     </div>
   </div>
 
-  <!-- 6. 历史近问归档模态框 -->
+  <!-- 11. 历史近问归档模态框 -->
   <div class="modal" id="modalHistory" aria-hidden="true">
     <div class="modal-card modal-lg">
       <div class="modal-head">
@@ -560,7 +878,7 @@
     </div>
   </div>
 
-  <!-- 7. 赞赏支持模态框 -->
+  <!-- 12. 赞赏支持模态框 -->
   <div class="modal" id="donationModal" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-head">
@@ -598,4 +916,5 @@
   <script src="script.js?v=20260826"></script>
 </body>
 </html>
+
 
