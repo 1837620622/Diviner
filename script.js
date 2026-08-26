@@ -161,7 +161,7 @@ function formatMessageContent(raw) {
   s = s.replace(/【([^】\n]+)】/g, '<strong style="color:var(--vermilion);font-weight:700">【$1】</strong>');
   
   // 箴言古训
-  s = s.replace(/箴言[：:]([^\n]+)/g, '<div class="fortune-box"><i data-lucide="sparkles"></i> 箴言：$1</div>');
+  s = s.replace(/箴言[：:]([^\n]+)/g, '<div class="fortune-box"><i data-lucide="sparkles"></i><span>箴言：$1</span></div>');
   
   // 行内高亮
   s = s.replace(/「([^」]+)」/g, '<mark>$1</mark>');
