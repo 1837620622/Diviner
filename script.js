@@ -361,6 +361,7 @@ function formatContent(raw) {
     }
 
     let inline = b;
+    inline = inline.replace(/`([^`]+)`/g, '<code>$1</code>');
     inline = inline.replace(/「([^」]+)」/g, '<mark>$1</mark>');
     inline = inline.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     if (/箴言/.test(inline)) {
@@ -398,11 +399,11 @@ function injectWuxingViz(html, raw) {
   const present = order.filter((k) => typeof values[k] === 'number');
   if (present.length < 3) return html;
 
-  const max = Math.max(...Object.values(values));
+  const max = Math.max(...Object.values(values), 1);
   const bars = present
     .map((k) => {
       const v = values[k];
-      const pct = max ? Math.round((v / max) * 100) : 0;
+      const pct = max ? Math.min(100, Math.round((v / max) * 100)) : 0;
       const color = { 金: '#d4af37', 木: '#10b981', 水: '#00c6ff', 火: '#c73e1d', 土: '#a78b71' }[k];
       return `
       <div style="display:flex;align-items:center;gap:10px;font-size:12px;margin:4px 0">
@@ -431,7 +432,10 @@ function injectWuxingViz(html, raw) {
 
 function scrollToBottom() {
   setTimeout(() => {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
+      behavior: 'smooth'
+    });
   }, 60);
 }
 

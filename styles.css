@@ -915,26 +915,33 @@ i[data-lucide] {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(4, 6, 20, 0.68);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(4, 6, 20, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: none;
-  place-items: center;
-  z-index: 70;
-  padding: 16px;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: var(--z-modal, 110);
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
-.modal.show { display: grid; }
+.modal.show { display: flex; }
 
 .modal-card {
+  margin: auto 0;
   width: 100%;
-  max-width: 460px;
+  max-width: 480px;
   background: var(--surface);
-  border: 1px solid rgba(142,45,226,.2);
+  border: 1px solid rgba(142,45,226,.25);
   border-radius: 20px;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  animation: modalEnter .3s cubic-bezier(.22,1,.36,1) forwards;
+  animation: modalEnter .25s cubic-bezier(.22,1,.36,1) forwards;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 40px);
 }
 .modal-card.modal-lg { max-width: 620px; }
 
@@ -950,6 +957,7 @@ i[data-lucide] {
   padding: 14px 18px;
   border-bottom: 1px solid rgba(142,45,226,.12);
   background: linear-gradient(180deg, #fff, var(--surface-2));
+  flex-shrink: 0;
 }
 .modal-head h3 {
   display: flex;
@@ -962,8 +970,10 @@ i[data-lucide] {
 
 .modal-body {
   padding: 18px;
-  max-height: 78vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
 }
 .modal-actions {
   display: flex;
@@ -1361,12 +1371,14 @@ i[data-lucide] {
   background: #fff;
   border: 1px solid var(--line-glass);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .bazi-pillars-table {
   display: grid;
   grid-template-columns: 1.2fr repeat(4, 1fr);
   text-align: center;
+  min-width: 360px;
 }
 .bazi-col {
   display: flex;
@@ -1813,14 +1825,31 @@ i[data-lucide] {
   .bazi-form-grid { grid-template-columns: 1fr; }
   .form-group.full-width { grid-column: span 1; }
   .composer-bar { padding: 8px 10px; }
-  #userInput { font-size: 14.5px; }
+  #userInput, .input-styled, .meihua-num-row input, .bazi-form-grid input, .bazi-form-grid select {
+    font-size: 16px !important; /* 防止 iOS 聚焦时强制自动放大画面 */
+  }
 }
 
-@media (max-width: 400px) {
-  .topbar-inner { padding: 0 10px; gap: 6px; }
+@media (max-width: 440px) {
+  .topbar-inner { padding: 0 8px; gap: 6px; }
   .seal { width: 34px; height: 34px; font-size: 17px; }
-  .brand-title { font-size: 16px; }
-  .pill-btn { padding: 4px 8px; font-size: 11px; }
+  .brand-title { font-size: 15.5px; }
+  .pill-btn { padding: 5px 8px; font-size: 11.5px; min-height: 32px; }
+  .meihua-result-grid { grid-template-columns: 1fr; gap: 8px; }
+  .xlr-palm-board { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .almanac-yiji-grid { grid-template-columns: 1fr; gap: 8px; }
+  .tarot-spread-board {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tarot-slot {
+    flex: 0 0 110px;
+    scroll-snap-align: start;
+  }
 }
 
 @media (min-width: 1080px) {
@@ -1835,4 +1864,5 @@ i[data-lucide] {
 
 code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.btn, .pill-btn, .tag-chip, .d-tag, .feedback-btn { touch-action: manipulation; }
 

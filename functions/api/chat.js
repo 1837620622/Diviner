@@ -166,7 +166,7 @@ export async function onRequestPost(context) {
         key: API_KEY,
         model,
         body: upstreamBaseBody,
-        timeoutMs: 45000,
+        timeoutMs: 12000,
       });
 
       if (resp.ok && data.choices && data.choices[0]?.message) {
