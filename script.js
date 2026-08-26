@@ -391,7 +391,9 @@ function renderMessageNode(role, content, images = [], isNew = true) {
 
   if (isNew) {
     refreshIcons();
-    scrollToBottom(true);
+    setTimeout(() => {
+      row.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 80);
   }
 }
 
