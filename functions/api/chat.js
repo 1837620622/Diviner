@@ -79,30 +79,16 @@ export async function onRequestPost(context) {
     );
   }
 
-  // 获取 IP 与地理（仅用于命理人设的“掐指一算”，不泄露技术细节）
+  // 获取 IP 与地理（直接使用 Cloudflare 原生边缘上下文，0 延迟无阻断）
   let clientIP =
     request.headers.get('CF-Connecting-IP') ||
     request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
     'unknown';
   if (clientIP.startsWith('::ffff:')) clientIP = clientIP.slice(7);
 
-  let locationText = '未知位置';
-  try {
-    const geoResp = await fetch(`https://api.vore.top/api/IPdata?ip=${encodeURIComponent(clientIP)}`, { signal: AbortSignal.timeout(2500) });
-    if (geoResp.ok) {
-      const geo = await geoResp.json();
-      if (geo.code === 200 && geo.adcode) {
-        const o = geo.adcode.o || '';
-        const r = geo.adcode.r || '';
-        if (o && !o.startsWith('市市') && o.length > 5) locationText = o;
-        else if (r) locationText = r;
-      }
-    }
-  } catch {
-    const cc = request.headers.get('CF-IPCountry') || '';
-    const city = request.cf?.city || '';
-    locationText = [cc, city].filter(Boolean).join(' ') || '未知位置';
-  }
+  const cfCountry = request.headers.get('CF-IPCountry') || request.cf?.country || '';
+  const cfCity = request.cf?.city || request.cf?.region || '';
+  let locationText = [cfCountry, cfCity].filter(Boolean).join(' · ') || '中华大地';
 
   let body;
   try {
@@ -118,25 +104,26 @@ export async function onRequestPost(context) {
   const messages = normalizeMessages(rawMessages);
   const isVision = hasImageContent(messages);
 
-  // 动态模型路由配置（支持通过环境变量完全自定义）
-  const configuredText = (env.MODEL_TEXT || env.AI_MODEL || env.DEFAULT_MODEL || 'nemotron-3-ultra-free').trim();
-  const configuredVision = (env.MODEL_VISION || env.AI_VISION_MODEL || 'mimo-v2.5-free').trim();
+  // 动态模型路由配置（支持环境变量完全自定义，优先快速响应模型）
+  const configuredText = (env.MODEL_TEXT || env.AI_MODEL || env.DEFAULT_MODEL || '').trim();
+  const configuredVision = (env.MODEL_VISION || env.AI_VISION_MODEL || '').trim();
 
   const textCandidates = Array.from(new Set([
     configuredText,
+    'gpt-4o-mini',
+    'deepseek-chat',
     'nemotron-3-ultra-free',
     'mimo-v2.5-free',
     'laguna-s-2.1-free',
-    'deepseek-chat',
-    'gpt-4o-mini',
     'gpt-3.5-turbo',
   ])).filter(Boolean);
 
   const visionCandidates = Array.from(new Set([
     configuredVision,
-    'mimo-v2.5-free',
     'gpt-4o-mini',
+    'mimo-v2.5-free',
     'nemotron-3-ultra-free',
+    'gemini-2.0-flash',
     'laguna-s-2.1-free',
   ])).filter(Boolean);
 
@@ -166,7 +153,7 @@ export async function onRequestPost(context) {
         key: API_KEY,
         model,
         body: upstreamBaseBody,
-        timeoutMs: 12000,
+        timeoutMs: 8000,
       });
 
       if (resp.ok && data.choices && data.choices[0]?.message) {

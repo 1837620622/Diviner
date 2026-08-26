@@ -374,7 +374,10 @@ function formatContent(raw) {
     out.push(`<p>${inline}</p>`);
   }
 
-  let html = out.join('\n').replace(/<p>\s*<\/p>/g, '');
+  let html = out.join('\n')
+    .replace(/<p>\s*(?:<br\s*\/?>\s*)+/gi, '<p>')
+    .replace(/(?:<br\s*\/?>\s*)+<\/p>/gi, '</p>')
+    .replace(/<p>\s*<\/p>/g, '');
   html = injectWuxingViz(html, raw);
   return html;
 }

@@ -655,14 +655,37 @@ i[data-lucide] {
 }
 
 .msg.user {
-  background: linear-gradient(180deg, rgba(142,45,226,.12), rgba(59,15,168,.08));
-  border-color: rgba(142,45,226,.22);
+  background: linear-gradient(180deg, #ffffff 0%, #f7f2ff 100%);
+  border: 1.5px solid rgba(142, 45, 226, 0.32);
+  box-shadow: 0 4px 20px rgba(142, 45, 226, 0.12), var(--shadow);
 }
 .msg.user .msg-head {
-  background: rgba(142,45,226,.08);
-  border-color: rgba(142,45,226,.12);
+  background: linear-gradient(90deg, rgba(142, 45, 226, 0.12), rgba(0, 198, 255, 0.06));
+  border-color: rgba(142, 45, 226, 0.18);
 }
-.msg.user .msg-body { color: var(--ink); }
+.msg.user .msg-role {
+  color: var(--primary-2);
+}
+.msg.user .msg-body {
+  color: #1a1928;
+  font-weight: 500;
+}
+
+.msg.assistant {
+  background: linear-gradient(180deg, #ffffff 0%, #fdfbf7 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.32);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22), var(--shadow);
+}
+.msg.assistant .msg-head {
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.14), rgba(199, 62, 29, 0.06));
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+.msg.assistant .msg-role {
+  color: var(--vermilion);
+}
+.msg.assistant .msg-body {
+  color: #1c1a24;
+}
 
 .callout {
   margin-top: 12px;
