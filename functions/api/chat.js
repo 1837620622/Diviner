@@ -110,18 +110,18 @@ export async function onRequestPost(context) {
 
   const textCandidates = Array.from(new Set([
     configuredText,
+    'muse-spark-1.2',
+    'muse-spark-1.2-contributor-free',
+    'hy3',
+    'hy3-free',
+    'mimo-v2.5',
+    'mimo-v2.5-free',
+    'laguna-s-2.1',
+    'laguna-s-2.1-free',
     'nemotron-3.5-lightning',
     'nemotron-3.5-lightning-free',
     'nemotron-3-ultra',
     'nemotron-3-ultra-free',
-    'laguna-s-2.1',
-    'laguna-s-2.1-free',
-    'mimo-v2.5',
-    'mimo-v2.5-free',
-    'hy3',
-    'hy3-free',
-    'muse-spark-1.2',
-    'muse-spark-1.2-contributor-free',
     'gpt-4o-mini',
     'deepseek-chat',
   ])).filter(Boolean);
@@ -130,10 +130,11 @@ export async function onRequestPost(context) {
     configuredVision,
     'mimo-v2.5',
     'mimo-v2.5-free',
+    'hy3',
+    'hy3-free',
+    'muse-spark-1.2',
     'nemotron-3-ultra',
-    'nemotron-3-ultra-free',
     'laguna-s-2.1',
-    'laguna-s-2.1-free',
     'gpt-4o-mini',
   ])).filter(Boolean);
 
@@ -167,9 +168,14 @@ export async function onRequestPost(context) {
       });
 
       if (resp.ok && data.choices && data.choices[0]?.message) {
-        usedModel = model;
-        lastData = data;
-        break;
+        const msg = data.choices[0].message;
+        const textContent = (msg.content || msg.reasoning_content || msg.reasoning || '').trim();
+        if (textContent) {
+          msg.content = textContent;
+          usedModel = model;
+          lastData = data;
+          break;
+        }
       }
 
       lastError = { status: resp.status, data };
