@@ -110,21 +110,31 @@ export async function onRequestPost(context) {
 
   const textCandidates = Array.from(new Set([
     configuredText,
+    'nemotron-3.5-lightning',
+    'nemotron-3.5-lightning-free',
+    'nemotron-3-ultra',
     'nemotron-3-ultra-free',
-    'mimo-v2.5-free',
+    'laguna-s-2.1',
     'laguna-s-2.1-free',
+    'mimo-v2.5',
+    'mimo-v2.5-free',
+    'hy3',
+    'hy3-free',
+    'muse-spark-1.2',
+    'muse-spark-1.2-contributor-free',
     'gpt-4o-mini',
     'deepseek-chat',
-    'gpt-3.5-turbo',
   ])).filter(Boolean);
 
   const visionCandidates = Array.from(new Set([
     configuredVision,
+    'mimo-v2.5',
     'mimo-v2.5-free',
+    'nemotron-3-ultra',
     'nemotron-3-ultra-free',
-    'gpt-4o-mini',
-    'gemini-2.0-flash',
+    'laguna-s-2.1',
     'laguna-s-2.1-free',
+    'gpt-4o-mini',
   ])).filter(Boolean);
 
   const candidates = isVision ? visionCandidates : textCandidates;
@@ -153,7 +163,7 @@ export async function onRequestPost(context) {
         key: API_KEY,
         model,
         body: upstreamBaseBody,
-        timeoutMs: 8000,
+        timeoutMs: 15000,
       });
 
       if (resp.ok && data.choices && data.choices[0]?.message) {
