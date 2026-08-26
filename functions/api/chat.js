@@ -1,256 +1,282 @@
-// Cloudflare Pages Function - API代理
-// API密钥存储在Cloudflare环境变量中，不会暴露在前端代码
-// 支持多线路：线路1(DeepSeek) 和 线路2(Qwen3)
+// Cloudflare Pages Function - 单线路 + 自动路由 + 兜底
+// 密钥通过环境变量注入，不落地仓库
+// 支持：纯文本走 nemotron-3-ultra，图片走 mimo-v2.5，自动兜底
+// 环境变量：
+//   API_BASE_URL  默认 https://freeai.chuankangkk.top/v1
+//   API_KEY       必填（OpenAI兼容）
+//   FALLBACK_ENABLED 默认 true
 
-// 主线路配置（ModelScope）
-const MAIN_ROUTES = {
-    1: { name: 'DeepSeek-V3', model: 'deepseek-ai/DeepSeek-V3.2', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
-    2: { name: 'Qwen3-80B', model: 'Qwen/Qwen3-Next-80B-A3B-Instruct', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
-    3: { name: 'DeepSeek-R1', model: 'deepseek-ai/DeepSeek-R1-0528', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' },
-    4: { name: 'Qwen3-235B', model: 'Qwen/Qwen3-235B-A22B', endpoint: 'https://api-inference.modelscope.cn/v1/chat/completions', provider: 'modelscope' }
+const DEFAULT_BASE = 'https://freeai.chuankangkk.top/v1';
+
+// 模型路由表：单线路对外无感知，后端自动选择
+const ROUTING = {
+  text: {
+    primary: 'nemotron-3-ultra-free',
+    fallbacks: ['mimo-v2.5-free', 'laguna-s-2.1-free'],
+  },
+  vision: {
+    primary: 'mimo-v2.5-free',
+    fallbacks: ['nemotron-3-ultra-free', 'laguna-s-2.1-free'],
+  },
 };
 
-// 备用线路配置（iFlow）
-const BACKUP_ROUTES = {
-    1: { name: '备用-DeepSeek', model: 'deepseek-v3', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
-    2: { name: '备用-Qwen3', model: 'qwen3-235b', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
-    3: { name: '备用-R1', model: 'deepseek-r1', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' },
-    4: { name: '备用-Qwen235B', model: 'qwen3-235b', endpoint: 'https://apis.iflow.cn/v1/chat/completions', provider: 'iflow' }
-};
-
-// 合并所有线路
-const ROUTES = {
-    ...MAIN_ROUTES,
-    // 备用线路从5开始，与主线路一一对应
-    5: BACKUP_ROUTES[1],
-    6: BACKUP_ROUTES[2],
-    7: BACKUP_ROUTES[3],
-    8: BACKUP_ROUTES[4]
-};
-
-export async function onRequestPost(context) {
-    const { request, env } = context;
-    
-    // 获取用户IP地址（首选IPv4）
-    let clientIP = request.headers.get('CF-Connecting-IP') || 
-                   request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 
-                   'unknown';
-    
-    // 如果是IPv6映射的IPv4地址，提取IPv4部分
-    if (clientIP.startsWith('::ffff:')) {
-        clientIP = clientIP.substring(7);
+// 检测消息中是否包含图片（OpenAI兼容的 content 数组格式）
+function hasImageContent(messages) {
+  for (const m of messages || []) {
+    const c = m.content;
+    if (Array.isArray(c)) {
+      for (const part of c) {
+        if (part.type === 'image_url' && part.image_url?.url) return true;
+      }
+    } else if (typeof c === 'string' && c.includes('data:image')) {
+      return true;
     }
-    
-    // 使用VORE-API查询IP地理位置（支持IPv4和IPv6）
-    let location = '未知位置';
-    try {
-        const geoResponse = await fetch(`https://api.vore.top/api/IPdata?ip=${clientIP}`);
-        if (geoResponse.ok) {
-            const geoData = await geoResponse.json();
-            if (geoData.code === 200 && geoData.adcode) {
-                // 优先使用adcode.o，如果格式异常则使用adcode.r
-                const adcodeO = geoData.adcode.o || '';
-                const adcodeR = geoData.adcode.r || '';
-                // 检查adcode.o是否有效（不是"市市 - "这种异常格式）
-                if (adcodeO && !adcodeO.startsWith('市市') && adcodeO.length > 5) {
-                    location = adcodeO;
-                } else if (adcodeR) {
-                    location = adcodeR;
-                } else {
-                    location = '未知位置';
-                }
-            }
-        }
-    } catch (e) {
-        // 地理位置查询失败，使用Cloudflare提供的信息
-        const cfCountry = request.headers.get('CF-IPCountry') || '';
-        const cfCity = request.cf?.city || '';
-        location = [cfCountry, cfCity].filter(Boolean).join(' ') || '未知位置';
-    }
-    
-    try {
-        // 获取请求体
-        const body = await request.json();
-        
-        // 获取线路选择（默认线路1）
-        const routeId = body.route || 1;
-        const route = ROUTES[routeId] || ROUTES[1];
-        
-        // 线路对应关系：线路1->备用1->线路2->备用2...
-        // 主线路繁忙建议对应备用，备用繁忙建议下一组主线路
-        const routeMapping = {
-            1: { backup: 5, next: 2, backupLabel: '备用1', nextLabel: '线路2' },
-            5: { backup: 2, next: 6, backupLabel: '线路2', nextLabel: '备用2' },
-            2: { backup: 6, next: 3, backupLabel: '备用2', nextLabel: '线路3' },
-            6: { backup: 3, next: 7, backupLabel: '线路3', nextLabel: '备用3' },
-            3: { backup: 7, next: 4, backupLabel: '备用3', nextLabel: '线路4' },
-            7: { backup: 4, next: 8, backupLabel: '线路4', nextLabel: '备用4' },
-            4: { backup: 8, next: 1, backupLabel: '备用4', nextLabel: '线路1' },
-            8: { backup: 1, next: 5, backupLabel: '线路1', nextLabel: '备用1' }
-        };
-        const currentMapping = routeMapping[routeId] || routeMapping[1];
-        const currentLabel = routeId <= 4 ? `线路${routeId}` : `备用${routeId - 4}`;
-        
-        // 根据provider选择API密钥
-        let API_KEY;
-        if (route.provider === 'iflow') {
-            API_KEY = env.IFLOW_API_KEY;
-            if (!API_KEY) {
-                return new Response(JSON.stringify({
-                    error: 'iFlow API密钥未配置，请在Cloudflare Pages设置中添加 IFLOW_API_KEY 环境变量'
-                }), {
-                    status: 500,
-                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-                });
-            }
-        } else if (route.provider === 'huggingface') {
-            API_KEY = env.HUGGINGFACE_API_KEY;
-            if (!API_KEY) {
-                return new Response(JSON.stringify({
-                    error: 'Hugging Face API密钥未配置，请在Cloudflare Pages设置中添加 HUGGINGFACE_API_KEY 环境变量'
-                }), {
-                    status: 500,
-                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-                });
-            }
-        } else {
-            API_KEY = env.MODELSCOPE_API_KEY;
-            if (!API_KEY) {
-                return new Response(JSON.stringify({
-                    error: 'ModelScope API密钥未配置，请在Cloudflare Pages设置中添加 MODELSCOPE_API_KEY 环境变量'
-                }), {
-                    status: 500,
-                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-                });
-            }
-        }
-        
-        // 使用选定线路的模型
-        const requestBody = {
-            ...body,
-            model: route.model
-        };
-        delete requestBody.route;
-        
-        // 转发请求到API
-        const response = await fetch(route.endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
-            },
-            body: JSON.stringify(requestBody)
-        });
-        
-        // 获取响应
-        const data = await response.json();
-        
-        // 处理400错误（参数错误）
-        if (response.status === 400) {
-            console.error('400错误详情:', JSON.stringify(data));
-            return new Response(JSON.stringify({
-                error: '请求参数错误',
-                details: data,
-                choices: [{
-                    message: {
-                        content: `🔮 **线路${routeId}暂不可用**\n\n该线路模型暂时无法使用，建议您切换到**其他线路**继续问卦。\n\n👆 点击右上角的线路按钮即可切换。`
-                    }
-                }]
-            }), {
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-            });
-        }
-        
-        // 处理429速率限制错误
-        if (response.status === 429) {
-            return new Response(JSON.stringify({
-                error: '🔮 天机繁忙，请稍后再试',
-                route_error: true,
-                current_route: routeId,
-                suggest_route: currentMapping.backup,
-                choices: [{
-                    message: {
-                        content: `🔮 **${currentLabel}繁忙**\n\n当前线路请求人数较多，建议您切换到**${currentMapping.backupLabel}**继续问卦。\n\n如果${currentMapping.backupLabel}也繁忙，可以尝试**${currentMapping.nextLabel}**。\n\n👆 点击右上角的线路按钮即可切换。\n\n💡 **多线路体验**：每条线路使用不同的AI模型，回答风格各异，同一问题可尝试多条线路获得不同角度的解读！`
-                    }
-                }]
-            }), {
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-            });
-        }
-        
-        // 保存对话记录到KV存储（如果配置了）
-        if (env.CHAT_LOGS && data.choices && data.choices[0]?.message?.content) {
-            try {
-                // 提取用户最后一条消息
-                const messages = body.messages || [];
-                const userMessages = messages.filter(m => m.role === 'user');
-                const lastUserMessage = userMessages[userMessages.length - 1]?.content || '';
-                const assistantResponse = data.choices[0].message.content;
-                
-                // 生成唯一ID（包含日期前缀，便于按日期筛选节省KV读取次数）
-                const today = new Date().toISOString().split('T')[0];
-                const recordId = `chat_${today}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                
-                // 生成友好的线路标签
-                const routeLabel = routeId <= 4 ? `线路${routeId}` : `备用${routeId - 4}`;
-                
-                // 保存记录
-                await env.CHAT_LOGS.put(recordId, JSON.stringify({
-                    id: recordId,
-                    ip: clientIP,
-                    location: location,
-                    route: routeId,
-                    routeLabel: routeLabel,
-                    timestamp: new Date().toISOString(),
-                    question: lastUserMessage,
-                    answer: assistantResponse
-                }), {
-                    // 保留90天
-                    expirationTtl: 90 * 24 * 60 * 60
-                });
-            } catch (logError) {
-                // 记录失败不影响正常响应
-                console.error('保存对话记录失败:', logError);
-            }
-        }
-        
-        // 返回响应
-        return new Response(JSON.stringify(data), {
-            status: response.status,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        });
-        
-    } catch (error) {
-        return new Response(JSON.stringify({
-            error: '请求处理失败: ' + error.message
-        }), {
-            status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        });
-    }
+  }
+  return false;
 }
 
-// 处理CORS预检请求
-export async function onRequestOptions() {
-    return new Response(null, {
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
-        }
+// 规范化图片消息：限制大小，保留最多3张，单张不超过 ~4MB base64
+function normalizeMessages(messages) {
+  let imageCount = 0;
+  return (messages || []).map((m) => {
+    if (!Array.isArray(m.content)) return m;
+    const parts = [];
+    for (const p of m.content) {
+      if (p.type === 'image_url') {
+        if (imageCount >= 3) continue;
+        const url = p.image_url?.url || '';
+        // 过滤過大 base64（>5MB 直接丢棄，提示由前端壓縮）
+        if (url.length > 5 * 1024 * 1024) continue;
+        imageCount++;
+        parts.push(p);
+      } else {
+        parts.push(p);
+      }
+    }
+    return { ...m, content: parts };
+  });
+}
+
+async function callUpstream({ base, key, model, body, timeoutMs = 30000 }) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(`${base.replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({ ...body, model }),
+      signal: controller.signal,
     });
+    const data = await resp.json().catch(() => ({}));
+    return { resp, data };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+function pickRoute(messages) {
+  return hasImageContent(messages) ? ROUTING.vision : ROUTING.text;
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+
+  const API_BASE = (env.API_BASE_URL || env.ANTHROPIC_BASE_URL || DEFAULT_BASE).trim();
+  const API_KEY = (env.API_KEY || env.OPENAI_API_KEY || env.ANTHROPIC_API_KEY || '').trim();
+
+  if (!API_KEY) {
+    return new Response(
+      JSON.stringify({ error: 'API_KEY 未配置，请在 Cloudflare Pages 环境变量中设置 API_KEY' }),
+      { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+    );
+  }
+
+  // 获取 IP 与地理（仅用于人设的“掐指一算”，不泄露技术细节）
+  let clientIP =
+    request.headers.get('CF-Connecting-IP') ||
+    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
+    'unknown';
+  if (clientIP.startsWith('::ffff:')) clientIP = clientIP.slice(7);
+
+  let locationText = '未知位置';
+  try {
+    const geoResp = await fetch(`https://api.vore.top/api/IPdata?ip=${encodeURIComponent(clientIP)}`, { signal: AbortSignal.timeout(2500) });
+    if (geoResp.ok) {
+      const geo = await geoResp.json();
+      if (geo.code === 200 && geo.adcode) {
+        const o = geo.adcode.o || '';
+        const r = geo.adcode.r || '';
+        if (o && !o.startsWith('市市') && o.length > 5) locationText = o;
+        else if (r) locationText = r;
+      }
+    }
+  } catch {
+    const cc = request.headers.get('CF-IPCountry') || '';
+    const city = request.cf?.city || '';
+    locationText = [cc, city].filter(Boolean).join(' ') || '未知位置';
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: '请求体不是合法 JSON' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    });
+  }
+
+  // 兼容旧前端仍传 route 的情況：直接忽略，后端自动路由
+  const rawMessages = body.messages || [];
+  const messages = normalizeMessages(rawMessages);
+  const isVision = hasImageContent(messages);
+  const route = pickRoute(messages);
+
+  // 兼容旧前端传 temperature / max_tokens，没有则用合理默认
+  const temperature = typeof body.temperature === 'number' ? body.temperature : 0.75;
+  const max_tokens = typeof body.max_tokens === 'number' ? body.max_tokens : 1800;
+  const top_p = typeof body.top_p === 'number' ? body.top_p : 0.9;
+
+  // 构造上游请求体：只透传必要字段，不把 route 等杂字段带上去
+  const upstreamBaseBody = {
+    messages,
+    temperature,
+    max_tokens,
+    top_p,
+    stream: false,
+  };
+
+  const candidates = [route.primary, ...route.fallbacks];
+  let lastError = null;
+  let lastData = null;
+  let usedModel = null;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const model = candidates[i];
+    try {
+      const { resp, data } = await callUpstream({ base: API_BASE, key: API_KEY, model, body: upstreamBaseBody, timeoutMs: 30000 });
+
+      // 成功
+      if (resp.ok && data.choices && data.choices[0]?.message) {
+        usedModel = model;
+        lastData = data;
+        break;
+      }
+
+      // 429 / 5xx 触发兜底，其他 400 视情况兜底
+      const isRetryable = resp.status === 429 || resp.status >= 500 || resp.status === 400;
+      lastError = { status: resp.status, data };
+      lastData = data;
+
+      // 400 且明确是 image 不支持：若当前是 vision 主模型，继续兜底；否则不再重试
+      if (resp.status === 400 && String(JSON.stringify(data)).includes('image')) {
+        // 有图片但模型不支持 image，继续下一个候选（虽然最终仍可能失败，但可尝试文字兜底提示）
+        if (i < candidates.length - 1) continue;
+      }
+
+      if (!isRetryable) break;
+      if (i < candidates.length - 1) {
+        // 轻微退避
+        await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+        continue;
+      }
+    } catch (e) {
+      lastError = { status: 0, message: e.message || String(e) };
+      if (i < candidates.length - 1) {
+        await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+        continue;
+      }
+    }
+  }
+
+  // 若全部失败，返回友好兜底（前端会以 assistant 消息形式展示）
+  if (!lastData || !lastData.choices || !lastData.choices[0]?.message) {
+    const detail = lastError ? JSON.stringify(lastError).slice(0, 800) : '未知错误';
+    return new Response(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content:
+                '天机暂晦，方才一试未得正解。\n\n' +
+                '可能原因：上游模型繁忙或图片过大。\n\n' +
+                '建议：\n' +
+                '1）若上传了图片，请将图片压缩至 2MB 以内，或先以文字描述面相手纹、房宅朝向；\n' +
+                '2）稍候 10 秒后重试；\n' +
+                '3）若持续异常，可更换网络后重试。\n\n' +
+                '本回复为本地兜底，非模型生成。',
+            },
+          },
+        ],
+        _fallback: true,
+        _detail: detail,
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+    );
+  }
+
+  // KV 记录（不阻塞）
+  if (env.CHAT_LOGS && lastData.choices[0]?.message?.content) {
+    try {
+      const userMessages = messages.filter((m) => m.role === 'user');
+      const lastUser = userMessages[userMessages.length - 1];
+      // 提取最后用户文本（兼容多模态）
+      let lastUserText = '';
+      if (Array.isArray(lastUser?.content)) {
+        lastUserText = lastUser.content
+          .filter((p) => p.type === 'text')
+          .map((p) => p.text)
+          .join('\n');
+        const hasImg = lastUser.content.some((p) => p.type === 'image_url');
+        if (hasImg) lastUserText = (lastUserText ? lastUserText + '\n' : '') + '[含图片]';
+      } else {
+        lastUserText = lastUser?.content || '';
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+      const recordId = `chat_${today}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      await env.CHAT_LOGS.put(
+        recordId,
+        JSON.stringify({
+          id: recordId,
+          ip: clientIP,
+          location: locationText,
+          route: usedModel || route.primary,
+          routeLabel: isVision ? '图文' : '文本',
+          model: usedModel,
+          isVision,
+          timestamp: new Date().toISOString(),
+          question: lastUserText.slice(0, 2000),
+          answer: String(lastData.choices[0].message.content).slice(0, 8000),
+        }),
+        { expirationTtl: 90 * 24 * 60 * 60 }
+      );
+    } catch (e) {
+      console.error('KV put failed', e);
+    }
+  }
+
+  // 附带调试头（不泄露 key）
+  return new Response(JSON.stringify(lastData), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'X-Model-Used': usedModel || route.primary,
+    },
+  });
+}
+
+export async function onRequestOptions() {
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Password',
+    },
+  });
 }

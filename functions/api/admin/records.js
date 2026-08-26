@@ -3,14 +3,16 @@
 // 优化版：使用prefix筛选，最大化节省KV读取次数
 // 新格式key: chat_YYYY-MM-DD_timestamp_random
 
-const ADMIN_PASSWORD = 'chuankangkk';
+const ADMIN_PASSWORD = (typeof process !== 'undefined' ? null : null); // 占位，实际从 env 读取
+// 优先从环境变量读取，避免硬编码泄露
 
 export async function onRequestGet(context) {
     const { request, env } = context;
     
-    // 验证管理员密码
-    const password = request.headers.get('X-Admin-Password');
-    if (password !== ADMIN_PASSWORD) {
+    // 验证管理员密码（从环境变量读取，默认回落旧值以兼容）
+    const expected = (env.ADMIN_PASSWORD || 'chuankangkk').trim();
+    const password = (request.headers.get('X-Admin-Password') || '').trim();
+    if (password !== expected) {
         return new Response(JSON.stringify({
             error: '未授权访问'
         }), {

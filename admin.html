@@ -1,948 +1,260 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>玄机子 - 后台管理</title>
-    <style>
-        /* ==================== 基础样式 ==================== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
-
-        /* ==================== 登录页面 ==================== */
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .login-box {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            border: 1px solid rgba(142, 45, 226, 0.3);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        .login-box h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2rem;
-            background: linear-gradient(to right, #8E2DE2, #4A00E0);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .login-box input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 1rem;
-        }
-
-        .login-box input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .login-box button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #8E2DE2, #4A00E0);
-            color: #fff;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .login-box button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(142, 45, 226, 0.4);
-        }
-
-        .error-msg {
-            color: #ff6b6b;
-            text-align: center;
-            margin-top: 15px;
-            display: none;
-        }
-
-        /* ==================== 管理面板 ==================== */
-        .admin-container {
-            display: none;
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(142, 45, 226, 0.2);
-        }
-
-        .admin-header h1 {
-            font-size: 1.5rem;
-            background: linear-gradient(to right, #8E2DE2, #4A00E0);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .admin-header .stats {
-            display: flex;
-            gap: 20px;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 10px 20px;
-            background: rgba(142, 45, 226, 0.2);
-            border-radius: 10px;
-        }
-
-        .stat-item .number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #8E2DE2;
-        }
-
-        .stat-item .label {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .logout-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255, 107, 107, 0.4);
-        }
-
-        /* ==================== 对话记录列表 ==================== */
-        .records-container {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(142, 45, 226, 0.2);
-        }
-
-        .records-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .records-header h2 {
-            font-size: 1.2rem;
-        }
-
-        .refresh-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #8E2DE2, #4A00E0);
-            color: #fff;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .refresh-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .date-input {
-            padding: 8px 12px;
-            border: 1px solid rgba(142, 45, 226, 0.5);
-            border-radius: 8px;
-            background: rgba(142, 45, 226, 0.2);
-            color: #fff;
-            font-size: 0.9rem;
-            cursor: pointer;
-            outline: none;
-        }
-
-        .date-input::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-            cursor: pointer;
-        }
-
-        .date-input:hover {
-            border-color: rgba(142, 45, 226, 0.8);
-            background: rgba(142, 45, 226, 0.3);
-        }
-
-        /* IP分组样式 */
-        .ip-group {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(142, 45, 226, 0.2);
-            overflow: hidden;
-        }
-
-        .ip-group-header {
-            background: linear-gradient(135deg, rgba(142, 45, 226, 0.3), rgba(74, 0, 224, 0.3));
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .ip-group-header:hover {
-            background: linear-gradient(135deg, rgba(142, 45, 226, 0.4), rgba(74, 0, 224, 0.4));
-        }
-
-        .ip-group-header .ip-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .ip-group-header .ip-address {
-            font-family: monospace;
-            font-size: 0.85rem;
-            color: #ffd700;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 5px 12px;
-            border-radius: 8px;
-            word-break: break-all;
-            max-width: 100%;
-        }
-
-        .ip-group-header .chat-count {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .ip-group-header .location {
-            font-size: 0.85rem;
-            color: #00c6ff;
-            background: rgba(0, 198, 255, 0.1);
-            padding: 3px 8px;
-            border-radius: 5px;
-        }
-
-        .ip-group-header .toggle-icon {
-            font-size: 1.2rem;
-            transition: transform 0.3s;
-        }
-
-        .ip-group.collapsed .toggle-icon {
-            transform: rotate(-90deg);
-        }
-
-        .ip-group-content {
-            padding: 15px;
-            display: block;
-        }
-
-        .ip-group.collapsed .ip-group-content {
-            display: none;
-        }
-
-        .record-item {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(142, 45, 226, 0.1);
-            transition: border-color 0.3s;
-        }
-
-        .record-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .record-item:hover {
-            border-color: rgba(142, 45, 226, 0.4);
-        }
-
-        .record-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .record-meta .route-tag {
-            background: rgba(142, 45, 226, 0.3);
-            padding: 4px 10px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            color: #ffd700;
-        }
-
-        .record-meta .time {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.85rem;
-        }
-
-        .record-conversation {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .record-msg {
-            padding: 12px 16px;
-            border-radius: 10px;
-            max-width: 85%;
-        }
-
-        .record-msg.user {
-            background: rgba(142, 45, 226, 0.3);
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-        }
-
-        .record-msg.assistant {
-            background: rgba(255, 255, 255, 0.1);
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-        }
-
-        .record-msg .role {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 5px;
-        }
-
-        .record-msg .content {
-            font-size: 0.9rem;
-            line-height: 1.6;
-            word-break: break-word;
-        }
-
-        .record-msg .content.collapsed {
-            max-height: 100px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .record-msg .content.collapsed::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 40px;
-            background: linear-gradient(transparent, rgba(0,0,0,0.5));
-        }
-
-        .expand-btn {
-            background: rgba(142, 45, 226, 0.3);
-            border: 1px solid rgba(142, 45, 226, 0.5);
-            color: var(--gold, #ffd700);
-            padding: 5px 12px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            margin-top: 10px;
-            transition: all 0.3s;
-        }
-
-        .expand-btn:hover {
-            background: rgba(142, 45, 226, 0.5);
-        }
-
-        /* 格式化内容样式 */
-        .record-msg .content .section-title {
-            color: #ffd700;
-            font-weight: bold;
-            margin: 10px 0 5px;
-        }
-
-        .record-msg .content mark {
-            background: rgba(142, 45, 226, 0.4);
-            color: #fff;
-            padding: 1px 4px;
-            border-radius: 3px;
-        }
-
-        .record-msg .content strong {
-            color: #ffd700;
-        }
-
-        .record-msg .content .luck-great { color: #00ff88; font-weight: bold; }
-        .record-msg .content .luck-good { color: #88ff00; }
-        .record-msg .content .luck-bad { color: #ff4444; font-weight: bold; }
-
-        .no-records {
-            text-align: center;
-            padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .no-records .icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-
-        /* ==================== 加载状态 ==================== */
-        .loading {
-            text-align: center;
-            padding: 40px;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(142, 45, 226, 0.3);
-            border-top-color: #8E2DE2;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* ==================== 响应式 ==================== */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            .admin-header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-                padding: 15px;
-            }
-
-            .admin-header h1 {
-                font-size: 1.3rem;
-            }
-
-            .admin-header .stats {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 8px;
-            }
-
-            .stat-item {
-                padding: 8px 12px;
-                font-size: 0.8rem;
-            }
-
-            /* IP分组头部手机适配 */
-            .ip-group-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-                padding: 12px 15px;
-            }
-
-            .ip-group-header .ip-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-                width: 100%;
-            }
-
-            .ip-group-header .ip-address {
-                font-size: 0.9rem;
-            }
-
-            .ip-group-header .location {
-                font-size: 0.75rem;
-                word-break: break-all;
-            }
-
-            .ip-group-header .chat-count {
-                font-size: 0.75rem;
-            }
-
-            .ip-group-header .toggle-icon {
-                position: absolute;
-                right: 15px;
-                top: 15px;
-            }
-
-            /* 记录项手机适配 */
-            .record-item {
-                padding: 12px;
-            }
-
-            .record-meta {
-                flex-direction: column;
-                gap: 8px;
-                align-items: flex-start;
-            }
-
-            .record-msg {
-                max-width: 100%;
-                padding: 10px 12px;
-            }
-
-            .record-msg .content {
-                font-size: 0.85rem;
-                line-height: 1.5;
-                word-break: break-all;
-            }
-
-            .record-msg .content.collapsed {
-                max-height: 80px;
-            }
-
-            .expand-btn {
-                width: 100%;
-                text-align: center;
-                padding: 8px;
-            }
-
-            /* 刷新按钮手机适配 */
-            .refresh-btn {
-                padding: 10px 20px;
-                font-size: 0.9rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>玄机子 · 后台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--paper:#f7f3ed;--paper2:#ece6d9;--ink:#1a1a18;--ink2:#3a3936;--muted:#6b6a67;--line:#d9d0bf;--line2:#c9bda8;--ver:#c73e1d;--brass:#b89b5c;--accent:#1a2a4a}
+    html,body{height:100%}
+    body{font-family:"Noto Serif SC",serif;background:var(--paper);color:var(--ink)}
+    i[data-lucide]{width:18px;height:18px}
+    .paper-bg{position:fixed;inset:0;z-index:-1;background: radial-gradient(900px 500px at 20% -10%, rgba(184,155,92,.10), transparent 60%), linear-gradient(180deg, var(--paper), var(--paper2))}
+    /* login */
+    .login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px}
+    .login-card{width:100%;max-width:380px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(26,26,24,.08)}
+    .login-card h1{display:flex;gap:10px;align-items:center;justify-content:center;font-size:18px;letter-spacing:.12em}
+    .seal{width:36px;height:36px;border-radius:8px;background:var(--ver);color:#fff;display:grid;place-items:center;font-weight:700}
+    .login-card input{width:100%;margin-top:16px;padding:12px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper);font:inherit}
+    .login-card input:focus{outline:none;border-color:var(--brass);background:#fff}
+    .btn{width:100%;margin-top:12px;padding:12px;border:none;background:var(--ver);color:#fff;border-radius:12px;cursor:pointer}
+    .btn:active{transform:scale(.98)}
+    .err{color:var(--ver);font-size:13px;text-align:center;margin-top:10px;display:none}
+    /* admin */
+    .admin{max-width:1160px;margin:0 auto;padding:18px;display:none}
+    .admin-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px rgba(26,26,24,.06)}
+    .admin-head h1{display:flex;gap:8px;align-items:center;font-size:16px;letter-spacing:.08em}
+    .stats{display:flex;gap:10px;flex-wrap:wrap}
+    .stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 14px;text-align:center;min-width:88px}
+    .stat .n{font-weight:700;color:var(--accent)}
+    .stat .l{font-size:11px;color:var(--muted)}
+    .logout{padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer}
+    .records{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 8px 30px rgba(26,26,24,.06)}
+    .records-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+    .records-head h2{display:flex;gap:8px;align-items:center;font-size:14px}
+    .ctrls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .date{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:inherit}
+    .ghost{padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+    .ghost.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .ip-group{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;background:#fff}
+    .ip-head{padding:10px 12px;background:var(--paper);display:flex;gap:10px;align-items:center;justify-content:space-between;cursor:pointer}
+    .ip-head .ip{font-family:"JetBrains Mono",monospace;font-size:12px;background:#fff;border:1px solid var(--line);padding:4px 8px;border-radius:8px}
+    .ip-head .loc{font-size:12px;color:var(--accent)}
+    .ip-head .cnt{font-size:12px;color:var(--muted)}
+    .ip-body{padding:12px;display:flex;flex-direction:column;gap:10px}
+    .ip-group.collapsed .ip-body{display:none}
+    .record{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--paper)}
+    .record-meta{display:flex;gap:8px;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:8px}
+    .tag{font-size:11px;background:#fff;border:1px solid var(--line);padding:3px 8px;border-radius:999px}
+    .time{font-size:11px;color:var(--muted)}
+    .bubble{padding:10px 12px;border-radius:12px;max-width:88%;font-size:13px;line-height:1.7}
+    .bubble.user{background:var(--accent);color:#fff;align-self:flex-end}
+    .bubble.assistant{background:#fff;border:1px solid var(--line);align-self:flex-start}
+    .bubble .role{font-size:11px;opacity:.7;margin-bottom:4px}
+    .conv{display:flex;flex-direction:column;gap:8px}
+    .collapsed-txt{max-height:100px;overflow:hidden;position:relative}
+    .collapsed-txt::after{content:'';position:absolute;left:0;right:0;bottom:0;height:40px;background:linear-gradient(transparent, var(--paper))}
+    .expand{margin-top:6px;padding:6px 10px;border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;font-size:12px}
+    .section-title{font-weight:700;border-left:3px solid var(--ver);padding-left:8px;margin:8px 0 6px}
+    .loading{display:grid;place-items:center;padding:30px;color:var(--muted)}
+    .spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--ver);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:640px){.records{padding:10px}.ip-head{flex-direction:column;align-items:flex-start}}
+  </style>
 </head>
 <body>
-    <!-- 登录页面 -->
-    <div class="login-container" id="loginContainer">
-        <div class="login-box">
-            <h1>🔮 玄机子后台</h1>
-            <input type="password" id="passwordInput" placeholder="请输入管理密码" autocomplete="off">
-            <button onclick="login()">进入管理</button>
-            <p class="error-msg" id="errorMsg">密码错误，请重试</p>
-        </div>
+  <div class="paper-bg" aria-hidden="true"></div>
+
+  <div class="login-wrap" id="loginContainer">
+    <div class="login-card">
+      <h1><span class="seal">观</span> 玄机子 · 后台</h1>
+      <input id="passwordInput" type="password" placeholder="管理密码" autocomplete="off" />
+      <button class="btn" id="loginBtn">进入</button>
+      <p class="err" id="errorMsg">密码错误或未授权</p>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">密码由 Cloudflare 环境变量校验，不在前端硬编码比对</p>
+    </div>
+  </div>
+
+  <div class="admin" id="adminContainer">
+    <div class="admin-head">
+      <h1><i data-lucide="scroll"></i> 玄机子 · 对话管理</h1>
+      <div class="stats">
+        <div class="stat"><div class="n" id="totalRecords">0</div><div class="l">总数</div></div>
+        <div class="stat"><div class="n" id="todayRecords">0</div><div class="l">今日</div></div>
+        <div class="stat"><div class="n" id="uniqueIPs">0</div><div class="l">独立IP</div></div>
+      </div>
+      <button class="logout" id="logoutBtn"><i data-lucide="log-out"></i> 退出</button>
     </div>
 
-    <!-- 管理面板 -->
-    <div class="admin-container" id="adminContainer">
-        <div class="admin-header">
-            <h1>🔮 玄机子 · 对话管理</h1>
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="number" id="totalRecords">0</div>
-                    <div class="label">对话总数</div>
-                </div>
-                <div class="stat-item">
-                    <div class="number" id="todayRecords">0</div>
-                    <div class="label">今日对话</div>
-                </div>
-                <div class="stat-item">
-                    <div class="number" id="uniqueIPs">0</div>
-                    <div class="label">独立IP</div>
-                </div>
-            </div>
-            <button class="logout-btn" onclick="logout()">退出登录</button>
+    <div class="records">
+      <div class="records-head">
+        <h2><i data-lucide="messages-square"></i> 对话记录 <span id="loadModeLabel" style="font-size:12px;color:var(--muted);font-weight:400"></span></h2>
+        <div class="ctrls">
+          <input type="date" id="dateSelector" class="date" />
+          <button class="ghost" id="todayBtn"><i data-lucide="calendar-days"></i> 今日</button>
+          <button class="ghost primary" id="allBtn"><i data-lucide="library"></i> 全部</button>
         </div>
-
-        <div class="records-container">
-            <div class="records-header">
-                <h2>📝 对话记录 <span id="loadModeLabel" style="font-size: 0.8rem; color: #ffd700; font-weight: normal;"></span></h2>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <input type="date" id="dateSelector" class="date-input" onchange="loadRecordsByDate()">
-                    <button class="refresh-btn" onclick="loadTodayRecords()">📅 今日</button>
-                    <button class="refresh-btn" onclick="loadAllRecords()" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a);">📚 全部</button>
-                </div>
-            </div>
-            <div id="recordsList">
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>加载中...</p>
-                </div>
-            </div>
-        </div>
+      </div>
+      <div id="recordsList"><div class="loading"><div class="spinner"></div><p>加载中</p></div></div>
     </div>
+  </div>
 
-    <script>
-        // ==================== 配置 ====================
-        const ADMIN_PASSWORD = 'chuankangkk';
-        let isLoggedIn = false;
+<script>
+let adminPassword = '';
+let isLoggedIn=false;
 
-        // ==================== 登录功能 ====================
-        function login() {
-            const password = document.getElementById('passwordInput').value;
-            const errorMsg = document.getElementById('errorMsg');
-            
-            if (password === ADMIN_PASSWORD) {
-                isLoggedIn = true;
-                sessionStorage.setItem('adminLoggedIn', 'true');
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('adminContainer').style.display = 'block';
-                initDateSelector();
-                initialLoad();
-            } else {
-                errorMsg.style.display = 'block';
-                document.getElementById('passwordInput').value = '';
-                setTimeout(() => {
-                    errorMsg.style.display = 'none';
-                }, 3000);
-            }
-        }
+function refreshIcons(){ if(window.lucide) window.lucide.createIcons(); }
 
-        function logout() {
-            isLoggedIn = false;
-            sessionStorage.removeItem('adminLoggedIn');
-            document.getElementById('loginContainer').style.display = 'flex';
-            document.getElementById('adminContainer').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-        }
+async function login(){
+  const input=document.getElementById('passwordInput');
+  const pwd=input.value.trim();
+  if(!pwd){ showErr('请输入密码'); return; }
+  // 直接以后端校验为准：发一次轻量请求
+  const test = await fetch('/api/admin/records?date='+new Date().toISOString().slice(0,10), { headers:{ 'X-Admin-Password': pwd } });
+  if(test.status===401){
+    showErr('密码错误或未授权'); return;
+  }
+  if(!test.ok){
+    showErr('校验失败：'+test.status); return;
+  }
+  adminPassword = pwd;
+  isLoggedIn=true;
+  sessionStorage.setItem('adminPwd', pwd);
+  document.getElementById('loginContainer').style.display='none';
+  document.getElementById('adminContainer').style.display='block';
+  initDateSelector(); initialLoad();
+}
+function showErr(msg){
+  const e=document.getElementById('errorMsg'); e.textContent=msg; e.style.display='block'; setTimeout(()=>e.style.display='none',2500);
+}
+function logout(){
+  isLoggedIn=false; adminPassword='';
+  sessionStorage.removeItem('adminPwd');
+  document.getElementById('loginContainer').style.display='grid';
+  document.getElementById('adminContainer').style.display='none';
+  document.getElementById('passwordInput').value='';
+}
+document.getElementById('loginBtn').addEventListener('click', login);
+document.getElementById('logoutBtn').addEventListener('click', logout);
+document.getElementById('passwordInput').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
+document.getElementById('todayBtn').addEventListener('click', loadTodayRecords);
+document.getElementById('allBtn').addEventListener('click', loadAllRecords);
 
-        // 回车键登录
-        document.getElementById('passwordInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                login();
-            }
-        });
+// 恢复会话
+const savedPwd = sessionStorage.getItem('adminPwd');
+if(savedPwd){
+  document.getElementById('passwordInput').value = savedPwd;
+  // 自动尝试登录
+  login();
+}
 
-        // 检查登录状态
-        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
-            document.getElementById('loginContainer').style.display = 'none';
-            document.getElementById('adminContainer').style.display = 'block';
-            isLoggedIn = true;
-            initDateSelector();
-            initialLoad();
-        }
+function initDateSelector(){
+  const el=document.getElementById('dateSelector');
+  const today=new Date().toISOString().slice(0,10);
+  el.value=today;
+  el.addEventListener('change', loadRecordsByDate);
+}
+function loadTodayRecords(){
+  const t=new Date().toISOString().slice(0,10);
+  document.getElementById('dateSelector').value=t;
+  loadRecords(t);
+}
+function loadAllRecords(){
+  document.getElementById('dateSelector').value='';
+  loadRecords(null,true);
+}
+function loadRecordsByDate(){
+  const d=document.getElementById('dateSelector').value;
+  if(d) loadRecords(d);
+}
+async function initialLoad(){
+  const t=new Date().toISOString().slice(0,10);
+  document.getElementById('dateSelector').value=t;
+  await loadRecords(t);
+}
+async function loadRecords(date=null, loadAll=false){
+  if(!isLoggedIn) return;
+  const list=document.getElementById('recordsList');
+  const label=document.getElementById('loadModeLabel');
+  label.textContent = loadAll? '(全部)' : `(${date||new Date().toISOString().slice(0,10)})`;
+  list.innerHTML='<div class="loading"><div class="spinner"></div><p>'+(loadAll?'加载全部中…':'加载 '+date+' 中…')+'</p></div>';
+  try{
+    let url='/api/admin/records';
+    if(loadAll) url+='?all=true';
+    else if(date) url+=`?date=${date}`;
+    const resp = await fetch(url, { headers:{ 'X-Admin-Password': adminPassword } });
+    if(!resp.ok) throw new Error('加载失败 '+resp.status);
+    const data = await resp.json();
+    displayRecords(data, loadAll, date);
+  }catch(e){
+    list.innerHTML='<div class="loading"><p>加载失败：'+escapeHtml(e.message)+'</p></div>';
+  }
+}
 
-        // ==================== 加载对话记录 ====================
-        // 初始化日期选择器
-        function initDateSelector() {
-            const dateSelector = document.getElementById('dateSelector');
-            const today = new Date().toISOString().split('T')[0];
-            dateSelector.value = today;
-            // 不设置 min/max，等后端返回日期范围后再设置
-        }
+function displayRecords(data, loadAll, date){
+  const list=document.getElementById('recordsList');
+  const records=data.records||[];
+  document.getElementById('totalRecords').textContent=data.stats?.total||records.length;
+  document.getElementById('todayRecords').textContent=data.stats?.today||0;
+  document.getElementById('uniqueIPs').textContent=data.stats?.uniqueIPs||0;
+  if(data.dateRange){
+    const sel=document.getElementById('dateSelector');
+    if(data.dateRange.min) sel.min=data.dateRange.min;
+    if(data.dateRange.max) sel.max=data.dateRange.max;
+  }
+  if(!records.length){
+    const msg = loadAll? '暂无记录' : `${date||'今日'}暂无记录`;
+    list.innerHTML='<div class="loading"><p>'+msg+'</p></div>'; return;
+  }
+  const groups={};
+  records.forEach(r=>{ const ip=r.ip||'未知IP'; (groups[ip]=groups[ip]||[]).push(r); });
+  Object.values(groups).forEach(arr=> arr.sort((a,b)=> new Date(b.timestamp)-new Date(a.timestamp)) );
+  const sortedIPs = Object.keys(groups).sort((a,b)=> new Date(groups[b][0].timestamp)-new Date(groups[a][0].timestamp));
+  let html=''; let gIdx=0; let global=0;
+  sortedIPs.forEach(ip=>{
+    const arr=groups[ip];
+    const latest=new Date(arr[0].timestamp).toLocaleString('zh-CN');
+    const loc=arr[0].location||'';
+    html+=`<div class="ip-group" id="group-${gIdx}"><div class="ip-head" onclick="toggleGroup(${gIdx})"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="ip">${escapeHtml(ip)}</span><span class="loc">${escapeHtml(loc||'查询中')}</span><span class="cnt">${arr.length}条 · ${latest}</span></div><span style="font-size:12px;color:var(--muted)"><i data-lucide="chevron-down"></i></span></div><div class="ip-body">`;
+    arr.forEach(rec=>{
+      const time=new Date(rec.timestamp).toLocaleString('zh-CN');
+      const q=escapeHtml(rec.question||'');
+      const a=formatContent(rec.answer||'');
+      const isLong=(rec.answer||'').length>220;
+      html+=`<div class="record"><div class="record-meta"><span class="tag">${escapeHtml(rec.routeLabel||rec.model||rec.route||'文本')}</span><span class="time">${time}</span></div><div class="conv"><div class="bubble user"><div class="role">用户</div><div>${q}</div></div><div class="bubble assistant"><div class="role">玄机子</div><div class="${isLong?'collapsed-txt':''}" id="answer-${global}">${a}</div>${isLong?`<button class="expand" onclick="toggleExpand(${global})">展开全文</button>`:''}</div></div></div>`;
+      global++;
+    });
+    html+='</div></div>'; gIdx++;
+  });
+  list.innerHTML=html; refreshIcons();
+}
+function toggleGroup(i){
+  const el=document.getElementById('group-'+i);
+  if(el) el.classList.toggle('collapsed');
+}
+function toggleExpand(i){
+  const el=document.getElementById('answer-'+i);
+  const btn=el.nextElementSibling;
+  if(el.classList.contains('collapsed-txt')){ el.classList.remove('collapsed-txt'); btn.textContent='收起'; }
+  else { el.classList.add('collapsed-txt'); btn.textContent='展开全文'; }
+}
+function formatContent(content){
+  if(!content) return '';
+  let s=escapeHtml(content);
+  s=s.replace(/^###\s*(.+)$/gm,'<div class="section-title">$1</div>').replace(/^##\s*(.+)$/gm,'<div class="section-title">$1</div>').replace(/^#\s*(.+)$/gm,'<div class="section-title">$1</div>');
+  s=s.replace(/\n/g,'<br>');
+  s=s.replace(/【([^】]+)】/g,'<div class="section-title">$1</div>');
+  s=s.replace(/「([^」]+)」/g,'<mark>$1</mark>');
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  return s;
+}
+function escapeHtml(t){ const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
 
-        // 加载今日数据
-        function loadTodayRecords() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dateSelector').value = today;
-            loadRecords(today);
-        }
-
-        // 加载全部数据
-        function loadAllRecords() {
-            document.getElementById('dateSelector').value = '';
-            loadRecords(null, true);
-        }
-
-        // 按日期加载
-        function loadRecordsByDate() {
-            const date = document.getElementById('dateSelector').value;
-            if (date) {
-                loadRecords(date);
-            }
-        }
-
-        // 首次加载（默认加载今日数据，后端会返回日期范围）
-        async function initialLoad() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dateSelector').value = today;
-            await loadRecords(today);
-        }
-
-        // 核心加载函数
-        // date: 指定日期(YYYY-MM-DD)或null
-        // loadAll: true=加载全部数据
-        async function loadRecords(date = null, loadAll = false) {
-            if (!isLoggedIn) return;
-
-            const recordsList = document.getElementById('recordsList');
-            const loadModeLabel = document.getElementById('loadModeLabel');
-            
-            // 更新标签显示
-            if (loadAll) {
-                loadModeLabel.textContent = '(全部数据)';
-            } else if (date) {
-                loadModeLabel.textContent = `(${date})`;
-            } else {
-                const today = new Date().toISOString().split('T')[0];
-                date = today;
-                loadModeLabel.textContent = `(${today})`;
-            }
-            
-            recordsList.innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>${loadAll ? '加载全部数据中...' : `加载 ${date} 数据中...`}</p>
-                </div>
-            `;
-
-            try {
-                // 构建API URL
-                let apiUrl = '/api/admin/records';
-                if (loadAll) {
-                    apiUrl += '?all=true';
-                } else if (date) {
-                    apiUrl += `?date=${date}`;
-                }
-                
-                const response = await fetch(apiUrl, {
-                    headers: {
-                        'X-Admin-Password': ADMIN_PASSWORD
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('加载失败');
-                }
-
-                const data = await response.json();
-                displayRecords(data, loadAll, date);
-            } catch (error) {
-                recordsList.innerHTML = `
-                    <div class="no-records">
-                        <div class="icon">❌</div>
-                        <p>加载失败: ${error.message}</p>
-                    </div>
-                `;
-            }
-        }
-
-        // ==================== 显示对话记录 ====================
-        function displayRecords(data, loadAll = false, date = null) {
-            const recordsList = document.getElementById('recordsList');
-            const records = data.records || [];
-
-            // 更新统计
-            document.getElementById('totalRecords').textContent = data.stats?.total || records.length;
-            document.getElementById('todayRecords').textContent = data.stats?.today || 0;
-            document.getElementById('uniqueIPs').textContent = data.stats?.uniqueIPs || 0;
-            
-            // 更新日历范围（根据后端返回的日期范围）
-            if (data.dateRange) {
-                const dateSelector = document.getElementById('dateSelector');
-                if (data.dateRange.min) {
-                    dateSelector.min = data.dateRange.min;
-                }
-                if (data.dateRange.max) {
-                    dateSelector.max = data.dateRange.max;
-                }
-            }
-
-            if (records.length === 0) {
-                const emptyMsg = loadAll 
-                    ? '暂无对话记录' 
-                    : `${date || '今日'}暂无对话记录，选择其他日期或点击「全部」查看`;
-                recordsList.innerHTML = `
-                    <div class="no-records">
-                        <div class="icon">📭</div>
-                        <p>${emptyMsg}</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // 按IP分组
-            const ipGroups = {};
-            records.forEach(record => {
-                const ip = record.ip || '未知IP';
-                if (!ipGroups[ip]) {
-                    ipGroups[ip] = [];
-                }
-                ipGroups[ip].push(record);
-            });
-
-            // 每个IP组内按时间倒序排列
-            Object.keys(ipGroups).forEach(ip => {
-                ipGroups[ip].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            });
-
-            // 按最新对话时间排序IP组
-            const sortedIPs = Object.keys(ipGroups).sort((a, b) => {
-                const latestA = new Date(ipGroups[a][0].timestamp);
-                const latestB = new Date(ipGroups[b][0].timestamp);
-                return latestB - latestA;
-            });
-
-            let html = '';
-            let globalIndex = 0;
-            
-            sortedIPs.forEach((ip, groupIndex) => {
-                const groupRecords = ipGroups[ip];
-                const latestTime = new Date(groupRecords[0].timestamp).toLocaleString('zh-CN');
-                const storedLocation = groupRecords[0].location || '';
-                
-                html += `
-                    <div class="ip-group" id="group-${groupIndex}">
-                        <div class="ip-group-header" onclick="toggleGroup(${groupIndex})">
-                            <div class="ip-info">
-                                <span class="ip-address">🌐 ${ip}</span>
-                                <span class="location" id="loc-${groupIndex}" data-ip="${ip}">📍 ${storedLocation || '查询中...'}</span>
-                                <span class="chat-count">${groupRecords.length} 条对话 · 最新: ${latestTime}</span>
-                            </div>
-                            <span class="toggle-icon">▼</span>
-                        </div>
-                        <div class="ip-group-content">
-                `;
-                
-                groupRecords.forEach(record => {
-                    const time = new Date(record.timestamp).toLocaleString('zh-CN');
-                    const answerFormatted = formatContent(record.answer || '');
-                    const isLong = (record.answer || '').length > 200;
-                    
-                    html += `
-                        <div class="record-item">
-                            <div class="record-meta">
-                                <span class="route-tag">📡 线路${record.route || '1'}</span>
-                                <span class="time">🕐 ${time}</span>
-                            </div>
-                            <div class="record-conversation">
-                                <div class="record-msg user">
-                                    <div class="role">👤 用户提问</div>
-                                    <div class="content">${escapeHtml(record.question || '')}</div>
-                                </div>
-                                <div class="record-msg assistant">
-                                    <div class="role">🧙‍♂️ 玄机子回答</div>
-                                    <div class="content ${isLong ? 'collapsed' : ''}" id="answer-${globalIndex}">${answerFormatted}</div>
-                                    ${isLong ? `<button class="expand-btn" onclick="toggleExpand(${globalIndex})">📖 展开全文</button>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    globalIndex++;
-                });
-                
-                html += `
-                        </div>
-                    </div>
-                `;
-            });
-
-            recordsList.innerHTML = html;
-            
-            // 异步查询所有IP的位置信息
-            queryAllIPLocations();
-        }
-
-        // ==================== 查询IP位置信息 ====================
-        async function queryAllIPLocations() {
-            const locationElements = document.querySelectorAll('.location[data-ip]');
-            
-            for (const elem of locationElements) {
-                const ip = elem.dataset.ip;
-                if (!ip || ip === '未知IP') continue;
-                
-                // 如果已经有位置信息（不是"查询中..."或"未知位置"），跳过
-                const currentText = elem.textContent;
-                if (currentText && !currentText.includes('查询中') && !currentText.includes('未知位置')) {
-                    continue;
-                }
-                
-                try {
-                    const response = await fetch(`https://api.vore.top/api/IPdata?ip=${ip}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.code === 200 && data.adcode && data.adcode.o) {
-                            elem.textContent = `📍 ${data.adcode.o}`;
-                        } else {
-                            elem.textContent = '📍 未知位置';
-                        }
-                    } else {
-                        elem.textContent = '📍 查询失败';
-                    }
-                } catch (e) {
-                    elem.textContent = '📍 查询失败';
-                }
-            }
-        }
-
-        // ==================== IP分组展开/收起 ====================
-        function toggleGroup(groupIndex) {
-            const group = document.getElementById(`group-${groupIndex}`);
-            if (group) {
-                group.classList.toggle('collapsed');
-            }
-        }
-
-        // ==================== 展开/收起功能 ====================
-        function toggleExpand(index) {
-            const content = document.getElementById(`answer-${index}`);
-            const btn = content.nextElementSibling;
-            
-            if (content.classList.contains('collapsed')) {
-                content.classList.remove('collapsed');
-                btn.textContent = '📕 收起';
-            } else {
-                content.classList.add('collapsed');
-                btn.textContent = '📖 展开全文';
-            }
-        }
-
-        // ==================== 内容格式化（与前端一致） ====================
-        function formatContent(content) {
-            if (!content) return '';
-            
-            let formatted = escapeHtml(content);
-            
-            // 处理 ### 标题格式
-            formatted = formatted.replace(/^###\s*(.+)$/gm, '<div class="section-title">【$1】</div>');
-            formatted = formatted.replace(/^##\s*(.+)$/gm, '<div class="section-title">【$1】</div>');
-            formatted = formatted.replace(/^#\s*(.+)$/gm, '<div class="section-title">【$1】</div>');
-            
-            // 处理换行
-            formatted = formatted.replace(/\n/g, '<br>');
-            
-            // 处理【标题】格式
-            formatted = formatted.replace(/【([^】]+)】/g, '<div class="section-title">✦ $1</div>');
-            
-            // 处理「重点词」格式
-            formatted = formatted.replace(/「([^」]+)」/g, '<mark>$1</mark>');
-            
-            // 处理 **加粗** 格式
-            formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            
-            // 处理吉凶标记
-            formatted = formatted.replace(/大吉/g, '<span class="luck-great">大吉</span>');
-            formatted = formatted.replace(/中吉/g, '<span class="luck-good">中吉</span>');
-            formatted = formatted.replace(/大凶/g, '<span class="luck-bad">大凶</span>');
-            
-            return formatted;
-        }
-
-        // ==================== 工具函数 ====================
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-    </script>
+refreshIcons();
+</script>
 </body>
 </html>
