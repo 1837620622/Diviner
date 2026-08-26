@@ -1,24 +1,14 @@
-// Cloudflare Pages Function - 单线路 + 自动路由 + 兜底
+// Cloudflare Pages Function - 单线路 + 自动路由 + 多重智能兜底
 // 密钥通过环境变量注入，不落地仓库
-// 支持：纯文本走 nemotron-3-ultra，图片走 mimo-v2.5，自动兜底
+// 支持：纯文本优先走 nemotron/deepseek，图片优先走 mimo/gpt-4o-mini，全自动兜底
 // 环境变量：
-//   API_BASE_URL  默认 https://freeai.chuankangkk.top/v1
-//   API_KEY       必填（OpenAI兼容）
+//   API_BASE_URL     默认 https://freeai.chuankangkk.top/v1
+//   API_KEY          必填（OpenAI兼容密钥）
+//   MODEL_TEXT       可选，自定义文本模型
+//   MODEL_VISION     可选，自定义视觉模型
 //   FALLBACK_ENABLED 默认 true
 
 const DEFAULT_BASE = 'https://freeai.chuankangkk.top/v1';
-
-// 模型路由表：单线路对外无感知，后端自动选择
-const ROUTING = {
-  text: {
-    primary: 'nemotron-3-ultra-free',
-    fallbacks: ['mimo-v2.5-free', 'laguna-s-2.1-free'],
-  },
-  vision: {
-    primary: 'mimo-v2.5-free',
-    fallbacks: ['nemotron-3-ultra-free', 'laguna-s-2.1-free'],
-  },
-};
 
 // 检测消息中是否包含图片（OpenAI兼容的 content 数组格式）
 function hasImageContent(messages) {
@@ -45,7 +35,6 @@ function normalizeMessages(messages) {
       if (p.type === 'image_url') {
         if (imageCount >= 3) continue;
         const url = p.image_url?.url || '';
-        // 过滤過大 base64（>5MB 直接丢棄，提示由前端壓縮）
         if (url.length > 5 * 1024 * 1024) continue;
         imageCount++;
         parts.push(p);
@@ -57,7 +46,7 @@ function normalizeMessages(messages) {
   });
 }
 
-async function callUpstream({ base, key, model, body, timeoutMs = 30000 }) {
+async function callUpstream({ base, key, model, body, timeoutMs = 45000 }) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -77,10 +66,6 @@ async function callUpstream({ base, key, model, body, timeoutMs = 30000 }) {
   }
 }
 
-function pickRoute(messages) {
-  return hasImageContent(messages) ? ROUTING.vision : ROUTING.text;
-}
-
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -89,12 +74,12 @@ export async function onRequestPost(context) {
 
   if (!API_KEY) {
     return new Response(
-      JSON.stringify({ error: 'API_KEY 未配置，请在 Cloudflare Pages 环境变量中设置 API_KEY' }),
+      JSON.stringify({ error: 'API_KEY 未配置，请在 Cloudflare Pages 环境变量中设置 API_KEY（不存入仓库）' }),
       { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
   }
 
-  // 获取 IP 与地理（仅用于人设的“掐指一算”，不泄露技术细节）
+  // 获取 IP 与地理（仅用于命理人设的“掐指一算”，不泄露技术细节）
   let clientIP =
     request.headers.get('CF-Connecting-IP') ||
     request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
@@ -129,18 +114,38 @@ export async function onRequestPost(context) {
     });
   }
 
-  // 兼容旧前端仍传 route 的情況：直接忽略，后端自动路由
   const rawMessages = body.messages || [];
   const messages = normalizeMessages(rawMessages);
   const isVision = hasImageContent(messages);
-  const route = pickRoute(messages);
 
-  // 兼容旧前端传 temperature / max_tokens，没有则用合理默认
+  // 动态模型路由配置（支持通过环境变量完全自定义）
+  const configuredText = (env.MODEL_TEXT || env.AI_MODEL || env.DEFAULT_MODEL || 'nemotron-3-ultra-free').trim();
+  const configuredVision = (env.MODEL_VISION || env.AI_VISION_MODEL || 'mimo-v2.5-free').trim();
+
+  const textCandidates = Array.from(new Set([
+    configuredText,
+    'nemotron-3-ultra-free',
+    'mimo-v2.5-free',
+    'laguna-s-2.1-free',
+    'deepseek-chat',
+    'gpt-4o-mini',
+    'gpt-3.5-turbo',
+  ])).filter(Boolean);
+
+  const visionCandidates = Array.from(new Set([
+    configuredVision,
+    'mimo-v2.5-free',
+    'gpt-4o-mini',
+    'nemotron-3-ultra-free',
+    'laguna-s-2.1-free',
+  ])).filter(Boolean);
+
+  const candidates = isVision ? visionCandidates : textCandidates;
+
   const temperature = typeof body.temperature === 'number' ? body.temperature : 0.75;
-  const max_tokens = typeof body.max_tokens === 'number' ? body.max_tokens : 1800;
+  const max_tokens = typeof body.max_tokens === 'number' ? body.max_tokens : 2048;
   const top_p = typeof body.top_p === 'number' ? body.top_p : 0.9;
 
-  // 构造上游请求体：只透传必要字段，不把 route 等杂字段带上去
   const upstreamBaseBody = {
     messages,
     temperature,
@@ -149,7 +154,6 @@ export async function onRequestPost(context) {
     stream: false,
   };
 
-  const candidates = [route.primary, ...route.fallbacks];
   let lastError = null;
   let lastData = null;
   let usedModel = null;
@@ -157,44 +161,45 @@ export async function onRequestPost(context) {
   for (let i = 0; i < candidates.length; i++) {
     const model = candidates[i];
     try {
-      const { resp, data } = await callUpstream({ base: API_BASE, key: API_KEY, model, body: upstreamBaseBody, timeoutMs: 30000 });
+      const { resp, data } = await callUpstream({
+        base: API_BASE,
+        key: API_KEY,
+        model,
+        body: upstreamBaseBody,
+        timeoutMs: 45000,
+      });
 
-      // 成功
       if (resp.ok && data.choices && data.choices[0]?.message) {
         usedModel = model;
         lastData = data;
         break;
       }
 
-      // 429 / 5xx 触发兜底，其他 400 视情况兜底
       const isRetryable = resp.status === 429 || resp.status >= 500 || resp.status === 400;
       lastError = { status: resp.status, data };
       lastData = data;
 
-      // 400 且明确是 image 不支持：若当前是 vision 主模型，继续兜底；否则不再重试
-      if (resp.status === 400 && String(JSON.stringify(data)).includes('image')) {
-        // 有图片但模型不支持 image，继续下一个候选（虽然最终仍可能失败，但可尝试文字兜底提示）
+      if (resp.status === 400 && String(JSON.stringify(data)).toLowerCase().includes('image')) {
         if (i < candidates.length - 1) continue;
       }
 
       if (!isRetryable) break;
       if (i < candidates.length - 1) {
-        // 轻微退避
-        await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+        await new Promise((r) => setTimeout(r, 350 * (i + 1)));
         continue;
       }
     } catch (e) {
       lastError = { status: 0, message: e.message || String(e) };
       if (i < candidates.length - 1) {
-        await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+        await new Promise((r) => setTimeout(r, 350 * (i + 1)));
         continue;
       }
     }
   }
 
-  // 若全部失败，返回友好兜底（前端会以 assistant 消息形式展示）
+  // 若全部失败，返回温润典雅的命理兜底回复
   if (!lastData || !lastData.choices || !lastData.choices[0]?.message) {
-    const detail = lastError ? JSON.stringify(lastError).slice(0, 800) : '未知错误';
+    const detail = lastError ? JSON.stringify(lastError).slice(0, 500) : '上游天象暂未连通';
     return new Response(
       JSON.stringify({
         choices: [
@@ -203,12 +208,13 @@ export async function onRequestPost(context) {
               role: 'assistant',
               content:
                 '天机暂晦，方才一试未得正解。\n\n' +
-                '可能原因：上游模型繁忙或图片过大。\n\n' +
-                '建议：\n' +
-                '1）若上传了图片，请将图片压缩至 2MB 以内，或先以文字描述面相手纹、房宅朝向；\n' +
-                '2）稍候 10 秒后重试；\n' +
-                '3）若持续异常，可更换网络后重试。\n\n' +
-                '本回复为本地兜底，非模型生成。',
+                '可能原因：上游天象推演通道繁忙，或上传之图元数据过大。\n\n' +
+                '【建议趋避】\n' +
+                '1）若上传了图片，请将图片压缩至 2MB 以内，或以文字描述面相手纹、居室朝向；\n' +
+                '2）稍候片刻重新问卜；\n' +
+                '3）可在下方点击【法器】直接使用六爻、摇签或排盘法器起卦。\n\n' +
+                '箴言：「静水流深，急则生变；稍安勿躁，自有明断。」\n\n' +
+                '本回复为系统温和兜底，非模型实时演算。',
             },
           },
         ],
@@ -219,12 +225,11 @@ export async function onRequestPost(context) {
     );
   }
 
-  // KV 记录（不阻塞）
+  // KV 记录（非阻塞）
   if (env.CHAT_LOGS && lastData.choices[0]?.message?.content) {
     try {
       const userMessages = messages.filter((m) => m.role === 'user');
       const lastUser = userMessages[userMessages.length - 1];
-      // 提取最后用户文本（兼容多模态）
       let lastUserText = '';
       if (Array.isArray(lastUser?.content)) {
         lastUserText = lastUser.content
@@ -245,7 +250,7 @@ export async function onRequestPost(context) {
           id: recordId,
           ip: clientIP,
           location: locationText,
-          route: usedModel || route.primary,
+          route: usedModel || (isVision ? 'vision' : 'text'),
           routeLabel: isVision ? '图文' : '文本',
           model: usedModel,
           isVision,
@@ -260,13 +265,12 @@ export async function onRequestPost(context) {
     }
   }
 
-  // 附带调试头（不泄露 key）
   return new Response(JSON.stringify(lastData), {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'X-Model-Used': usedModel || route.primary,
+      'X-Model-Used': usedModel || (isVision ? 'vision' : 'text'),
     },
   });
 }
@@ -280,3 +284,4 @@ export async function onRequestOptions() {
     },
   });
 }
+
