@@ -101,9 +101,11 @@ function routeMap(env) {
 
   return {
     // 默认首选：通义千问 3.6（Groq），速度快、支持图文。
+    // 提示词已要求长文推演（700~1200 字），故 token 上限与单次超时同步放宽，
+    // 避免长答写到一半被 13s 超时腰斩。
     'qwen3.6': openaiCompat('groq', '灵台', 'https://api.groq.com/openai/v1', groqKey,
       envText(env.GROQ_MODEL) || 'qwen/qwen3.6-27b',
-      { vision: true, timeoutMs: 13000, maxTokens: 2400, extraBody: { reasoning_effort: 'none' } }),
+      { vision: true, timeoutMs: 28000, maxTokens: 4096, extraBody: { reasoning_effort: 'none' } }),
 
     // b.ai 免费模型。推理类（reasoning）会先输出 reasoning_content（服务端已过滤），
     // 故生成上限抬高到 6000，避免思考耗尽 token 导致正文为空。千问 3.8 亦属推理类。
@@ -114,10 +116,10 @@ function routeMap(env) {
     'hy3': bai('hy3', false, 6000),
     'mimo-v2.5': bai('mimo-v2.5', false, 6000),
 
-    // 智谱 GLM 直连（保留既有 Key，可作为中文稳妥之选）。
+    // 智谱 GLM 直连（保留既有 Key，可作为中文稳妥之选）。超时与上限同步放宽以容纳长答。
     'glm-4.7-flash': openaiCompat('zhipu', '灵台', 'https://open.bigmodel.cn/api/paas/v4', zhipuKey,
       envText(env.ZHIPU_MODEL) || 'glm-4.7-flash',
-      { timeoutMs: 16000, maxTokens: 2400, extraBody: { thinking: { type: 'disabled' } } }),
+      { timeoutMs: 26000, maxTokens: 4096, extraBody: { thinking: { type: 'disabled' } } }),
   };
 }
 
@@ -272,28 +274,55 @@ function friendlyFailMessage(fail) {
   return '此模型推演受阻（限流、超时或线路波动）。可稍候重试，或另择一尊法器（模型）再问。';
 }
 
-// ── 多用户公平性：按 IP 限流 ──────────────────────────────────────────────
+// ── 多用户公平性：按 IP 两级限流 ─────────────────────────────────────────
 // 上游为免费档密钥（Groq / b.ai / 智谱），配额全体用户共享。个别高频或脚本用户
-// 可在短时间内打满配额，令其他在线问卜者尽数受阻。此处对单个 IP 做分钟级软限流，
-// 保护共享香火。KV 读写异常时放行（fail-open），避免限流组件故障把所有人拒之门外。
-// 采用非原子「读后自增」：高并发下可能轻微少计，作为软限流可接受。
+// 可在短时间内打满配额，令其他在线问卜者尽数受阻，故对单个 IP 做分钟级软限流。
+//
+// 第一级·内存计数：模块作用域的 Map 在同一边缘节点的同一 isolate 内跨请求复用，
+// 零 KV 消耗即可挡住绝大多数刷量；不同 isolate 互不可见，故为「单节点软限流」。
+// 第二级·KV 全局聚合：仅当某 IP 在本节点已明显高频（≥ MEM_KV_GATE）时才写 KV，
+// 跨节点累计后按 RATE_MAX 拦截真正的分布式刷量。免费档 KV 每天仅约 1000 次写，
+// 聊天日志本身每次请求已占一次写，限流层若再逐请求写 KV 会令写预算翻倍耗尽，
+// 因此 KV 只服务于高频 IP，正常用户全程不触碰。
+// KV 读写异常时放行（fail-open），避免限流组件故障把所有人拒之门外。
+// 两级均为非原子「读后自增」，高并发下可能轻微少计，作为软限流可接受。
 const RATE_WINDOW_MS = 60 * 1000; // 1 分钟窗口
 const RATE_MAX = 30;              // 每 IP 每分钟最多问卜次数
+const MEM_KV_GATE = 12;           // 本节点窗口内超过此次数后才动用 KV 做全局聚合
+const memRate = new Map();        // `${windowStart}_${ip}` -> 本 isolate 窗口内计数
+
+// 清理过期窗口，防止 Map 在长跑 isolate 中无限增长（仅保留当前与上一窗口）。
+function pruneMemRate(windowStart) {
+  if (memRate.size < 4000) return;
+  for (const key of memRate.keys()) {
+    const w = Number(key.slice(0, key.indexOf('_')));
+    if (w < windowStart - 1) memRate.delete(key);
+  }
+}
 
 async function checkRateLimit(env, request) {
-  if (!env.CHAT_LOGS) return { allowed: true };
   const ip = request.headers.get('CF-Connecting-IP') || 'anon';
   const windowStart = Math.floor(Date.now() / RATE_WINDOW_MS);
-  const key = `rl_${windowStart}_${ip}`;
-  try {
-    const cur = Number(await env.CHAT_LOGS.get(key)) || 0;
-    if (cur >= RATE_MAX) return { allowed: false };
-    // TTL 略大于窗口，窗口滚过后自动清理，不与 chat_ 日志混淆。
-    await env.CHAT_LOGS.put(key, String(cur + 1), { expirationTtl: 120 });
-    return { allowed: true };
-  } catch {
-    return { allowed: true }; // KV 异常放行
+  pruneMemRate(windowStart);
+
+  // 第一级：内存计数，本节点窗口内超限即拒。
+  const memKey = `${windowStart}_${ip}`;
+  const memCount = (memRate.get(memKey) || 0) + 1;
+  memRate.set(memKey, memCount);
+  if (memCount > RATE_MAX) return { allowed: false };
+
+  // 第二级：高频 IP 才动用 KV 做跨节点全局聚合；TTL 略大于窗口，滚窗后自动清理。
+  if (env.CHAT_LOGS && memCount >= MEM_KV_GATE) {
+    try {
+      const kvKey = `rl_${memKey}`;
+      const cur = Number(await env.CHAT_LOGS.get(kvKey)) || 0;
+      if (cur >= RATE_MAX) return { allowed: false };
+      await env.CHAT_LOGS.put(kvKey, String(cur + 1), { expirationTtl: 120 });
+    } catch {
+      // KV 异常放行
+    }
   }
+  return { allowed: true };
 }
 
 // 以「普通助手消息帧」温和提示（区别于 model_error：不触发前端重选模型弹窗）。
@@ -444,6 +473,10 @@ export async function onRequestPost(context) {
         try { await writer.write(encoder.encode('data: [DONE]\n\n')); } catch {}
       }
     } finally {
+      // 客户端中途断开（关闭页面或点了停止）时，下游 writer 会先报错走到这里；
+      // 此时必须同步断掉上游读取，否则上游会为无人接收的推演继续生成，
+      // 白白烧掉全体用户共享的免费配额。正常跑完后 cancel 是无害的空操作。
+      try { await reader.cancel(); } catch {}
       try { await writer.close(); } catch {}
       const logPromise = saveRecord(env, request, {
         question, answer, route: route.id, routeLabel: route.label,
