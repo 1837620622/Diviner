@@ -18,12 +18,20 @@ async function listAllKeys(kv, prefix, maxKeys = 5000) {
   return keys.slice(0, maxKeys);
 }
 
+// 口令比对先各做 SHA-256 摘要再 timingSafeEqual，长度恒定，抵御时差侧信道。
+async function safeEqual(a, b) {
+  const enc = new TextEncoder();
+  const ha = await crypto.subtle.digest('SHA-256', enc.encode(a));
+  const hb = await crypto.subtle.digest('SHA-256', enc.encode(b));
+  return crypto.subtle.timingSafeEqual(ha, hb);
+}
+
 export async function onRequestGet({ request, env }) {
   const expected = String(env.ADMIN_PASSWORD || '').trim();
   if (!expected) return json({ error: '管理后台尚未配置 ADMIN_PASSWORD' }, 503);
 
   const supplied = String(request.headers.get('X-Admin-Password') || '').trim();
-  if (!supplied || supplied !== expected) return json({ error: '未授权访问' }, 401);
+  if (!supplied || !(await safeEqual(supplied, expected))) return json({ error: '未授权访问' }, 401);
 
   if (!env.CHAT_LOGS) {
     return json({ records: [], stats: { total: 0, today: 0, uniqueIPs: 0, loaded: 0 }, dateRange: { min: null, max: null, available: [] } });
@@ -43,11 +51,14 @@ export async function onRequestGet({ request, env }) {
     let candidate = loadAll ? allKeys : allKeys.filter((k) => k.name.startsWith(`chat_${targetDate}_`));
     candidate = candidate.sort((a, b) => b.name.localeCompare(a.name)).slice(0, limit);
 
-    const records = [];
-    for (const key of candidate) {
-      const rec = await env.CHAT_LOGS.get(key.name, { type: 'json' });
-      if (rec) records.push(rec);
-    }
+    // 可选按模型筛选：匹配前台模型代号 modelId，或上游真实模型名 model。
+    const modelFilter = String(url.searchParams.get('model') || '').trim();
+
+    // 并发读取所选记录，替代逐条串行 await，显著降低后台加载时延。
+    const fetched = await Promise.all(candidate.map((key) => env.CHAT_LOGS.get(key.name, { type: 'json' })));
+    const records = fetched.filter(Boolean).filter((rec) =>
+      !modelFilter || rec.modelId === modelFilter || rec.model === modelFilter
+    );
 
     const uniqueIPs = new Set(records.map((r) => r.ip).filter(Boolean)).size;
     const todayCount = allKeys.filter((k) => k.name.startsWith(`chat_${today}_`)).length;

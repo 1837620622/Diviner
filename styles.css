@@ -1787,6 +1787,55 @@ textarea#userInput::placeholder{color:#655f57}
 .send-btn:not(:disabled):active { transform:translateY(1px) scale(.96);box-shadow:0 3px 10px rgba(124,40,31,.3); }
 .composer-legal-text { color:#5d5852;letter-spacing:.08em;font-family:var(--font-serif); }
 
+/* 法器（模型）选择器：真实厂商图标 + 模型代号 + 能力徽标，问卜者自主择器。
+   与占案同源的黑金 / 朱砂基调，只露厂商图标与代号，不暴露上游网关。 */
+.model-selector { position:relative;width:fit-content;max-width:100%;margin:2px 0 10px; }
+.model-selector-btn { display:flex;align-items:center;gap:9px;padding:7px 12px 7px 9px;background:rgba(14,13,19,.9);border:1px solid rgba(229,200,141,.16);border-radius:6px;cursor:pointer;font-family:var(--font-serif);transition:.28s var(--ritual-ease); }
+.model-selector-btn:hover { border-color:rgba(217,181,111,.4);background:rgba(198,161,91,.05); }
+.model-selector-btn:focus-visible { outline:none;border-color:rgba(217,181,111,.55);box-shadow:0 0 0 2px rgba(201,161,81,.14); }
+.model-selector-logo-wrap { width:22px;height:22px;border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);flex:none; }
+.model-selector-logo { width:100%;height:100%;object-fit:cover;display:block; }
+.model-selector-text { display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;min-width:0; }
+.model-selector-name { font:500 12.5px/1.2 var(--font-serif);color:#e3d8c4;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px; }
+.model-selector-cap { font:400 10px/1.2 var(--font-serif);color:#8a7f6b;letter-spacing:.05em;margin-top:1px; }
+.model-selector-caret { width:14px;height:14px;color:#9a8c6e;transition:transform .28s var(--ritual-ease);flex:none; }
+.model-selector.open .model-selector-caret { transform:rotate(180deg); }
+
+.model-selector-panel { position:absolute;bottom:calc(100% + 10px);left:0;min-width:300px;max-width:min(360px,calc(100vw - 32px));max-height:340px;overflow-y:auto;background:linear-gradient(160deg,rgba(20,18,25,.99),rgba(11,10,15,.99));border:1px solid rgba(224,192,126,.22);border-radius:6px;box-shadow:0 24px 60px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.02);padding:6px;display:none;z-index:120; }
+.model-selector.open .model-selector-panel { display:block;animation:modelPanelIn .24s var(--ritual-ease) both; }
+@keyframes modelPanelIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+.model-selector-panel::-webkit-scrollbar { width:6px; }
+.model-selector-panel::-webkit-scrollbar-thumb { background:rgba(212,175,55,.2);border-radius:3px; }
+.model-selector-panel::-webkit-scrollbar-track { background:transparent; }
+
+.model-option { display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:4px;cursor:pointer;transition:.2s;border:1px solid transparent; }
+.model-option + .model-option { margin-top:2px; }
+.model-option:hover { background:rgba(198,161,91,.06); }
+.model-option:focus-visible { outline:none;background:rgba(198,161,91,.07);border-color:rgba(217,181,111,.3); }
+.model-option.selected { background:rgba(148,46,37,.12);border-color:rgba(180,70,52,.28); }
+.model-option-logo { width:24px;height:24px;border-radius:5px;object-fit:cover;flex:none;margin-top:1px;background:rgba(255,255,255,.04); }
+.model-option-main { flex:1;min-width:0; }
+.model-option-topline { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+.model-option-name { font:600 13px/1.25 var(--font-serif);color:#ead9bd;letter-spacing:.03em; }
+.model-option-vendor { font:400 10.5px/1.3 var(--font-serif);color:#8a7f6b;letter-spacing:.04em;margin-top:2px; }
+.model-badge { font:500 9.5px/1 var(--font-serif);letter-spacing:.06em;padding:3px 6px;border-radius:2px;border:1px solid;flex:none; }
+.model-badge-rec { color:#e0bf79;border-color:rgba(224,191,121,.35);background:rgba(224,191,121,.08); }
+.model-badge-vision { color:#9fd0b8;border-color:rgba(16,185,129,.28);background:rgba(16,185,129,.07); }
+.model-badge-text { color:#a89bb0;border-color:rgba(168,155,176,.22);background:rgba(168,155,176,.06); }
+.model-pace { font:400 9.5px/1 var(--font-serif);color:#7a6f5c;letter-spacing:.05em;margin-left:auto;flex:none; }
+.model-option-proscon { margin-top:6px;display:flex;flex-direction:column;gap:3px; }
+.model-line { display:flex;gap:5px;align-items:flex-start;font:400 10.5px/1.5 var(--font-serif);letter-spacing:.02em; }
+.model-line svg { width:11px;height:11px;flex:none;margin-top:2px; }
+.model-pros { color:#8f8471; }
+.model-pros svg { color:#7fae90; }
+.model-cons { color:#7d7466; }
+.model-cons svg { color:#b0705f; }
+
+@media (max-width: 480px) {
+  .model-selector-panel { min-width:0;width:calc(100vw - 32px);max-width:calc(100vw - 32px); }
+  .model-selector-name { max-width:132px; }
+}
+
 /* 消息：取消“AI 气泡感”，改为签批式阅读 */
 .msg-row { animation:messageRise .65s var(--ritual-ease) both; }
 .msg-row.assistant { padding:10px 0 22px; }

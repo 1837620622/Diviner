@@ -4,6 +4,111 @@
 const API_ENDPOINT = '/api/chat';
 const STORAGE_KEY = 'xuanjizi_sessions_v7';
 const SIDEBAR_KEY = 'xuanjizi_sidebar';
+const MODEL_KEY = 'xuanjizi_model_v1';
+
+// 安全读写 localStorage：隐私模式 / 存储被禁时不抛异常，读返回默认值、写静默忽略。
+// 顶层构造（如 SoundEngine）若直接裸调 localStorage 一旦抛错会中断整个脚本，故统一走这里。
+const safeStorage = {
+  get(key, fallback = null) {
+    try { return localStorage.getItem(key); } catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, value); } catch { /* 存储不可用时静默忽略 */ }
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// 可选模型（法器）目录：id 与后端 functions/api/chat.js 的路由表一一对应。
+// vendor 为厂商名，logo 为真实厂商图标，vision 标注是否支持读图，
+// pros/cons 说明优劣，供问卜者自行权衡择器。
+// ─────────────────────────────────────────────────────────────
+const MODEL_CATALOG = [
+  {
+    id: 'qwen3.6',
+    name: '通义千问 3.6',
+    vendor: '通义千问',
+    logo: '/logos/qwen.png',
+    vision: true,
+    pace: '疾',
+    recommended: true,
+    pros: '响应迅捷、长上下文稳健、图文兼通，宜日常快速问卜。',
+    cons: '玄学意象的细腻铺陈，略逊专用推理模型。'
+  },
+  {
+    id: 'deepseek-v4-flash-vision-exp',
+    name: 'DeepSeek V4 视觉版',
+    vendor: 'DeepSeek',
+    logo: '/logos/deepseek.png',
+    vision: true,
+    pace: '缓',
+    pros: '深度推理兼具图像解读，可观相格、户型、卦象图。',
+    cons: '起卦耗时较长，免费线路限流较紧。'
+  },
+  {
+    id: 'deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
+    vendor: 'DeepSeek',
+    logo: '/logos/deepseek.png',
+    vision: false,
+    pace: '缓',
+    pros: '推理链缜密，擅解繁复卦理与多条件抉择。',
+    cons: '仅文字；免费线路或有限流。'
+  },
+  {
+    id: 'glm-5.3-flash',
+    name: '智谱清言 GLM-5.3',
+    vendor: '智谱清言',
+    logo: '/logos/zhipu.png',
+    vision: false,
+    pace: '稳',
+    pros: '中文语感醇厚、说理温润，契合东方术数语境。',
+    cons: '仅文字；推理时稍缓。'
+  },
+  {
+    id: 'hy3',
+    name: '腾讯混元 HY3',
+    vendor: '腾讯混元',
+    logo: '/logos/tencent.png',
+    vision: false,
+    pace: '缓',
+    pros: '国学底蕴醇厚、断语稳妥，宜问大势进退。',
+    cons: '仅文字；响应偏慢。'
+  },
+  {
+    id: 'glm-4.7-flash',
+    name: '智谱清言 GLM-4.7',
+    vendor: '智谱清言',
+    logo: '/logos/zhipu.png',
+    vision: false,
+    pace: '疾',
+    pros: '直连专线、出语快、中文稳妥，宜速问速答。',
+    cons: '仅文字；深度铺陈稍弱。'
+  },
+  {
+    id: 'mimo-v2.5',
+    name: '小米 MiMo 2.5',
+    vendor: '小米 MiMo',
+    logo: '/logos/xiaomi.png',
+    vision: false,
+    pace: '稳',
+    pros: '思路清晰、语气平实，宜追问与复盘。',
+    cons: '仅文字；免费额度易触限。'
+  },
+  {
+    id: 'qwen3.8-flash',
+    name: '通义千问 3.8 Flash',
+    vendor: '通义千问',
+    logo: '/logos/qwen.png',
+    vision: false,
+    pace: '疾',
+    pros: '出语极快，宜简短占断、速问速答。',
+    cons: '仅文字；深度铺陈稍弱。'
+  }
+];
+const DEFAULT_MODEL_ID = 'qwen3.6';
+// 当前所选模型 id（默认通义千问 3.6）。
+let currentModelId = DEFAULT_MODEL_ID;
+
 const SYSTEM_PROMPT = `你是【玄机子】。以东方术数（周易六爻、梅花易数、四柱八字、小六壬、黄历、灵签）与塔罗圣三角为镜，帮问卜者把一件心事看清楚，再把选择还给他自己。
 
 口吻：沉静、具体、克制，像懂易理的先生，不是神棍，也不是客服。
@@ -66,7 +171,7 @@ const TAROT_DECK = [
 class SoundEngine {
   constructor() {
     this.ctx = null;
-    this.enabled = localStorage.getItem('xuanjizi_sound') !== 'off';
+    this.enabled = safeStorage.get('xuanjizi_sound') !== 'off';
     this.master = 0.55;
   }
   init() {
@@ -79,7 +184,7 @@ class SoundEngine {
   }
   setEnabled(v) {
     this.enabled = !!v;
-    localStorage.setItem('xuanjizi_sound', this.enabled ? 'on' : 'off');
+    safeStorage.set('xuanjizi_sound', this.enabled ? 'on' : 'off');
     if (this.enabled) this.play('open');
   }
   tone(freq, duration=.35, type='sine', gain=.045, delay=0, endFreq=null) {
@@ -171,6 +276,7 @@ function initApp() {
   restoreSidebar();
   loadSessions();
   bindEvents();
+  initModelSelector();
   renderHistoryList();
   renderAlmanacData();
   initAtmosphere();
@@ -179,7 +285,7 @@ function initApp() {
     if (e.matches) {
       document.body.classList.remove('sidebar-collapsed');
       closeMobileNav();
-    } else if (localStorage.getItem(SIDEBAR_KEY) === 'collapsed') {
+    } else if (safeStorage.get(SIDEBAR_KEY) === 'collapsed') {
       document.body.classList.add('sidebar-collapsed');
       closeMobileNav();
     }
@@ -189,7 +295,7 @@ function initApp() {
 }
 
 function restoreSidebar() {
-  if (!isMobileNav() && localStorage.getItem(SIDEBAR_KEY) === 'collapsed') {
+  if (!isMobileNav() && safeStorage.get(SIDEBAR_KEY) === 'collapsed') {
     document.body.classList.add('sidebar-collapsed');
   }
   syncSidebarTrigger();
@@ -212,7 +318,7 @@ function loadSessions() {
 
 function saveSessions() {
   const serialize = () => JSON.stringify(sessions);
-  const persist = () => localStorage.setItem(STORAGE_KEY, serialize());
+  const persist = () => safeStorage.set(STORAGE_KEY, serialize());
   try { persist(); return; } catch (e) { /* 进入分级降级 */ }
 
   // 图片最先撑爆配额：先剥离所有会话中的图片
@@ -575,6 +681,7 @@ async function handleSend(customText = null, includeImages = true) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: apiMessages,
+        model: currentModelId,
         temperature: 0.72,
         max_tokens: 2200,
         stream: true
@@ -614,6 +721,15 @@ async function handleSend(customText = null, includeImages = true) {
 
         try {
           const parsed = JSON.parse(trimmed.slice(6));
+          // 后端返回「所选模型线路出错」帧：抛出带 modelError 标记的错误，
+          // 交由下方 catch 展示友好提示并引导重新选择模型。
+          if (parsed.model_error) {
+            clearTimeout(requestTimer);
+            requestTimer = null;
+            const e = new Error(parsed.message || '所选模型推演受阻');
+            e.modelError = true;
+            throw e;
+          }
           const delta = parsed.choices?.[0]?.delta?.content || '';
           if (delta) {
             accumulatedText += delta;
@@ -621,7 +737,8 @@ async function handleSend(customText = null, includeImages = true) {
             scrollToBottom();
           }
         } catch (e) {
-          // 容错单行解析
+          // modelError 需向上抛出，其余单行解析错误容错忽略
+          if (e && e.modelError) throw e;
         }
       }
     }
@@ -641,8 +758,18 @@ async function handleSend(customText = null, includeImages = true) {
     sound.play('oracle');
   } catch (err) {
     console.error('Stream error', err);
-    setStatus('推演遇到波动 · 已自动兜底');
-    const fallback = `推演暂遇阻滞。\n\n【建议趋避】稍候片刻重新问卜，若上传了图片请稍作压缩后重试。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
+    let fallback;
+    if (err && err.modelError) {
+      // 所选模型线路受阻：如实告知，并引导另择一尊法器（模型）。
+      setStatus('此路受阻 · 请另择法器');
+      const detail = err.message || '所选模型推演受阻';
+      fallback = `此尊法器（${getModelById(currentModelId)?.name || '所选模型'}）此番推演受阻。\n\n【缘由】${detail}\n\n【建议趋避】点击输入框上方的模型选择器，另择一尊法器再问；深度推理类法器较稳，极速类法器较快。`;
+      // 主动展开模型选择器，方便用户立即重选。
+      openModelSelector();
+    } else {
+      setStatus('推演遇到波动 · 可另择法器');
+      fallback = `推演暂遇阻滞。\n\n【建议趋避】稍候片刻重新问卜，或点击输入框上方的模型选择器另择一尊法器；若上传了图片请稍作压缩后重试。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
+    }
     bubble.innerHTML = formatDivinationContent(fallback);
     attachMessageActions(wrapper, fallback);
     sess.messages.push({ role: 'assistant', content: fallback });
@@ -657,6 +784,132 @@ async function handleSend(customText = null, includeImages = true) {
 function showLoading(show) {
   loadingOverlay.classList.toggle('active', show);
   loadingOverlay.setAttribute('aria-hidden', show ? 'false' : 'true');
+}
+
+// ─────────────────────────────────────────────────────────────
+// 法器（模型）选择器：把后端路由表里的模型以真实厂商图标呈现，
+// 由问卜者自主择器。仅显示厂商图标 + 模型代号，不暴露上游网关。
+// ─────────────────────────────────────────────────────────────
+function getModelById(id) {
+  return MODEL_CATALOG.find((m) => m.id === id) || null;
+}
+
+// 读取上次所择法器；无记录或记录失效则回落到默认。
+function loadPersistedModel() {
+  try {
+    const saved = localStorage.getItem(MODEL_KEY);
+    if (saved && getModelById(saved)) currentModelId = saved;
+  } catch { /* localStorage 不可用时保持默认 */ }
+}
+
+// 把选择按钮上的图标、名称、能力徽标刷新为当前所选法器。
+function renderModelSelectorBtn() {
+  const m = getModelById(currentModelId) || getModelById(DEFAULT_MODEL_ID);
+  const logo = document.getElementById('modelSelectorLogo');
+  const name = document.getElementById('modelSelectorName');
+  const cap = document.getElementById('modelSelectorCap');
+  if (!m || !logo || !name || !cap) return;
+  logo.src = m.logo;
+  logo.alt = m.vendor;
+  name.textContent = m.name;
+  const capBits = [m.vision ? '图文' : '文字'];
+  if (m.recommended) capBits.push('默认');
+  cap.textContent = capBits.join(' · ');
+}
+
+// 依目录顺序渲染下拉面板：首选置顶并标注「默认」，其余依次排开。
+// 每行呈现厂商图标、模型代号、图文/文字徽标、节奏与优劣，供权衡。
+function buildModelPanel() {
+  const panel = document.getElementById('modelSelectorPanel');
+  if (!panel) return;
+  panel.innerHTML = '';
+  const ordered = [...MODEL_CATALOG].sort((a, b) => Number(!!b.recommended) - Number(!!a.recommended));
+  for (const m of ordered) {
+    const opt = document.createElement('div');
+    opt.className = 'model-option' + (m.id === currentModelId ? ' selected' : '');
+    opt.setAttribute('role', 'option');
+    opt.setAttribute('tabindex', '0');
+    opt.setAttribute('aria-selected', m.id === currentModelId ? 'true' : 'false');
+    opt.dataset.id = m.id;
+    opt.innerHTML =
+      `<img class="model-option-logo" src="${m.logo}" alt="" loading="lazy">` +
+      `<div class="model-option-main">` +
+        `<div class="model-option-topline">` +
+          `<span class="model-option-name">${m.name}</span>` +
+          (m.recommended ? `<span class="model-badge model-badge-rec">默认</span>` : '') +
+          `<span class="model-badge ${m.vision ? 'model-badge-vision' : 'model-badge-text'}">${m.vision ? '图文' : '文字'}</span>` +
+          `<span class="model-pace">速·${m.pace}</span>` +
+        `</div>` +
+        `<div class="model-option-vendor">${m.vendor}</div>` +
+        `<div class="model-option-proscon">` +
+          `<div class="model-line model-pros"><i data-lucide="plus"></i><span>${m.pros}</span></div>` +
+          `<div class="model-line model-cons"><i data-lucide="minus"></i><span>${m.cons}</span></div>` +
+        `</div>` +
+      `</div>`;
+    opt.addEventListener('click', () => selectModel(m.id));
+    opt.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selectModel(m.id); }
+    });
+    panel.appendChild(opt);
+  }
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openModelSelector() {
+  const wrap = document.getElementById('modelSelector');
+  const btn = document.getElementById('modelSelectorBtn');
+  const panel = document.getElementById('modelSelectorPanel');
+  if (!wrap || !btn || !panel) return;
+  buildModelPanel();
+  wrap.classList.add('open');
+  btn.setAttribute('aria-expanded', 'true');
+}
+
+function closeModelSelector() {
+  const wrap = document.getElementById('modelSelector');
+  const btn = document.getElementById('modelSelectorBtn');
+  if (!wrap || !btn) return;
+  wrap.classList.remove('open');
+  btn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleModelSelector() {
+  const wrap = document.getElementById('modelSelector');
+  if (!wrap) return;
+  if (wrap.classList.contains('open')) closeModelSelector();
+  else openModelSelector();
+}
+
+// 择定一尊法器：更新当前模型、刷新按钮、记忆于本地，收起面板。
+function selectModel(id) {
+  const m = getModelById(id);
+  if (!m) return;
+  currentModelId = id;
+  try { localStorage.setItem(MODEL_KEY, id); } catch { /* 记忆失败不阻断选择 */ }
+  renderModelSelectorBtn();
+  closeModelSelector();
+  // 若已附图片而所选法器不读图，轻声提醒将退化为纯文字推演。
+  // 以实际待推演的图片队列为准；预览容器的 innerHTML 可能含占位元素，不可靠。
+  const hasImage = pendingImages.length > 0;
+  if (hasImage && !m.vision) {
+    setStatus(`${m.name} 仅通文字 · 图片将不参与推演`);
+  }
+}
+
+function initModelSelector() {
+  loadPersistedModel();
+  renderModelSelectorBtn();
+  const btn = document.getElementById('modelSelectorBtn');
+  if (btn) btn.addEventListener('click', toggleModelSelector);
+  // 面板之外点击或按 Esc，收起选择器。
+  document.addEventListener('click', (ev) => {
+    const wrap = document.getElementById('modelSelector');
+    if (!wrap || !wrap.classList.contains('open')) return;
+    if (!wrap.contains(ev.target)) closeModelSelector();
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') closeModelSelector();
+  });
 }
 
 function setStatus(text) {
@@ -806,7 +1059,7 @@ function openSidebar() {
     sidebarOverlay.classList.add('show');
   } else {
     document.body.classList.remove('sidebar-collapsed');
-    localStorage.setItem(SIDEBAR_KEY, 'open');
+    safeStorage.set(SIDEBAR_KEY, 'open');
   }
   syncSidebarTrigger();
 }
@@ -823,7 +1076,7 @@ function closeSidebar() {
 
 function collapseDesktopSidebar() {
   document.body.classList.add('sidebar-collapsed');
-  localStorage.setItem(SIDEBAR_KEY, 'collapsed');
+  safeStorage.set(SIDEBAR_KEY, 'collapsed');
   syncSidebarTrigger();
 }
 

@@ -209,6 +209,18 @@
 <div class="attach-preview" id="attachPreview" style="display:none;">
 <div class="thumbs-list" id="thumbsList"></div>
 </div>
+<!-- 模型（法器）选择器：真实厂商 logo + 名称 + 能力标注，用户自主择器 -->
+<div class="model-selector" id="modelSelector">
+<button aria-expanded="false" aria-haspopup="listbox" class="model-selector-btn" id="modelSelectorBtn" title="择一尊法器（模型）推演" type="button">
+<span class="model-selector-logo-wrap"><img alt="" class="model-selector-logo" id="modelSelectorLogo" src="/logos/qwen.png"/></span>
+<span class="model-selector-text">
+<span class="model-selector-name" id="modelSelectorName">通义千问 3.6</span>
+<span class="model-selector-cap" id="modelSelectorCap">图文 · 默认</span>
+</span>
+<i class="model-selector-caret" data-lucide="chevron-down"></i>
+</button>
+<div class="model-selector-panel" id="modelSelectorPanel" role="listbox" tabindex="-1"></div>
+</div>
 <!-- 输入卡片 (移动端完美防截断与自动换行) -->
 <div class="composer-input-card">
 <input accept="image/*" id="fileInput" multiple="" style="display:none;" type="file"/>
