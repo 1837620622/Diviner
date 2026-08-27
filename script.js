@@ -556,6 +556,25 @@ function bindEvents() {
     document.getElementById('modalAbout').classList.add('show');
   });
 
+  // 随喜赞助弹窗
+  const openSponsor = () => {
+    document.getElementById('modalSponsor').classList.add('show');
+    closeSidebar();
+  };
+  const headerSponsorBtn = document.getElementById('headerSponsorBtn');
+  if (headerSponsorBtn) headerSponsorBtn.addEventListener('click', openSponsor);
+  const sidebarSponsorBtn = document.getElementById('sidebarSponsorBtn');
+  if (sidebarSponsorBtn) sidebarSponsorBtn.addEventListener('click', openSponsor);
+
+  // 赞助金额切换
+  document.querySelectorAll('.amount-btn').forEach(ab => {
+    ab.addEventListener('click', () => {
+      document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+      ab.classList.add('active');
+      sound.playChime();
+    });
+  });
+
   // 初始化各法器交互逻辑
   initTarotLogic();
   initIchingLogic();
