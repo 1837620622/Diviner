@@ -1,5 +1,5 @@
-// 玄机子 · 东方数理与灵犀占断 (XuanJiZi v7.0)
-// 支持多线路无缝容灾、3D 灵犀塔罗、周易六爻、梅花易数、四柱八字、小六壬、摇签、黄历、木鱼与海报生成
+// 玄机子 · 东方数理与灵犀占断 (XuanJiZi v7.0 - Zero Emoji Edition)
+// 纯净典雅设计，无任何低质表情符号，支持多线路无缝容灾、3D 塔罗、六爻、梅花、八字、小六壬、摇签、黄历、木鱼与海报生成
 
 const API_ENDPOINT = '/api/chat';
 const STORAGE_KEY = 'xuanjizi_sessions_v7';
@@ -14,32 +14,33 @@ const SYSTEM_PROMPT = `你是【玄机子】，一位融汇东方数理传统（
 
 严格禁止：
 - 严禁输出任何思考标签（如 <think>...</think> 或 <reasoning>...</reasoning>）；
+- 严禁使用 Emoji 绘文字表情符号；
 - 严禁生硬宣称“我是人工智能无法算命”，必须代入玄机子宗师身份，以数理逻辑与哲学智慧给出深度解读。`;
 
-// 22 张大阿卡纳塔罗牌数据
+// 22 张大阿卡纳塔罗牌数据 (罗马数字与纯净文本)
 const TAROT_DECK = [
-  { name: '愚者 (The Fool)', icon: '🌟', upright: '新的开端、纯真、勇敢冒险、无限潜能', reversed: '盲目冲动、缺乏规划、轻率行事' },
-  { name: '魔术师 (The Magician)', icon: '🪄', upright: '创造力、专注力、显化愿景、资源齐备', reversed: '才能受阻、言不由衷、缺乏行动' },
-  { name: '女祭司 (The High Priestess)', icon: '🌙', upright: '直觉敏锐、深沉智慧、潜意识洞察、静观', reversed: '忽视直觉、情绪压抑、表面化' },
-  { name: '皇后 (The Empress)', icon: '👑', upright: '丰盛繁荣、滋养培育、创造力爆发、和谐', reversed: '过度依赖、创造枯竭、心力交瘁' },
-  { name: '皇帝 (The Emperor)', icon: '🏛️', upright: '权威秩序、坚固根基、掌控力、战略执行', reversed: '僵化专断、控制欲过强、执行遇阻' },
-  { name: '教皇 (The Hierophant)', icon: '📜', upright: '传统智慧、良师指引、精神信仰、求同存异', reversed: '墨守成规、教条束缚、沟通障碍' },
-  { name: '恋人 (The Lovers)', icon: '❤️', upright: '灵魂契合、重要抉择、真挚联结、价值观一致', reversed: '关系分歧、抉择两难、诱惑失衡' },
-  { name: '战车 (The Chariot)', icon: '🛡️', upright: '意志坚定、破除险阻、势如破竹、胜利在握', reversed: '失控受阻、用力过猛、方向偏差' },
-  { name: '力量 (Strength)', icon: '🦁', upright: '以柔克刚、内在勇气、情绪安抚、包容自信', reversed: '自我怀疑、急躁失控、气力透支' },
-  { name: '隐士 (The Hermit)', icon: '🏮', upright: '向内求索、独立自省、明灯指路、真理追寻', reversed: '孤立封闭、逃避现实、偏执自误' },
-  { name: '命运之轮 (Wheel of Fortune)', icon: '☸️', upright: '时来运转、顺应周期、转机降临、命运眷顾', reversed: '运势起伏、被动等待、逆势徒劳' },
-  { name: '正义 (Justice)', icon: '⚖️', upright: '公正因果、清明理智、负责自律、真理显现', reversed: '偏颇失衡、推卸责任、纠纷未决' },
-  { name: '倒吊人 (The Hanged Man)', icon: '⏳', upright: '换位思考、主动沉淀、精神觉醒、舍得智慧', reversed: '无谓牺牲、拖延僵持、固执不放' },
-  { name: '死神 (Death)', icon: '🦋', upright: '脱胎换骨、旧事终结、告别过去、迎接新生', reversed: '抗拒改变、沉湎过往、停滞不前' },
-  { name: '节制 (Temperance)', icon: '🕊️', upright: '中庸调和、身心平衡、良性循环、耐心沉淀', reversed: '极度失衡、急功近利、情绪失控' },
-  { name: '恶魔 (The Devil)', icon: '⛓️', upright: '欲望驱使、物质束缚、执念觉察、打破枷锁', reversed: '重获清醒、斩断心魔、回归本真' },
-  { name: '高塔 (The Tower)', icon: '⚡', upright: '破旧立新、震撼觉醒、打破虚妄、重建秩序', reversed: '侥幸逃避、隐患未除、后知后觉' },
-  { name: '星星 (The Star)', icon: '✨', upright: '希望重燃、灵感涌现、心灵疗愈、前路光明', reversed: '信心动摇、期待落空、灵感枯竭' },
-  { name: '月亮 (The Moon)', icon: '🔮', upright: '洞悉迷局、直面恐惧、潜意识浮现、警惕幻象', reversed: '拨云见日、恐惧消退、真相大白' },
-  { name: '太阳 (The Sun)', icon: '☀️', upright: '光明喜悦、丰硕成果、自信笃定、万事通达', reversed: '暂欠明朗、虚荣浮躁、缺乏耐心' },
-  { name: '审判 (Judgement)', icon: '🎺', upright: '唤醒天命、彻底解脱、重大决断、新的人生篇章', reversed: '犹豫不决、自怨自艾、错失机缘' },
-  { name: '世界 (The World)', icon: '🌍', upright: '圆满终结、融会贯通、宏大格局、全新征程', reversed: '临门一脚、缺乏闭环、留有遗憾' }
+  { num: '0', name: '愚者 (The Fool)', upright: '新的开端、纯真、勇敢冒险、无限潜能', reversed: '盲目冲动、缺乏规划、轻率行事' },
+  { num: 'I', name: '魔术师 (The Magician)', upright: '创造力、专注力、显化愿景、资源齐备', reversed: '才能受阻、言不由衷、缺乏行动' },
+  { num: 'II', name: '女祭司 (The High Priestess)', upright: '直觉敏锐、深沉智慧、潜意识洞察、静观', reversed: '忽视直觉、情绪压抑、表面化' },
+  { num: 'III', name: '皇后 (The Empress)', upright: '丰盛繁荣、滋养培育、创造力爆发、和谐', reversed: '过度依赖、创造枯竭、心力交瘁' },
+  { num: 'IV', name: '皇帝 (The Emperor)', upright: '权威秩序、坚固根基、掌控力、战略执行', reversed: '僵化专断、控制欲过强、执行遇阻' },
+  { num: 'V', name: '教皇 (The Hierophant)', upright: '传统智慧、良师指引、精神信仰、求同存异', reversed: '墨守成规、教条束缚、沟通障碍' },
+  { num: 'VI', name: '恋人 (The Lovers)', upright: '灵魂契合、重要抉择、真挚联结、价值观一致', reversed: '关系分歧、抉择两难、诱惑失衡' },
+  { num: 'VII', name: '战车 (The Chariot)', upright: '意志坚定、破除险阻、势如破竹、胜利在握', reversed: '失控受阻、用力过猛、方向偏差' },
+  { num: 'VIII', name: '力量 (Strength)', upright: '以柔克刚、内在勇气、情绪安抚、包容自信', reversed: '自我怀疑、急躁失控、气力透支' },
+  { num: 'IX', name: '隐士 (The Hermit)', upright: '向内求索、独立自省、明灯指路、真理追寻', reversed: '孤立封闭、逃避现实、偏执自误' },
+  { num: 'X', name: '命运之轮 (Wheel of Fortune)', upright: '时来运转、顺应周期、转机降临、命运眷顾', reversed: '运势起伏、被动等待、逆势徒劳' },
+  { num: 'XI', name: '正义 (Justice)', upright: '公正因果、清明理智、负责自律、真理显现', reversed: '偏颇失衡、推卸责任、纠纷未决' },
+  { num: 'XII', name: '倒吊人 (The Hanged Man)', upright: '换位思考、主动沉淀、精神觉醒、舍得智慧', reversed: '无谓牺牲、拖延僵持、固执不放' },
+  { num: 'XIII', name: '死神 (Death)', upright: '脱胎换骨、旧事终结、告别过去、迎接新生', reversed: '抗拒改变、沉湎过往、停滞不前' },
+  { num: 'XIV', name: '节制 (Temperance)', upright: '中庸调和、身心平衡、良性循环、耐心沉淀', reversed: '极度失衡、急功近利、情绪失控' },
+  { num: 'XV', name: '恶魔 (The Devil)', upright: '欲望驱使、物质束缚、执念觉察、打破枷锁', reversed: '重获清醒、斩断心魔、回归本真' },
+  { num: 'XVI', name: '高塔 (The Tower)', upright: '破旧立新、震撼觉醒、打破虚妄、重建秩序', reversed: '侥幸逃避、隐患未除、后知后觉' },
+  { num: 'XVII', name: '星星 (The Star)', upright: '希望重燃、灵感涌现、心灵疗愈、前路光明', reversed: '信心动摇、期待落空、灵感枯竭' },
+  { num: 'XVIII', name: '月亮 (The Moon)', upright: '洞悉迷局、直面恐惧、潜意识浮现、警惕幻象', reversed: '拨云见日、恐惧消退、真相大白' },
+  { num: 'XIX', name: '太阳 (The Sun)', upright: '光明喜悦、丰硕成果、自信笃定、万事通达', reversed: '暂欠明朗、虚荣浮躁、缺乏耐心' },
+  { num: 'XX', name: '审判 (Judgement)', upright: '唤醒天命、彻底解脱、重大决断、新的人生篇章', reversed: '犹豫不决、自怨自艾、错失机缘' },
+  { num: 'XXI', name: '世界 (The World)', upright: '圆满终结、融会贯通、宏大格局、全新征程', reversed: '临门一脚、缺乏闭环、留有遗憾' }
 ];
 
 // 音频引擎
@@ -311,23 +312,47 @@ function renderMessageNode(role, rawContent, images = [], isNew = false) {
 
 function formatDivinationContent(text) {
   if (!text) return '';
-  // 1. 过滤任何遗留的思考标签
+  // 1. 彻底过滤思考与推理标签
   let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '').trim();
-  
-  // 2. 格式化 Markdown 粗体与符号
+
+  // 2. 格式化玄机箴言（支持多行引用 > **...** 以及各种前缀格式）
+  cleaned = cleaned.replace(/(?:【玄机箴言】|###\s*玄机箴言|玄机箴言[：:])[\s*#]*([\s\S]*?)(?=(?:\n\s*\n\s*【|\n\s*\n\s*###|$))/gi, (match, content) => {
+    const lines = content
+      .split('\n')
+      .map(l => l.replace(/^[>\s*#]+/, '').replace(/[\s*#]+$/, '').replace(/\*\*/g, '').replace(/\*/g, '').trim())
+      .filter(Boolean);
+    const poem = lines.join('<br>');
+    return `<div class="fortune-box"><i data-lucide="sparkles"></i><div><strong>玄机箴言：</strong><br>${poem}</div></div>`;
+  });
+
+  // 3. 核心分段标题转换为神圣标识
+  cleaned = cleaned.replace(/(?:【建议趋避】|###\s*建议趋避)/g, '<div class="section-title"><i data-lucide="shield"></i> 建议趋避</div>');
+  cleaned = cleaned.replace(/(?:【象数解析】|###\s*象数解析)/g, '<div class="section-title"><i data-lucide="compass"></i> 象数解析</div>');
+  cleaned = cleaned.replace(/(?:【吉凶趋避】|###\s*吉凶趋避)/g, '<div class="section-title"><i data-lucide="flame"></i> 吉凶趋避</div>');
+  cleaned = cleaned.replace(/(?:【可行建议】|###\s*可行建议)/g, '<div class="section-title"><i data-lucide="target"></i> 可行建议</div>');
+
+  // 4. 清理 Markdown 引用符 (>) 与列表符
+  cleaned = cleaned.replace(/^[ \t]*>[ \t]?/gm, '');
+  cleaned = cleaned.replace(/^[ \t]*[-*]\s+/gm, '• ');
+
+  // 5. 格式化粗体 **text** -> <strong>text</strong>
   cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // 6. 彻底清除任何遗留的孤立 markdown 符号
+  cleaned = cleaned.replace(/#{1,6}\s*/g, '');
   cleaned = cleaned.replace(/\*\*/g, '');
-  
-  // 3. 格式化玄机箴言金框
-  cleaned = cleaned.replace(/【玄机箴言】([\s\S]*?)(?=(\n\n|$))/g, '<div class="fortune-box"><i data-lucide="sparkles"></i><div><strong>玄机箴言：</strong>$1</div></div>');
-  cleaned = cleaned.replace(/【建议趋避】/g, '<div class="section-title"><i data-lucide="shield"></i> 建议趋避</div>');
-  cleaned = cleaned.replace(/【象数解析】/g, '<div class="section-title"><i data-lucide="compass"></i> 象数解析</div>');
-  cleaned = cleaned.replace(/【吉凶趋避】/g, '<div class="section-title"><i data-lucide="flame"></i> 吉凶趋避</div>');
-  cleaned = cleaned.replace(/【可行建议】/g, '<div class="section-title"><i data-lucide="target"></i> 可行建议</div>');
-  
-  // 4. 段落包装
-  const paras = cleaned.split(/\n\s*\n/);
-  return paras.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+
+  // 7. 优雅分段包裹
+  const paras = cleaned.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  const htmlParas = [];
+  for (const p of paras) {
+    if (p.startsWith('<div class="section-title"') || p.startsWith('<div class="fortune-box"')) {
+      htmlParas.push(p);
+    } else {
+      htmlParas.push(`<p>${p.replace(/\n/g, '<br>')}</p>`);
+    }
+  }
+  return htmlParas.join('');
 }
 
 function scrollToBottom() {
@@ -475,19 +500,6 @@ function bindEvents() {
     }
   });
 
-  // 侧边栏抽屉开关
-  document.getElementById('openSidebarBtn').addEventListener('click', openSidebar);
-  document.getElementById('closeSidebarBtn').addEventListener('click', closeSidebar);
-  sidebarOverlay.addEventListener('click', closeSidebar);
-
-  // 快捷按钮点击
-  document.querySelectorAll('[data-prompt]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const prompt = btn.getAttribute('data-prompt');
-      if (prompt) handleSend(prompt);
-    });
-  });
-
   // 头部海报按钮绑定
   const headerShareBtn = document.getElementById('headerShareBtn');
   if (headerShareBtn) {
@@ -498,10 +510,23 @@ function bindEvents() {
     });
   }
 
+  // 侧边栏抽屉开关
+  document.getElementById('openSidebarBtn').addEventListener('click', openSidebar);
+  document.getElementById('closeSidebarBtn').addEventListener('click', closeSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
+
   // 点击遮罩空白区域关闭模态框
   document.querySelectorAll('.modal-backdrop').forEach(mb => {
     mb.addEventListener('click', (e) => {
       if (e.target === mb) mb.classList.remove('show');
+    });
+  });
+
+  // 快捷按钮点击
+  document.querySelectorAll('[data-prompt]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const prompt = btn.getAttribute('data-prompt');
+      if (prompt) handleSend(prompt);
     });
   });
 
@@ -650,7 +675,7 @@ function renderAttachPreview() {
   });
 }
 
-// ==================== 1. 灵犀塔罗逻辑 (Tarotoo 3D 风格) ====================
+// ==================== 1. 灵犀塔罗逻辑 (Zero Emoji · 优雅罗马数字) ====================
 let drawnTarotCards = [];
 function initTarotLogic() {
   const drawBtn = document.getElementById('drawTarotBtn');
@@ -673,7 +698,7 @@ function initTarotLogic() {
       const info = drawnTarotCards[idx];
       
       front.innerHTML = `
-        <div class="card-img-placeholder">${info.icon}</div>
+        <div class="card-num-badge">${info.num}</div>
         <div class="card-name">${info.name}</div>
         <div class="card-pos">${info.isReversed ? '【逆位】' : '【正位】'}</div>
       `;
@@ -722,7 +747,7 @@ function initIchingLogic() {
     const c1 = Math.random() > 0.5 ? 3 : 2;
     const c2 = Math.random() > 0.5 ? 3 : 2;
     const c3 = Math.random() > 0.5 ? 3 : 2;
-    const sum = c1 + c2 + c3; // 6: 老阴, 7: 少阳, 8: 少阴, 9: 老阳
+    const sum = c1 + c2 + c3;
     ichingLines.push(sum);
 
     renderHexLines();
@@ -740,7 +765,6 @@ function initIchingLogic() {
 
   function renderHexLines() {
     hexLines.innerHTML = '';
-    // 从初爻到上爻（从下往上）
     [...ichingLines].reverse().forEach((val, idx) => {
       const lineIdx = ichingLines.length - idx;
       const isYang = val === 7 || val === 9;
@@ -753,7 +777,7 @@ function initIchingLogic() {
       row.innerHTML = `
         <span style="font-size:11px;color:var(--gold);width:36px;">第${lineIdx}爻</span>
         <div style="flex:1;height:10px;background:${isYang ? 'var(--gold)' : 'linear-gradient(90deg, var(--gold) 45%, transparent 45%, transparent 55%, var(--gold) 55%)'};border-radius:2px;"></div>
-        <span style="font-size:11px;color:${isDong ? 'var(--cinnabar)' : 'var(--text-muted)'};width:40px;">${isDong ? '●动爻' : '静爻'}</span>
+        <span style="font-size:11px;color:${isDong ? 'var(--cinnabar)' : 'var(--text-muted)'};width:40px;">${isDong ? '动爻' : '静爻'}</span>
       `;
       hexLines.appendChild(row);
     });
@@ -961,11 +985,10 @@ function initMuyuLogic() {
     muyuCount++;
     countEl.textContent = muyuCount;
 
-    // 漂浮功德动画
     const floatText = document.createElement('div');
     floatText.textContent = '+1 功德';
     floatText.style.position = 'absolute';
-    floatText.style.color = 'var(--gold-light)';
+    floatText.style.color = 'var(--gold)';
     floatText.style.fontWeight = 'bold';
     floatText.style.fontSize = '16px';
     floatText.style.pointerEvents = 'none';
@@ -1047,9 +1070,9 @@ function openPosterModal(text) {
 
   // 1. 背景渐变
   const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-  bgGrad.addColorStop(0, '#1a1636');
-  bgGrad.addColorStop(0.5, '#121024');
-  bgGrad.addColorStop(1, '#090812');
+  bgGrad.addColorStop(0, '#1c1828');
+  bgGrad.addColorStop(0.5, '#120e1d');
+  bgGrad.addColorStop(1, '#0b0814');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, w, h);
 
@@ -1061,7 +1084,7 @@ function openPosterModal(text) {
   ctx.strokeRect(32, 32, w - 64, h - 64);
 
   // 3. 顶部印章与标题
-  ctx.fillStyle = '#c73e1d';
+  ctx.fillStyle = '#9d2f23';
   ctx.fillRect(w / 2 - 28, 54, 56, 56);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 30px serif';

@@ -3,36 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>玄机子 · 东方数理与灵犀塔罗 | Tarotoo Divine</title>
-  <meta name="description" content="玄机子 - 融汇东方周易数理与西方灵犀塔罗的AI占断系统。3D灵犀塔罗、周易六爻、梅花易数、四柱八字、小六壬速断、观象灵签。" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23632c94'/><text x='50' y='68' text-anchor='middle' font-size='58' fill='%23f5d77f' font-family='serif' font-weight='bold'>玄</text></svg>">
-  <meta name="theme-color" content="#120b22" />
+  <title>玄机子 · 东方数理与灵犀占断</title>
+  <meta name="description" content="玄机子 - 融汇东方周易数理与西方灵犀塔罗的AI占断系统。周易六爻、梅花易数、四柱八字、小六壬速断、灵犀塔罗、观象灵签。" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%239d2f23'/><text x='50' y='68' text-anchor='middle' font-size='58' fill='%23fbf8f0' font-family='serif' font-weight='bold'>玄</text></svg>">
+  <meta name="theme-color" content="#121018" />
   <meta name="color-scheme" content="dark" />
 
-  <!-- Google Fonts: Boska / Cinzel / Playfair Display / Noto Serif SC -->
+  <!-- 衬线字体与优雅字形 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Serif+SC:wght@500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-  <link rel="stylesheet" href="styles.css?v=20260827_tarotoo" />
+  <link rel="stylesheet" href="styles.css?v=20260827_zero_emoji" />
 </head>
-<body class="tarotoo-theme">
-  <!-- 顶部星光与聚光灯效果 -->
-  <div class="tarotoo-stars-bg" aria-hidden="true"></div>
-  <div class="tarotoo-spotlight" aria-hidden="true"></div>
+<body class="dark-mystic-theme">
+  <!-- 浑天星宿背景 -->
+  <div class="astrolabe-bg" aria-hidden="true"></div>
 
   <div id="app" class="app-layout">
-    <!-- 侧边栏抽屉遮罩 -->
+    <!-- 侧边栏遮罩 -->
     <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
 
-    <!-- 左侧侧边栏 (神秘学抽屉) -->
+    <!-- 左侧侧边栏 -->
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-seal">玄</div>
           <div class="brand-text">
-            <h1 class="brand-title">玄机子 · TAROTOO</h1>
+            <h1 class="brand-title">玄机子</h1>
             <span class="brand-desc">观象授时 · 灵台问卜</span>
           </div>
         </div>
@@ -42,37 +41,37 @@
       </div>
 
       <div class="sidebar-action">
-        <button id="newChatBtn" class="btn btn-tarotoo-new">
+        <button id="newChatBtn" class="btn btn-new-chat">
           <i data-lucide="plus"></i>
-          <span>新起一卦 (New Spread)</span>
+          <span>新起一卦</span>
         </button>
       </div>
 
       <div class="sidebar-scroll">
-        <!-- 法器工具导航 -->
+        <!-- 命理法器导航 (纯矢量图标与印章) -->
         <div class="sidebar-section">
           <div class="section-label">
             <i data-lucide="sparkles"></i>
-            <span>占断法器 · Spreads</span>
+            <span>命理法器</span>
           </div>
           <div class="tools-grid">
-            <button class="tool-item" data-tool="tarot"><div class="tool-icon">🔮</div><span>灵犀塔罗</span></button>
-            <button class="tool-item" data-tool="iching"><div class="tool-icon">🪙</div><span>周易六爻</span></button>
-            <button class="tool-item" data-tool="meihua"><div class="tool-icon">🌸</div><span>梅花易数</span></button>
-            <button class="tool-item" data-tool="xiaoliuren"><div class="tool-icon">✋</div><span>小六壬</span></button>
-            <button class="tool-item" data-tool="bazi"><div class="tool-icon">📜</div><span>四柱八字</span></button>
-            <button class="tool-item" data-tool="lot"><div class="tool-icon">🎋</div><span>观象灵签</span></button>
-            <button class="tool-item" data-tool="almanac"><div class="tool-icon">🧭</div><span>择吉黄历</span></button>
-            <button class="tool-item" data-tool="dream"><div class="tool-icon">🌙</div><span>周公解梦</span></button>
-            <button class="tool-item" data-tool="muyu"><div class="tool-icon">🔔</div><span>功德木鱼</span></button>
+            <button class="tool-item" data-tool="tarot"><div class="tool-seal">灵</div><span>灵犀塔罗</span></button>
+            <button class="tool-item" data-tool="iching"><div class="tool-seal">易</div><span>周易六爻</span></button>
+            <button class="tool-item" data-tool="meihua"><div class="tool-seal">梅</div><span>梅花易数</span></button>
+            <button class="tool-item" data-tool="xiaoliuren"><div class="tool-seal">诀</div><span>小六壬</span></button>
+            <button class="tool-item" data-tool="bazi"><div class="tool-seal">命</div><span>四柱八字</span></button>
+            <button class="tool-item" data-tool="lot"><div class="tool-seal">签</div><span>观象灵签</span></button>
+            <button class="tool-item" data-tool="almanac"><div class="tool-seal">历</div><span>择吉黄历</span></button>
+            <button class="tool-item" data-tool="dream"><div class="tool-seal">梦</div><span>周公解梦</span></button>
+            <button class="tool-item" data-tool="muyu"><div class="tool-seal">木</div><span>功德木鱼</span></button>
           </div>
         </div>
 
-        <!-- 历史会话 -->
+        <!-- 历史问卜档案 -->
         <div class="sidebar-section">
           <div class="section-label">
             <i data-lucide="history"></i>
-            <span>问卜档案 · Archive</span>
+            <span>近问档案</span>
             <button id="clearAllHistoryBtn" class="clear-history-btn" title="清空全部">清空</button>
           </div>
           <div id="historyList" class="history-list"></div>
@@ -91,7 +90,7 @@
       </div>
     </aside>
 
-    <!-- 右侧主问卜视窗 -->
+    <!-- 右侧主视窗 -->
     <main class="main-content">
       <!-- 顶栏导航 -->
       <header class="chat-header">
@@ -101,7 +100,7 @@
           </button>
           <div class="current-chat-info">
             <h2 id="chatTitle" class="current-title">灵台问卜</h2>
-            <span class="status-badge" id="statusBadge"><span class="status-dot"></span><span id="statusBadgeText">智谱·清言 / Groq 双核就绪</span></span>
+            <span class="status-badge" id="statusBadge"><span class="status-dot"></span><span id="statusBadgeText">智谱·清言 / Groq 双核待命</span></span>
           </div>
         </div>
         <div class="header-right">
@@ -115,174 +114,122 @@
         </div>
       </header>
 
-      <!-- 聊天消息流 -->
+      <!-- 消息流视窗 -->
       <div id="chatContainer" class="chat-container">
         <div class="chat-inner" id="chatInner">
-          <!-- Tarotoo 风格主欢迎画卷 -->
-          <div class="welcome-card tarotoo-hero" id="welcomeCard">
-            <!-- 顶部神圣符号 -->
-            <div class="tarotoo-symbols-row">
-              <span class="tarotoo-eye-symbol">👁️</span>
-              <div class="tarotoo-center-brand">
-                <span class="tarotoo-sub-label">WELCOME TO TAROTOO & XUANJIZI</span>
-                <div class="tarotoo-moon-phases">) ☽ ◯ ☾ (</div>
+          <!-- 初始欢迎画卷 (八卦星图与法门门扉) -->
+          <div class="welcome-card" id="welcomeCard">
+            <div class="hero-ritual-box">
+              <div class="bagua-astrolabe" aria-hidden="true">
+                <div class="bagua-ring-outer">
+                  <span>乾</span><span>坎</span><span>艮</span><span>震</span>
+                  <span>巽</span><span>离</span><span>坤</span><span>兑</span>
+                </div>
+                <div class="bagua-ring-mid"></div>
+                <div class="bagua-ring-inner"></div>
+                <div class="bagua-center-seal">玄</div>
               </div>
-              <span class="tarotoo-sun-symbol">🌞</span>
-            </div>
-
-            <div class="tarotoo-hero-text">
-              <h1 class="tarotoo-main-title">
-                向玄机子问一件真正关切的事<br>
-                <span>Ask the Oracle Anything</span>
-              </h1>
-              <p class="tarotoo-desc">
-                融汇东方数理传统与西方灵犀塔罗。先立心念、后取象数、再给可行趋避。
-              </p>
-            </div>
-
-            <!-- Tarotoo 6大经典占断法门卡片轮播展示 -->
-            <div class="tarotoo-cards-grid">
-              <!-- 1. 灵犀塔罗 -->
-              <div class="tarotoo-card-item" data-tool="tarot">
-                <div class="t-card-header">
-                  <span class="t-card-type">TAROT</span>
-                  <span class="t-card-sub">圣三角观心</span>
+              <div class="hero-text-content">
+                <div class="hero-tag"><i data-lucide="compass"></i><span>易理幽微 · 神明默会</span></div>
+                <h2 class="hero-title">向玄机子问一件真正关切的事</h2>
+                <p class="hero-desc">把推算还给数理，把选择还给人。先立心念、后取象数、再给可行趋避。可直接详述困惑，亦可择下方命理法器即时起盘。</p>
+                <div class="hero-principles">
+                  <span><i data-lucide="target"></i> 一念既起，一次一问</span>
+                  <span><i data-lucide="book-open"></i> 先盘后断，理数可循</span>
+                  <span><i data-lucide="shield-check"></i> 顺势而为，自强不息</span>
                 </div>
-                <h3 class="t-card-title">灵犀塔罗</h3>
-                <div class="t-card-illustration">
-                  <div class="t-card-frame">
-                    <div class="t-card-inner-art art-tarot">
-                      <div class="t-moons-top">) ☽ ◯ ☾ (</div>
-                      <div class="t-center-emblem">🔮</div>
-                      <div class="t-card-subtext">3 Card Spread</div>
-                      <div class="t-moons-bottom">) ☽ ◯ ☾ (</div>
-                    </div>
-                  </div>
-                </div>
-                <button class="t-card-btn">开启牌阵 →</button>
-              </div>
-
-              <!-- 2. 周易六爻 -->
-              <div class="tarotoo-card-item" data-tool="iching">
-                <div class="t-card-header">
-                  <span class="t-card-type">I-CHING</span>
-                  <span class="t-card-sub">三币摇卦</span>
-                </div>
-                <h3 class="t-card-title">周易六爻</h3>
-                <div class="t-card-illustration">
-                  <div class="t-card-frame">
-                    <div class="t-card-inner-art art-iching">
-                      <div class="t-moons-top">) ☽ ◯ ☾ (</div>
-                      <div class="t-center-emblem">🪙</div>
-                      <div class="t-card-subtext">6 Lines Oracle</div>
-                      <div class="t-moons-bottom">) ☽ ◯ ☾ (</div>
-                    </div>
-                  </div>
-                </div>
-                <button class="t-card-btn">掷币起卦 →</button>
-              </div>
-
-              <!-- 3. 梅花易数 -->
-              <div class="tarotoo-card-item" data-tool="meihua">
-                <div class="t-card-header">
-                  <span class="t-card-type">MEIHUA</span>
-                  <span class="t-card-sub">报数取象</span>
-                </div>
-                <h3 class="t-card-title">梅花易数</h3>
-                <div class="t-card-illustration">
-                  <div class="t-card-frame">
-                    <div class="t-card-inner-art art-meihua">
-                      <div class="t-moons-top">) ☽ ◯ ☾ (</div>
-                      <div class="t-center-emblem">🌸</div>
-                      <div class="t-card-subtext">Time & Numbers</div>
-                      <div class="t-moons-bottom">) ☽ ◯ ☾ (</div>
-                    </div>
-                  </div>
-                </div>
-                <button class="t-card-btn">数理演算 →</button>
-              </div>
-
-              <!-- 4. 四柱八字 -->
-              <div class="tarotoo-card-item" data-tool="bazi">
-                <div class="t-card-header">
-                  <span class="t-card-type">BAZI</span>
-                  <span class="t-card-sub">生辰格局</span>
-                </div>
-                <h3 class="t-card-title">四柱八字</h3>
-                <div class="t-card-illustration">
-                  <div class="t-card-frame">
-                    <div class="t-card-inner-art art-bazi">
-                      <div class="t-moons-top">) ☽ ◯ ☾ (</div>
-                      <div class="t-center-emblem">📜</div>
-                      <div class="t-card-subtext">Four Pillars</div>
-                      <div class="t-moons-bottom">) ☽ ◯ ☾ (</div>
-                    </div>
-                  </div>
-                </div>
-                <button class="t-card-btn">生辰排盘 →</button>
-              </div>
-
-              <!-- 5. 小六壬速断 -->
-              <div class="tarotoo-card-item" data-tool="xiaoliuren">
-                <div class="t-card-header">
-                  <span class="t-card-type">XIAOLIUREN</span>
-                  <span class="t-card-sub">掐指落宫</span>
-                </div>
-                <h3 class="t-card-title">小六壬速断</h3>
-                <div class="t-card-illustration">
-                  <div class="t-card-frame">
-                    <div class="t-card-inner-art art-xlr">
-                      <div class="t-moons-top">) ☽ ◯ ☾ (</div>
-                      <div class="t-center-emblem">✋</div>
-                      <div class="t-card-subtext">6 Palaces Palm</div>
-                      <div class="t-moons-bottom">) ☽ ◯ ☾ (</div>
-                    </div>
-                  </div>
-                </div>
-                <button class="t-card-btn">掐指速断 →</button>
-              </div>
-
-              <!-- 6. 观象灵签 -->
-              <div class="tarotoo-card-item" data-tool="lot">
-                <div class="t-card-header">
-                  <span class="t-card-type">LOTS</span>
-                  <span class="t-card-sub">虔心摇签</span>
-                </div>
-                <h3 class="t-card-title">观象灵签</h3>
-                <div class="t-card-illustration">
-                  <div class="t-card-frame">
-                    <div class="t-card-inner-art art-lot">
-                      <div class="t-moons-top">) ☽ ◯ ☾ (</div>
-                      <div class="t-center-emblem">🎋</div>
-                      <div class="t-card-subtext">Daily Fortune</div>
-                      <div class="t-moons-bottom">) ☽ ◯ ☾ (</div>
-                    </div>
-                  </div>
-                </div>
-                <button class="t-card-btn">虔诚求签 →</button>
               </div>
             </div>
 
-            <!-- 底部警语 -->
-            <div class="tarotoo-footer-note">
-              <span>✦</span> 占断旨在理清心念与决策依据；涉及医疗、法律、投资等重大事项，请以专业意见为准。
+            <!-- 六大经典门类门扉 -->
+            <div class="divider-text"><span>择一法门 · 灵台起卦</span></div>
+            <div class="doors-grid">
+              <div class="door-card" data-tool="tarot">
+                <div class="door-header">
+                  <span class="door-seal gold">灵</span>
+                  <div class="door-titles">
+                    <strong>灵犀塔罗</strong>
+                    <span>三牌观心 · 情感与抉择</span>
+                  </div>
+                  <i data-lucide="chevron-right" class="door-arrow"></i>
+                </div>
+              </div>
+
+              <div class="door-card" data-tool="iching">
+                <div class="door-header">
+                  <span class="door-seal red">易</span>
+                  <div class="door-titles">
+                    <strong>周易六爻</strong>
+                    <span>三币摇卦 · 具体一事吉凶</span>
+                  </div>
+                  <i data-lucide="chevron-right" class="door-arrow"></i>
+                </div>
+              </div>
+
+              <div class="door-card" data-prompt="请问玄机子：报数 3 与 8，求问近期事业转换与贵人机缘如何？">
+                <div class="door-header">
+                  <span class="door-seal">梅</span>
+                  <div class="door-titles">
+                    <strong>梅花易数</strong>
+                    <span>报数起卦 · 时机与动变</span>
+                  </div>
+                  <i data-lucide="chevron-right" class="door-arrow"></i>
+                </div>
+              </div>
+
+              <div class="door-card" data-tool="bazi">
+                <div class="door-header">
+                  <span class="door-seal">命</span>
+                  <div class="door-titles">
+                    <strong>四柱八字</strong>
+                    <span>生辰排盘 · 五行格局大运</span>
+                  </div>
+                  <i data-lucide="chevron-right" class="door-arrow"></i>
+                </div>
+              </div>
+
+              <div class="door-card" data-tool="xiaoliuren">
+                <div class="door-header">
+                  <span class="door-seal">诀</span>
+                  <div class="door-titles">
+                    <strong>小六壬速断</strong>
+                    <span>掐指寻象 · 近事与应期</span>
+                  </div>
+                  <i data-lucide="chevron-right" class="door-arrow"></i>
+                </div>
+              </div>
+
+              <div class="door-card" data-tool="lot">
+                <div class="door-header">
+                  <span class="door-seal">签</span>
+                  <div class="door-titles">
+                    <strong>观象灵签</strong>
+                    <span>虔心求签 · 每日一示</span>
+                  </div>
+                  <i data-lucide="chevron-right" class="door-arrow"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="welcome-footer-note">
+              <i data-lucide="info"></i> 占卜旨在理清心中迷思与决策依据；涉及医疗、法律、大额投资等重大事项，请以现实专业意见为准。
             </div>
           </div>
-          <!-- 动态消息节点在此注入 -->
+          <!-- 动态消息列表在此注入 -->
         </div>
       </div>
 
-      <!-- Tarotoo 风格底部操作栏 -->
+      <!-- 底部输入操作栏 -->
       <div class="composer-container">
-        <!-- 快捷问卜话题 Chips -->
+        <!-- 快捷问卜话题 Chips (纯矢量图标) -->
         <div class="quick-topics-bar">
-          <button class="topic-chip" data-prompt="求问近期的事业发展与贵人相助时机，当如何抉择？">💼 事业贵人</button>
-          <button class="topic-chip" data-prompt="求测当前的情感缘分与阻碍，对方心意如何？">❤️ 姻缘情感</button>
-          <button class="topic-chip" data-prompt="报数 3 与 8，求问下半年财运走势与投资趋避。">💰 财运吉凶</button>
-          <button class="topic-chip" data-prompt="求问近期重大抉择：当进当退，时机与隐患何在？">🔮 抉择转机</button>
-          <button class="topic-chip" data-tool="tarot">🃏 塔罗三牌</button>
-          <button class="topic-chip" data-tool="iching">🪙 六爻纳甲</button>
-          <button class="topic-chip" data-tool="muyu">🔔 功德木鱼</button>
+          <button class="topic-chip" data-prompt="求问近期的事业发展与贵人相助时机，当如何抉择？"><i data-lucide="briefcase"></i><span>事业贵人</span></button>
+          <button class="topic-chip" data-prompt="求测当前的情感缘分与阻碍，对方心意如何？"><i data-lucide="heart"></i><span>姻缘情感</span></button>
+          <button class="topic-chip" data-prompt="报数 3 与 8，求问下半年财运走势与投资趋避。"><i data-lucide="circle-dollar-sign"></i><span>财运吉凶</span></button>
+          <button class="topic-chip" data-prompt="求问近期重大抉择：当进当退，时机与隐患何在？"><i data-lucide="help-circle"></i><span>抉择转机</span></button>
+          <button class="topic-chip highlight" data-tool="tarot"><i data-lucide="layers"></i><span>塔罗三牌</span></button>
+          <button class="topic-chip" data-tool="iching"><i data-lucide="coins"></i><span>六爻纳甲</span></button>
+          <button class="topic-chip" data-tool="muyu"><i data-lucide="bell"></i><span>功德木鱼</span></button>
         </div>
 
         <!-- 图片预览 -->
@@ -290,16 +237,16 @@
           <div id="thumbsList" class="thumbs-list"></div>
         </div>
 
-        <!-- Tarotoo 风格输入大卡片 -->
-        <div class="tarotoo-input-box">
+        <!-- 输入卡片 -->
+        <div class="composer-input-card">
           <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" />
-          <button id="uploadBtn" class="tarotoo-upload-btn" title="上传相格/户型/卦象图">
+          <button id="uploadBtn" class="upload-btn" title="上传相格/户型/卦象图">
             <i data-lucide="image"></i>
           </button>
-          <div class="tarotoo-textarea-wrap">
-            <textarea id="userInput" rows="1" placeholder="Type your question here... 详述生辰八字、困惑，或点击上方卡片起卦" maxlength="3000"></textarea>
+          <div class="textarea-wrapper">
+            <textarea id="userInput" rows="1" placeholder="请详述生辰八字、困惑，或点击上方快捷法器起卦……" maxlength="3000"></textarea>
           </div>
-          <button id="sendBtn" class="tarotoo-send-btn" title="发送推演">
+          <button id="sendBtn" class="send-btn" title="发送推演">
             <i data-lucide="sparkles"></i>
           </button>
         </div>
@@ -312,22 +259,22 @@
 
   <!-- 全局加载蒙层 -->
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
-    <div class="tarotoo-loading-box">
-      <div class="tarotoo-spinner">
-        <div class="spinner-eye">👁️</div>
+    <div class="loading-box">
+      <div class="astrolabe-spinner">
         <div class="spinner-ring ring-1"></div>
         <div class="spinner-ring ring-2"></div>
+        <div class="spinner-core">玄</div>
       </div>
       <h3>玄机子观象推演中</h3>
       <p>正在排定盘面与气象生克……</p>
     </div>
   </div>
 
-  <!-- ==================== 3D 灵犀塔罗交互模态框 ==================== -->
+  <!-- ==================== 1. 灵犀塔罗模态框 (3D 交互卡牌) ==================== -->
   <div id="modalTarot" class="modal-backdrop">
     <div class="modal-window modal-lg">
       <div class="modal-header">
-        <div class="modal-title"><i data-lucide="layers"></i><span>灵犀塔罗 · 圣三角牌阵 (Tarotoo Spread)</span></div>
+        <div class="modal-title"><i data-lucide="layers"></i><span>灵犀塔罗 · 圣三角牌阵</span></div>
         <button class="modal-close-btn" data-close="modalTarot"><i data-lucide="x"></i></button>
       </div>
       <div class="modal-body">
@@ -342,11 +289,11 @@
             <div class="tarot-card" id="tarotCard1">
               <div class="tarot-inner">
                 <div class="tarot-back">
-                  <div class="card-back-pattern"></div>
+                  <div class="card-back-geom"></div>
                   <span>翻牌</span>
                 </div>
                 <div class="tarot-front" id="tarotFront1">
-                  <div class="card-img-placeholder">🔮</div>
+                  <div class="card-num-badge">0</div>
                   <span class="card-name">-</span>
                   <span class="card-pos">-</span>
                 </div>
@@ -358,11 +305,11 @@
             <div class="tarot-card" id="tarotCard2">
               <div class="tarot-inner">
                 <div class="tarot-back">
-                  <div class="card-back-pattern"></div>
+                  <div class="card-back-geom"></div>
                   <span>翻牌</span>
                 </div>
                 <div class="tarot-front" id="tarotFront2">
-                  <div class="card-img-placeholder">🔮</div>
+                  <div class="card-num-badge">I</div>
                   <span class="card-name">-</span>
                   <span class="card-pos">-</span>
                 </div>
@@ -374,11 +321,11 @@
             <div class="tarot-card" id="tarotCard3">
               <div class="tarot-inner">
                 <div class="tarot-back">
-                  <div class="card-back-pattern"></div>
+                  <div class="card-back-geom"></div>
                   <span>翻牌</span>
                 </div>
                 <div class="tarot-front" id="tarotFront3">
-                  <div class="card-img-placeholder">🔮</div>
+                  <div class="card-num-badge">II</div>
                   <span class="card-name">-</span>
                   <span class="card-pos">-</span>
                 </div>
@@ -398,8 +345,7 @@
     </div>
   </div>
 
-  <!-- 其余 8 大法器模态框 -->
-  <!-- 2. 周易六爻 -->
+  <!-- 2. 周易六爻模态框 -->
   <div id="modalIching" class="modal-backdrop">
     <div class="modal-window">
       <div class="modal-header">
@@ -410,9 +356,9 @@
         <div class="form-item"><label>问卜心意与事由</label><input type="text" id="ichingMatter" placeholder="例：问下半年换工作的吉凶与时机" class="input-modern" /></div>
         <div class="iching-board">
           <div class="coins-stage">
-            <div class="coin" id="coin1"><div class="coin-face front">乾隆</div><div class="coin-face back">满文</div></div>
-            <div class="coin" id="coin2"><div class="coin-face front">乾隆</div><div class="coin-face back">满文</div></div>
-            <div class="coin" id="coin3"><div class="coin-face front">乾隆</div><div class="coin-face back">满文</div></div>
+            <div class="coin" id="coin1"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
+            <div class="coin" id="coin2"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
+            <div class="coin" id="coin3"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
           </div>
           <div class="toss-controls">
             <button id="tossCoinBtn" class="btn btn-gold"><i data-lucide="refresh-cw"></i> 摇掷铜钱 (<span id="tossStep">第 1 爻 / 共 6 爻</span>)</button>
@@ -635,14 +581,14 @@
   <div id="modalAbout" class="modal-backdrop">
     <div class="modal-window">
       <div class="modal-header">
-        <div class="modal-title"><i data-lucide="info"></i><span>关于玄机子 · TAROTOO</span></div>
+        <div class="modal-title"><i data-lucide="info"></i><span>关于玄机子</span></div>
         <button class="modal-close-btn" data-close="modalAbout"><i data-lucide="x"></i></button>
       </div>
       <div class="modal-body">
         <div class="about-content">
           <div class="about-seal">玄机</div>
           <h3>玄机子 · 灵台问卜</h3>
-          <p class="about-ver">版本：v7.0 灵犀旗舰版 (Tarotoo Edition)</p>
+          <p class="about-ver">版本：v7.0 灵犀典藏版</p>
           <p class="about-p">融汇东方传统易学、四柱八字、梅花六爻与西方灵犀塔罗，为问卜者提供客观、富于哲思与可行建议的推演指导。</p>
           <div class="about-quote">「知命而不受制于命，顺势而为，自强不息。」</div>
         </div>
@@ -651,6 +597,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260827_tarotoo"></script>
+  <script src="script.js?v=20260827_zero_emoji"></script>
 </body>
 </html>
