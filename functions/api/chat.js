@@ -259,7 +259,7 @@ function rotate(list, start) {
 
 function buildProviders(env, isVision, clientIP) {
   const map = providerMap(env);
-  const defaultOrder = 'groq,zhipu,cloudflare,hfpublic,gemini,custom';
+  const defaultOrder = 'zhipu,groq,hfpublic,cloudflare,custom,gemini';
   const requestedOrder = String(env.AI_PROVIDER_ORDER || defaultOrder)
     .split(',')
     .map((v) => v.trim().toLowerCase())

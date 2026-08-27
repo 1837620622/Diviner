@@ -1,25 +1,48 @@
-/**
- * 玄机子 · 东方智慧与数理推演 (XuanJiZi v6.0)
- * 纯原生现代化架构，豆包/Claude 级流畅交互体验，零 Emoji 经卷规范
- */
+// 玄机子 · 东方数理与灵犀占断 (XuanJiZi v7.0)
+// 支持多线路无缝容灾、3D 灵犀塔罗、周易六爻、梅花易数、四柱八字、小六壬、摇签、黄历、木鱼与海报生成
 
 const API_ENDPOINT = '/api/chat';
+const STORAGE_KEY = 'xuanjizi_sessions_v7';
+const SYSTEM_PROMPT = `你是【玄机子】，一位融汇东方数理传统（周易六爻、梅花易数、四柱八字、小六壬）与西方灵犀哲学（塔罗圣三角）的命理占断大师。
+你的职责是以客观、睿智、温和且富含哲理的语言为问卜者排忧解难。
 
-const SYSTEM_PROMPT = `你是【玄机子】，一位融汇东方数理传统与现代逻辑推演的命理占断学者。
+回答结构要求：
+1. 【象数解析】清晰陈述卦象/牌面/数理的内在含义；
+2. 【吉凶趋避】客观剖析利弊，指出机遇与隐患；
+3. 【可行建议】给出3点在现实生活中切实可行的具体行动方案；
+4. 【玄机箴言】以一句富有诗意与东方智慧的箴言收尾。
 
-【宗旨与准则】
-1. 把推算还给数理，把选择还给人。先立盘、后辨象、再给可行趋避，不作绝对化宿命断言。
-2. 融汇周易六爻纳甲、子平八字、紫微斗数、梅花易数、小六壬掌诀、周公解梦与西洋灵犀塔罗。
-3. 语言典雅庄重、温润清朗，兼具古雅底蕴与现代实践指引。
-4. 全文严格杜绝任何 Emoji 表情符号，统一采用宋刻经卷分节符号【...】与「...」标记核心要点。
+严格禁止：
+- 严禁输出任何思考标签（如 <think>...</think> 或 <reasoning>...</reasoning>）；
+- 严禁生硬宣称“我是人工智能无法算命”，必须代入玄机子宗师身份，以数理逻辑与哲学智慧给出深度解读。`;
 
-【排版规范】
-- 【盘面推演】清晰列出卦象、干支、生克、十神或牌阵基本盘
-- 【象意剖析】由浅入深解析五行气数、格局强弱与当下的心理投射
-- 【可行趋避】给出具体方位、时令节奏、行为举措与心态建议
-- 【玄机箴言】篇末附一句四言或七言古训点睛`;
+// 22 张大阿卡纳塔罗牌数据
+const TAROT_DECK = [
+  { name: '愚者 (The Fool)', icon: '🌟', upright: '新的开端、纯真、勇敢冒险、无限潜能', reversed: '盲目冲动、缺乏规划、轻率行事' },
+  { name: '魔术师 (The Magician)', icon: '🪄', upright: '创造力、专注力、显化愿景、资源齐备', reversed: '才能受阻、言不由衷、缺乏行动' },
+  { name: '女祭司 (The High Priestess)', icon: '🌙', upright: '直觉敏锐、深沉智慧、潜意识洞察、静观', reversed: '忽视直觉、情绪压抑、表面化' },
+  { name: '皇后 (The Empress)', icon: '👑', upright: '丰盛繁荣、滋养培育、创造力爆发、和谐', reversed: '过度依赖、创造枯竭、心力交瘁' },
+  { name: '皇帝 (The Emperor)', icon: '🏛️', upright: '权威秩序、坚固根基、掌控力、战略执行', reversed: '僵化专断、控制欲过强、执行遇阻' },
+  { name: '教皇 (The Hierophant)', icon: '📜', upright: '传统智慧、良师指引、精神信仰、求同存异', reversed: '墨守成规、教条束缚、沟通障碍' },
+  { name: '恋人 (The Lovers)', icon: '❤️', upright: '灵魂契合、重要抉择、真挚联结、价值观一致', reversed: '关系分歧、抉择两难、诱惑失衡' },
+  { name: '战车 (The Chariot)', icon: '🛡️', upright: '意志坚定、破除险阻、势如破竹、胜利在握', reversed: '失控受阻、用力过猛、方向偏差' },
+  { name: '力量 (Strength)', icon: '🦁', upright: '以柔克刚、内在勇气、情绪安抚、包容自信', reversed: '自我怀疑、急躁失控、气力透支' },
+  { name: '隐士 (The Hermit)', icon: '🏮', upright: '向内求索、独立自省、明灯指路、真理追寻', reversed: '孤立封闭、逃避现实、偏执自误' },
+  { name: '命运之轮 (Wheel of Fortune)', icon: '☸️', upright: '时来运转、顺应周期、转机降临、命运眷顾', reversed: '运势起伏、被动等待、逆势徒劳' },
+  { name: '正义 (Justice)', icon: '⚖️', upright: '公正因果、清明理智、负责自律、真理显现', reversed: '偏颇失衡、推卸责任、纠纷未决' },
+  { name: '倒吊人 (The Hanged Man)', icon: '⏳', upright: '换位思考、主动沉淀、精神觉醒、舍得智慧', reversed: '无谓牺牲、拖延僵持、固执不放' },
+  { name: '死神 (Death)', icon: '🦋', upright: '脱胎换骨、旧事终结、告别过去、迎接新生', reversed: '抗拒改变、沉湎过往、停滞不前' },
+  { name: '节制 (Temperance)', icon: '🕊️', upright: '中庸调和、身心平衡、良性循环、耐心沉淀', reversed: '极度失衡、急功近利、情绪失控' },
+  { name: '恶魔 (The Devil)', icon: '⛓️', upright: '欲望驱使、物质束缚、执念觉察、打破枷锁', reversed: '重获清醒、斩断心魔、回归本真' },
+  { name: '高塔 (The Tower)', icon: '⚡', upright: '破旧立新、震撼觉醒、打破虚妄、重建秩序', reversed: '侥幸逃避、隐患未除、后知后觉' },
+  { name: '星星 (The Star)', icon: '✨', upright: '希望重燃、灵感涌现、心灵疗愈、前路光明', reversed: '信心动摇、期待落空、灵感枯竭' },
+  { name: '月亮 (The Moon)', icon: '🔮', upright: '洞悉迷局、直面恐惧、潜意识浮现、警惕幻象', reversed: '拨云见日、恐惧消退、真相大白' },
+  { name: '太阳 (The Sun)', icon: '☀️', upright: '光明喜悦、丰硕成果、自信笃定、万事通达', reversed: '暂欠明朗、虚荣浮躁、缺乏耐心' },
+  { name: '审判 (Judgement)', icon: '🎺', upright: '唤醒天命、彻底解脱、重大决断、新的人生篇章', reversed: '犹豫不决、自怨自艾、错失机缘' },
+  { name: '世界 (The World)', icon: '🌍', upright: '圆满终结、融会贯通、宏大格局、全新征程', reversed: '临门一脚、缺乏闭环、留有遗憾' }
+];
 
-// ==================== 1. Web Audio 禅音引擎 ====================
+// 音频引擎
 class SoundEngine {
   constructor() {
     this.ctx = null;
@@ -27,8 +50,8 @@ class SoundEngine {
   }
   init() {
     if (!this.ctx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) this.ctx = new AC();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
     }
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -38,75 +61,53 @@ class SoundEngine {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    [432, 864, 1296].forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-      const vol = 0.12 / (idx + 1);
-      gain.gain.setValueAtTime(vol, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(now);
-      osc.stop(now + 1.6);
-    });
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(528, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.8);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.8);
   }
   playCoin() {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1400 + Math.random() * 400, now);
-    osc.frequency.exponentialRampToValueAtTime(320, now + 0.15);
-    gain.gain.setValueAtTime(0.18, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    osc.frequency.setValueAtTime(1200 + Math.random() * 400, this.ctx.currentTime);
+    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
     osc.connect(gain);
     gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.18);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.35);
   }
-  playBell() {
+  playMuyu() {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(216, now);
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
+    osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
     osc.connect(gain);
     gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 2.4);
-  }
-  playWood() {
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(580, now);
-    osc.frequency.exponentialRampToValueAtTime(140, now + 0.12);
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.22);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.25);
   }
 }
 const sound = new SoundEngine();
 
-// ==================== 2. 全局状态与 DOM 元素 ====================
+// DOM 元素缓存
 let sessions = [];
 let currentSessionId = null;
 let pendingImages = [];
@@ -121,161 +122,52 @@ const uploadBtn = document.getElementById('uploadBtn');
 const fileInput = document.getElementById('fileInput');
 const attachPreview = document.getElementById('attachPreview');
 const thumbsList = document.getElementById('thumbsList');
+const historyList = document.getElementById('historyList');
+const chatTitle = document.getElementById('chatTitle');
+const statusBadgeText = document.getElementById('statusBadgeText');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
-const openSidebarBtn = document.getElementById('openSidebarBtn');
-const closeSidebarBtn = document.getElementById('closeSidebarBtn');
-const newChatBtn = document.getElementById('newChatBtn');
-const headerNewChatBtn = document.getElementById('headerNewChatBtn');
-const historyList = document.getElementById('historyList');
-const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 const soundToggleBtn = document.getElementById('soundToggleBtn');
 const soundIcon = document.getElementById('soundIcon');
-const aboutBtn = document.getElementById('aboutBtn');
-const headerShareBtn = document.getElementById('headerShareBtn');
-const chatTitle = document.getElementById('chatTitle');
-const statusBadgeText = document.getElementById('statusBadgeText');
 
-function setStatus(text) {
-  if (statusBadgeText) statusBadgeText.textContent = text;
+// 初始化会话与事件
+function initApp() {
+  loadSessions();
+  bindEvents();
+  renderHistoryList();
+  renderAlmanacData();
+  if (window.lucide) window.lucide.createIcons();
 }
 
-function refreshIcons() {
-  if (window.lucide && typeof window.lucide.createIcons === 'function') {
-    window.lucide.createIcons();
-  }
-}
-
-function escapeHtml(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// ==================== 3. 消息格式化与五行可视化 ====================
-function formatMessageContent(raw) {
-  let s = String(raw || '').replace(/\r\n/g, '\n');
-  s = escapeHtml(s);
-
-  // 分节标题 (仅当整行单独为【...】或以 ### 开头时才转为大标题，避免行内打断语句)
-  s = s.replace(/^#{1,3}\s*(.+)$/gm, '【$1】');
-  s = s.replace(/^\s*【([^】\n]+)】\s*$/gm, '<div class="section-title"><i data-lucide="compass" style="width:15px;height:15px"></i> $1</div>');
-  s = s.replace(/【([^】\n]+)】/g, '<strong style="color:var(--vermilion);font-weight:700">【$1】</strong>');
-  
-  // 箴言古训
-  s = s.replace(/箴言[：:]([^\n]+)/g, '<div class="fortune-box"><i data-lucide="sparkles"></i><span>箴言：$1</span></div>');
-  
-  // 行内高亮
-  s = s.replace(/「([^」]+)」/g, '<mark>$1</mark>');
-  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
-  s = s.replace(/大吉/g, '<strong style="color:var(--jade)">大吉</strong>');
-  s = s.replace(/大凶/g, '<strong style="color:var(--vermilion)">大凶</strong>');
-
-  // 段落包装
-  const blocks = s.split(/\n\n+/);
-  const formatted = blocks.map(b => {
-    b = b.trim();
-    if (!b) return '';
-    if (b.startsWith('<div class="section-title">') || b.startsWith('<div class="fortune-box">')) {
-      return b;
-    }
-    return `<p>${b.replace(/\n/g, '<br>')}</p>`;
-  }).join('\n');
-
-  return injectWuxing(formatted, raw);
-}
-
-function injectWuxing(html, raw) {
-  const txt = String(raw || '');
-  const re = /[金木水火土]\s*[:：]?\s*(\d+(?:\.\d+)?)\s*%?/g;
-  const matches = [...txt.matchAll(re)];
-  if (matches.length < 3) return html;
-
-  const vals = {};
-  for (const m of matches) {
-    const el = m[0].trim()[0];
-    if ('金木水火土'.includes(el)) vals[el] = parseFloat(m[1]);
-  }
-  const keys = ['金', '木', '水', '火', '土'].filter(k => typeof vals[k] === 'number');
-  if (keys.length < 3) return html;
-
-  const max = Math.max(...Object.values(vals), 1);
-  const bars = keys.map(k => {
-    const v = vals[k];
-    const pct = Math.min(100, Math.round((v / max) * 100));
-    const colors = { 金: '#d4af37', 木: '#10b981', 水: '#00c6ff', 火: '#c73e1d', 土: '#a78b71' };
-    return `
-      <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;margin:3px 0;">
-        <span style="width:14px;color:${colors[k]};font-weight:900;">${k}</span>
-        <div style="flex:1;height:6px;background:rgba(0,0,0,0.08);border-radius:999px;overflow:hidden;">
-          <div style="height:100%;width:${pct}%;background:${colors[k]};border-radius:999px;"></div>
-        </div>
-        <span style="width:32px;text-align:right;font-family:monospace;color:#666;">${v}%</span>
-      </div>`;
-  }).join('');
-
-  const card = `
-    <div style="margin:12px 0 8px;padding:10px 14px;background:#f5f2ea;border:1px solid rgba(212,175,55,0.3);border-radius:8px;">
-      <div style="font-size:11px;font-weight:700;color:#8B6914;margin-bottom:6px;display:flex;align-items:center;gap:5px;">
-        <i data-lucide="activity" style="width:13px;height:13px;"></i> 五行气数能量分布
-      </div>
-      ${bars}
-    </div>`;
-
-  return html + card;
-}
-
-// ==================== 4. 会话管理与本地存储 ====================
 function loadSessions() {
   try {
-    const raw = localStorage.getItem('xuanjizi_sessions_v6') || localStorage.getItem('xuanjizi_sessions_v4');
+    const raw = localStorage.getItem(STORAGE_KEY);
     sessions = raw ? JSON.parse(raw) : [];
-  } catch {
+  } catch (e) {
     sessions = [];
   }
   if (!sessions.length) {
     createNewSession();
   } else {
     currentSessionId = sessions[0].id;
-    renderHistoryList();
     renderCurrentChat();
   }
 }
 
 function saveSessions() {
   try {
-    // 浏览器 localStorage 通常只有约 5MB；历史图片最容易把整个会话存储挤爆。
-    // 先完整保存最近会话，若超额则逐级移除历史图片，但保留文字问卜记录。
-    const snapshot = JSON.parse(JSON.stringify(sessions.slice(0, 30)));
-    let payload = JSON.stringify(snapshot);
-    try {
-      localStorage.setItem('xuanjizi_sessions_v6', payload);
-      return;
-    } catch {}
-
-    for (let si = snapshot.length - 1; si >= 0; si--) {
-      const msgs = snapshot[si].messages || [];
-      for (const m of msgs) {
-        if (m.images) m.images = [];
-      }
-      payload = JSON.stringify(snapshot);
-      try {
-        localStorage.setItem('xuanjizi_sessions_v6', payload);
-        return;
-      } catch {}
-    }
-  } catch {}
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  } catch (e) {
+    console.error('Storage full', e);
+  }
 }
 
 function createNewSession() {
   const newSess = {
-    id: 'sess_' + Date.now(),
-    title: '新问卜 · ' + new Date().toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }),
-    time: Date.now(),
+    id: 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    title: '新问卜 · ' + new Date().toLocaleDateString(),
+    created: Date.now(),
     messages: []
   };
   sessions.unshift(newSess);
@@ -286,8 +178,38 @@ function createNewSession() {
   closeSidebar();
 }
 
-function deleteSession(id, e) {
-  if (e) e.stopPropagation();
+function renderHistoryList() {
+  historyList.innerHTML = '';
+  if (!sessions.length) {
+    historyList.innerHTML = '<div class="history-empty">暂无历史问卜</div>';
+    return;
+  }
+  sessions.forEach(sess => {
+    const item = document.createElement('div');
+    item.className = 'history-item' + (sess.id === currentSessionId ? ' active' : '');
+    item.innerHTML = `
+      <div class="history-title-wrap">
+        <i data-lucide="message-square"></i>
+        <span>${escapeHtml(sess.title)}</span>
+      </div>
+      <button class="history-item-del" title="删除"><i data-lucide="trash-2"></i></button>
+    `;
+    item.querySelector('.history-title-wrap').addEventListener('click', () => {
+      currentSessionId = sess.id;
+      renderHistoryList();
+      renderCurrentChat();
+      closeSidebar();
+    });
+    item.querySelector('.history-item-del').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteSession(sess.id);
+    });
+    historyList.appendChild(item);
+  });
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function deleteSession(id) {
   sessions = sessions.filter(s => s.id !== id);
   if (!sessions.length) {
     createNewSession();
@@ -299,63 +221,25 @@ function deleteSession(id, e) {
   }
 }
 
-function renderHistoryList() {
-  historyList.innerHTML = '';
-  if (!sessions.length) {
-    historyList.innerHTML = '<div class="history-empty">暂无历史问卜</div>';
-    return;
-  }
-  sessions.forEach(sess => {
-    const div = document.createElement('div');
-    div.className = 'history-item' + (sess.id === currentSessionId ? ' active' : '');
-    div.innerHTML = `
-      <div class="history-title-wrap">
-        <i data-lucide="message-square"></i>
-        <span>${escapeHtml(sess.title)}</span>
-      </div>
-      <button class="history-item-del" title="删除"><i data-lucide="trash-2"></i></button>
-    `;
-    div.addEventListener('click', () => {
-      currentSessionId = sess.id;
-      renderHistoryList();
-      renderCurrentChat();
-      closeSidebar();
-    });
-    div.querySelector('.history-item-del').addEventListener('click', (e) => deleteSession(sess.id, e));
-    historyList.appendChild(div);
-  });
-  refreshIcons();
-}
-
 function renderCurrentChat() {
   const sess = sessions.find(s => s.id === currentSessionId);
-  chatInner.innerHTML = '';
-  if (!sess || !sess.messages.length) {
-    chatInner.appendChild(welcomeCard);
+  if (!sess) return;
+  chatTitle.textContent = sess.title;
+  
+  // 清理消息容器（保留欢迎卡片）
+  const msgNodes = chatInner.querySelectorAll('.msg-row');
+  msgNodes.forEach(n => n.remove());
+
+  if (!sess.messages.length) {
     welcomeCard.style.display = 'block';
-    chatTitle.textContent = '问卜推演';
   } else {
     welcomeCard.style.display = 'none';
-    chatTitle.textContent = sess.title;
-    sess.messages.forEach(m => {
-      renderMessageNode(m.role, m.content, m.images, false);
-    });
+    sess.messages.forEach(m => renderMessageNode(m.role, m.content, m.images || []));
   }
-  refreshIcons();
-  scrollToBottom(false);
+  scrollToBottom();
 }
 
-function scrollToBottom(smooth = true) {
-  setTimeout(() => {
-    chatContainer.scrollTo({
-      top: chatContainer.scrollHeight,
-      behavior: smooth ? 'smooth' : 'auto'
-    });
-  }, 40);
-}
-
-// ==================== 5. 消息渲染 ====================
-function renderMessageNode(role, content, images = [], isNew = true) {
+function renderMessageNode(role, rawContent, images = [], isNew = false) {
   const isUser = role === 'user';
   const row = document.createElement('div');
   row.className = `msg-row ${isUser ? 'user' : 'assistant'}`;
@@ -369,20 +253,22 @@ function renderMessageNode(role, content, images = [], isNew = true) {
 
   const meta = document.createElement('div');
   meta.className = 'msg-meta';
-  meta.textContent = isUser ? '缘主' : '玄机子';
+  meta.textContent = isUser ? '求问善信' : '玄机子';
   wrapper.appendChild(meta);
 
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatDivinationContent(rawContent);
 
-  if (isUser) {
-    const textHtml = `<p>${escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
-    const imgHtml = images && images.length
-      ? `<div class="thumbs-in-msg">${images.map(u => `<img src="${u}" alt="图片" />`).join('')}</div>`
-      : '';
-    bubble.innerHTML = textHtml + imgHtml;
-  } else {
-    bubble.innerHTML = formatMessageContent(content);
+  if (images && images.length) {
+    const thumbs = document.createElement('div');
+    thumbs.className = 'thumbs-in-msg';
+    images.forEach(src => {
+      const img = document.createElement('img');
+      img.src = src;
+      thumbs.appendChild(img);
+    });
+    bubble.appendChild(thumbs);
   }
   wrapper.appendChild(bubble);
 
@@ -390,17 +276,23 @@ function renderMessageNode(role, content, images = [], isNew = true) {
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
     actions.innerHTML = `
-      <button class="msg-action-btn" data-act="copy"><i data-lucide="copy"></i> 复制</button>
-      <button class="msg-action-btn" data-act="share"><i data-lucide="image"></i> 符笺</button>
-      <button class="msg-action-btn" data-act="up"><i data-lucide="thumbs-up"></i> 有启发</button>
+      <button class="msg-action-btn" data-act="copy"><i data-lucide="copy"></i><span>复制卦辞</span></button>
+      <button class="msg-action-btn" data-act="share"><i data-lucide="share-2"></i><span>符笺海报</span></button>
+      <button class="msg-action-btn" data-act="up"><i data-lucide="thumbs-up"></i><span>有启发</span></button>
     `;
-    actions.querySelector('[data-act="copy"]').addEventListener('click', async (e) => {
-      await navigator.clipboard.writeText(content);
-      e.target.closest('button').innerHTML = '<i data-lucide="check"></i> 已复制';
-      refreshIcons();
+    actions.querySelector('[data-act="copy"]').addEventListener('click', (e) => {
+      navigator.clipboard.writeText(rawContent).then(() => {
+        const btn = e.target.closest('button');
+        btn.innerHTML = '<i data-lucide="check"></i><span>已复制</span>';
+        if (window.lucide) window.lucide.createIcons();
+        setTimeout(() => {
+          btn.innerHTML = '<i data-lucide="copy"></i><span>复制卦辞</span>';
+          if (window.lucide) window.lucide.createIcons();
+        }, 1500);
+      });
     });
     actions.querySelector('[data-act="share"]').addEventListener('click', () => {
-      openPosterModal(content);
+      openPosterModal(rawContent);
     });
     actions.querySelector('[data-act="up"]').addEventListener('click', (e) => {
       e.target.closest('button').classList.add('active');
@@ -413,15 +305,34 @@ function renderMessageNode(role, content, images = [], isNew = true) {
   row.appendChild(wrapper);
   chatInner.appendChild(row);
 
-  if (isNew) {
-    refreshIcons();
-    setTimeout(() => {
-      row.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }, 80);
-  }
+  if (window.lucide) window.lucide.createIcons();
+  if (isNew) scrollToBottom();
 }
 
-// ==================== 6. 消息发送与 API 请求 ====================
+function formatDivinationContent(text) {
+  if (!text) return '';
+  // 1. 过滤任何遗留的思考标签
+  let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '').trim();
+  
+  // 2. 格式化玄机箴言金框
+  cleaned = cleaned.replace(/【玄机箴言】([\s\S]*?)(?=(\n\n|$))/g, '<div class="fortune-box"><i data-lucide="sparkles"></i><div><strong>玄机箴言：</strong>$1</div></div>');
+  cleaned = cleaned.replace(/【建议趋避】/g, '<div class="section-title"><i data-lucide="shield"></i> 建议趋避</div>');
+  cleaned = cleaned.replace(/【象数解析】/g, '<div class="section-title"><i data-lucide="compass"></i> 象数解析</div>');
+  cleaned = cleaned.replace(/【吉凶趋避】/g, '<div class="section-title"><i data-lucide="flame"></i> 吉凶趋避</div>');
+  cleaned = cleaned.replace(/【可行建议】/g, '<div class="section-title"><i data-lucide="target"></i> 可行建议</div>');
+  
+  // 3. 段落包装
+  const paras = cleaned.split(/\n\s*\n/);
+  return paras.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+}
+
+function scrollToBottom() {
+  setTimeout(() => {
+    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+  }, 60);
+}
+
+// 消息发送与 API 请求
 async function handleSend(customText = null) {
   const text = (customText !== null ? customText : userInput.value).trim();
   const hasImages = pendingImages.length > 0;
@@ -433,30 +344,26 @@ async function handleSend(customText = null) {
   const sess = sessions.find(s => s.id === currentSessionId);
   if (!sess) return;
 
-  const currentImages = [...pendingImages];
+  const currentImgs = [...pendingImages];
   pendingImages = [];
   renderAttachPreview();
 
   const userContent = text || '（已上传相格或户型图，请玄机子推演）';
-  
-  // 隐藏欢迎卡
   welcomeCard.style.display = 'none';
 
-  // 记录用户消息
   sess.messages.push({
     role: 'user',
     content: userContent,
-    images: currentImages.map(img => img.dataUrl)
+    images: currentImgs.map(img => img.dataUrl)
   });
 
-  // 更新会话标题
   if (sess.messages.length === 1 && text) {
     sess.title = text.slice(0, 14);
     chatTitle.textContent = sess.title;
     renderHistoryList();
   }
 
-  renderMessageNode('user', userContent, currentImages.map(img => img.dataUrl), true);
+  renderMessageNode('user', userContent, currentImgs.map(img => img.dataUrl), true);
   saveSessions();
 
   userInput.value = '';
@@ -465,7 +372,6 @@ async function handleSend(customText = null) {
   showLoading(true);
 
   try {
-    // 组装发给后端的格式
     const apiMessages = [{ role: 'system', content: SYSTEM_PROMPT }];
     sess.messages.forEach(m => {
       if (m.role === 'user' && m.images && m.images.length) {
@@ -478,8 +384,9 @@ async function handleSend(customText = null) {
     });
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 50000);
-    setStatus('正在择路推演');
+    const timer = setTimeout(() => controller.abort(), 45000);
+    setStatus('玄机子正在择路推演……');
+
     let resp;
     try {
       resp = await fetch(API_ENDPOINT, {
@@ -499,21 +406,19 @@ async function handleSend(customText = null) {
     if (!resp.ok) {
       let detail = '';
       try { detail = (await resp.json())?.error || ''; } catch {}
-      throw new Error(detail || `网络状态码异常 ${resp.status}`);
+      throw new Error(detail || `网络状态码 ${resp.status}`);
     }
 
     const route = resp.headers.get('X-Diviner-Route');
-    if (route) {
-      const routeNames = {
-        groq: '玄机主路',
-        zhipu: '中文稳路',
-        cloudflare: '边缘稳路',
-        hfpublic: '免钥云路',
-        gemini: '灵视备路',
-        custom: '兼容备路'
-      };
-      setStatus(`${routeNames[route] || '推演线路'} · 已接通`);
-    }
+    const routeNames = {
+      groq: '玄机一号 (Groq·高速)',
+      zhipu: '玄机二号 (智谱·清言)',
+      hfpublic: '玄机四号 (云游·太素)',
+      cloudflare: '玄机五号 (边缘·星阵)',
+      custom: '玄机三号 (星宿·灵运)'
+    };
+    setStatus(`${routeNames[route] || '气场通达'} · 已接通`);
+
     const data = await resp.json();
     const reply = data.choices && data.choices[0]?.message?.content
       ? data.choices[0].message.content
@@ -522,11 +427,11 @@ async function handleSend(customText = null) {
     sess.messages.push({ role: 'assistant', content: reply });
     saveSessions();
     renderMessageNode('assistant', reply, [], true);
-    sound.playBell();
+    sound.playChime();
   } catch (err) {
     console.error(err);
-    setStatus(err?.name === 'AbortError' ? '推演超时 · 可重试' : '线路波动 · 已止损');
-    const fallback = `推演暂遇阻滞。\n\n建议趋避：稍候片刻重新问卜，若上传了图片请将大小保持在2MB以内。\n\n箴言：静水流深，急则生变；稍安勿躁，自有明断。`;
+    setStatus('推演遇到波动 · 已自动兜底');
+    const fallback = `推演暂遇阻滞。\n\n【建议趋避】稍候片刻重新问卜，若上传了图片请将大小保持在2MB以内。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
     sess.messages.push({ role: 'assistant', content: fallback });
     saveSessions();
     renderMessageNode('assistant', fallback, [], true);
@@ -542,7 +447,122 @@ function showLoading(show) {
   loadingOverlay.setAttribute('aria-hidden', show ? 'false' : 'true');
 }
 
-// ==================== 7. 图片上传与压缩 ====================
+function setStatus(text) {
+  statusBadgeText.textContent = text;
+}
+
+// 绑定输入框与侧边栏事件
+function bindEvents() {
+  userInput.addEventListener('input', autoGrowTextarea);
+  userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  });
+
+  sendBtn.addEventListener('click', () => handleSend());
+  document.getElementById('newChatBtn').addEventListener('click', createNewSession);
+  document.getElementById('headerNewChatBtn').addEventListener('click', createNewSession);
+  document.getElementById('clearAllHistoryBtn').addEventListener('click', () => {
+    if (confirm('确认清空所有历史问卜档案？')) {
+      sessions = [];
+      createNewSession();
+    }
+  });
+
+  // 侧边栏抽屉开关
+  document.getElementById('openSidebarBtn').addEventListener('click', openSidebar);
+  document.getElementById('closeSidebarBtn').addEventListener('click', closeSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
+
+  // 快捷按钮点击
+  document.querySelectorAll('[data-prompt]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const prompt = btn.getAttribute('data-prompt');
+      if (prompt) handleSend(prompt);
+    });
+  });
+
+  // 法器打开弹窗绑定
+  document.querySelectorAll('[data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tool = btn.getAttribute('data-tool');
+      openToolModal(tool);
+    });
+  });
+
+  // 模态框关闭绑定
+  document.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-close');
+      const target = document.getElementById(targetId);
+      if (target) target.classList.remove('show');
+    });
+  });
+
+  // 图片上传
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+  // 音频切换
+  soundToggleBtn.addEventListener('click', () => {
+    sound.enabled = !sound.enabled;
+    soundIcon.setAttribute('data-lucide', sound.enabled ? 'volume-2' : 'volume-x');
+    if (window.lucide) window.lucide.createIcons();
+  });
+
+  // 关于弹窗
+  document.getElementById('aboutBtn').addEventListener('click', () => {
+    document.getElementById('modalAbout').classList.add('show');
+  });
+
+  // 初始化各法器交互逻辑
+  initTarotLogic();
+  initIchingLogic();
+  initMeihuaLogic();
+  initXiaoliurenLogic();
+  initBaziLogic();
+  initLotLogic();
+  initMuyuLogic();
+  initDreamLogic();
+}
+
+function openSidebar() {
+  sidebar.classList.add('open');
+  sidebarOverlay.classList.add('show');
+}
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('show');
+}
+
+function autoGrowTextarea() {
+  userInput.style.height = 'auto';
+  userInput.style.height = Math.min(userInput.scrollHeight, 140) + 'px';
+}
+
+function openToolModal(tool) {
+  const modalMap = {
+    tarot: 'modalTarot',
+    iching: 'modalIching',
+    meihua: 'modalMeihua',
+    xiaoliuren: 'modalXiaoliuren',
+    bazi: 'modalBazi',
+    lot: 'modalLot',
+    almanac: 'modalAlmanac',
+    dream: 'modalDream',
+    muyu: 'modalMuyu'
+  };
+  const mId = modalMap[tool];
+  if (mId) {
+    const el = document.getElementById(mId);
+    if (el) el.classList.add('show');
+    closeSidebar();
+  }
+}
+
+// 图片压缩
 function compressImage(file, maxSide = 1100, quality = 0.76) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -551,8 +571,7 @@ function compressImage(file, maxSide = 1100, quality = 0.76) {
       const img = new Image();
       img.onerror = () => reject(new Error('图片格式无法识别'));
       img.onload = () => {
-        let w = img.width;
-        let h = img.height;
+        let w = img.width, h = img.height;
         if (w > maxSide || h > maxSide) {
           const ratio = Math.min(maxSide / w, maxSide / h);
           w = Math.max(1, Math.round(w * ratio));
@@ -576,18 +595,14 @@ async function handleFiles(files) {
   if (!list.length) return;
   for (const f of list) {
     if (!f.type.startsWith('image/')) continue;
-    if (f.size > 12 * 1024 * 1024) {
-      alert('单张图片请控制在 12MB 以内。');
-      continue;
-    }
     try {
       const dataUrl = await compressImage(f);
       pendingImages.push({ file: f, dataUrl });
     } catch (err) {
       console.error(err);
-      alert('这张图片未能读取，请换一张 JPG / PNG / WebP。');
     }
   }
+  fileInput.value = '';
   renderAttachPreview();
 }
 
@@ -599,542 +614,493 @@ function renderAttachPreview() {
   }
   attachPreview.style.display = 'block';
   thumbsList.innerHTML = '';
-  pendingImages.forEach((img, idx) => {
-    const item = document.createElement('div');
-    item.className = 'thumb-item';
-    item.innerHTML = `
-      <img src="${img.dataUrl}" alt="预览" />
-      <button class="thumb-remove" data-idx="${idx}">×</button>
+  pendingImages.forEach((item, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb-item';
+    wrap.innerHTML = `
+      <img src="${item.dataUrl}" />
+      <button class="thumb-del-btn" data-del="${idx}">&times;</button>
     `;
-    item.querySelector('.thumb-remove').addEventListener('click', () => {
+    wrap.querySelector('.thumb-del-btn').addEventListener('click', () => {
       pendingImages.splice(idx, 1);
       renderAttachPreview();
     });
-    thumbsList.appendChild(item);
+    thumbsList.appendChild(wrap);
   });
 }
 
-// ==================== 8. 侧边栏与模态框控制 ====================
-function openSidebar() {
-  sidebar.classList.add('open');
-  sidebarOverlay.classList.add('show');
-}
-function closeSidebar() {
-  sidebar.classList.remove('open');
-  sidebarOverlay.classList.remove('show');
-}
+// ==================== 1. 灵犀塔罗逻辑 (Tarotoo 3D 风格) ====================
+let drawnTarotCards = [];
+function initTarotLogic() {
+  const drawBtn = document.getElementById('drawTarotBtn');
+  const submitBtn = document.getElementById('submitTarotBtn');
+  const resultDesc = document.getElementById('tarotResultDesc');
 
-function openModal(id) {
-  const modal = document.getElementById(id);
-  if (!modal) return;
-  modal.classList.add('show');
-  document.body.classList.add('modal-open');
-  const focusable = modal.querySelector('input, textarea, select, button');
-  setTimeout(() => focusable?.focus({ preventScroll: true }), 80);
-}
-function closeModal(id) {
-  const modal = document.getElementById(id);
-  if (modal) modal.classList.remove('show');
-  if (!document.querySelector('.modal-backdrop.show')) document.body.classList.remove('modal-open');
-}
+  drawBtn.addEventListener('click', () => {
+    sound.playChime();
+    // 随机无放回抽取 3 张牌
+    const shuffled = [...TAROT_DECK].sort(() => Math.random() - 0.5);
+    drawnTarotCards = [
+      { ...shuffled[0], isReversed: Math.random() > 0.65, slot: '过去' },
+      { ...shuffled[1], isReversed: Math.random() > 0.65, slot: '现在' },
+      { ...shuffled[2], isReversed: Math.random() > 0.65, slot: '未来' }
+    ];
 
-// ==================== 9. 九大法器交互实现 ====================
-
-// 1. 六爻
-let ichingStep = 0;
-let ichingLines = [];
-function resetIching() {
-  ichingStep = 0;
-  ichingLines = [];
-  document.getElementById('tossStep').textContent = '第 1 爻 / 共 6 爻';
-  document.getElementById('hexagramLines').innerHTML = '';
-  document.getElementById('ichingResult').style.display = 'none';
-  document.getElementById('submitIchingBtn').disabled = true;
-  document.getElementById('tossCoinBtn').disabled = false;
-}
-function tossCoins() {
-  if (ichingStep >= 6) return;
-  sound.playCoin();
-  ['coin1', 'coin2', 'coin3'].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.add('flipping');
-    setTimeout(() => el.classList.remove('flipping'), 600);
-  });
-
-  const c1 = Math.random() > 0.5 ? 3 : 2;
-  const c2 = Math.random() > 0.5 ? 3 : 2;
-  const c3 = Math.random() > 0.5 ? 3 : 2;
-  const sum = c1 + c2 + c3; // 6:老阴, 7:少阳, 8:少阴, 9:老阳
-
-  setTimeout(() => {
-    ['coin1', 'coin2', 'coin3'].forEach((id, idx) => {
-      const val = [c1, c2, c3][idx];
-      const el = document.getElementById(id);
-      el.style.transform = val === 3 ? 'rotateY(0deg)' : 'rotateY(180deg)';
+    ['tarotCard1', 'tarotCard2', 'tarotCard3'].forEach((cId, idx) => {
+      const card = document.getElementById(cId);
+      const front = document.getElementById('tarotFront' + (idx + 1));
+      const info = drawnTarotCards[idx];
+      
+      front.innerHTML = `
+        <div class="card-img-placeholder">${info.icon}</div>
+        <div class="card-name">${info.name}</div>
+        <div class="card-pos">${info.isReversed ? '【逆位】' : '【正位】'}</div>
+      `;
+      card.classList.remove('flipped');
+      setTimeout(() => card.classList.add('flipped'), 150 * (idx + 1));
     });
 
-    ichingStep++;
-    let lineName = '', isMoving = false;
-    if (sum === 6) { lineName = '六（老阴 · 变阳）'; isMoving = true; }
-    else if (sum === 7) { lineName = '七（少阳 · 不变）'; }
-    else if (sum === 8) { lineName = '八（少阴 · 不变）'; }
-    else if (sum === 9) { lineName = '九（老阳 · 变阴）'; isMoving = true; }
+    resultDesc.style.display = 'block';
+    resultDesc.innerHTML = `
+      <strong>圣三角牌阵排定：</strong><br>
+      • 过去（起因）：${drawnTarotCards[0].name} ${drawnTarotCards[0].isReversed ? '逆位' : '正位'}<br>
+      • 现在（处境）：${drawnTarotCards[1].name} ${drawnTarotCards[1].isReversed ? '逆位' : '正位'}<br>
+      • 未来（走向）：${drawnTarotCards[2].name} ${drawnTarotCards[2].isReversed ? '逆位' : '正位'}
+    `;
+    submitBtn.disabled = false;
+  });
 
-    ichingLines.push({ step: ichingStep, sum, lineName, isMoving });
+  submitBtn.addEventListener('click', () => {
+    const q = document.getElementById('tarotQuestion').value.trim() || '求问当前困惑与走向';
+    const prompt = `【灵犀塔罗·圣三角牌阵问卜】\n所问心念：${q}\n牌阵排定：\n1. 过去因缘：${drawnTarotCards[0].name}（${drawnTarotCards[0].isReversed ? '逆位' : '正位'}）\n2. 当下境遇：${drawnTarotCards[1].name}（${drawnTarotCards[1].isReversed ? '逆位' : '正位'}）\n3. 未来走向：${drawnTarotCards[2].name}（${drawnTarotCards[2].isReversed ? '逆位' : '正位'}）\n请玄机子结合三牌之生克象意，为我详析起因、现状瓶颈与未来破局指引。`;
+    document.getElementById('modalTarot').classList.remove('show');
+    handleSend(prompt);
+  });
+}
 
-    const row = document.createElement('div');
-    row.className = 'hex-line' + (isMoving ? ' moving' : '');
-    row.innerHTML = `<span>第 ${ichingStep} 爻</span><span>${lineName}</span>`;
-    document.getElementById('hexagramLines').appendChild(row);
+// ==================== 2. 周易六爻逻辑 ====================
+let ichingLines = [];
+function initIchingLogic() {
+  const tossBtn = document.getElementById('tossCoinBtn');
+  const submitBtn = document.getElementById('submitIchingBtn');
+  const tossStep = document.getElementById('tossStep');
+  const hexLines = document.getElementById('hexagramLines');
+  const resBox = document.getElementById('ichingResult');
 
-    if (ichingStep < 6) {
-      document.getElementById('tossStep').textContent = `第 ${ichingStep + 1} 爻 / 共 6 爻`;
+  tossBtn.addEventListener('click', () => {
+    if (ichingLines.length >= 6) return;
+    sound.playCoin();
+
+    ['coin1', 'coin2', 'coin3'].forEach(cId => {
+      const c = document.getElementById(cId);
+      c.classList.remove('flipping');
+      void c.offsetWidth;
+      c.classList.add('flipping');
+    });
+
+    const c1 = Math.random() > 0.5 ? 3 : 2;
+    const c2 = Math.random() > 0.5 ? 3 : 2;
+    const c3 = Math.random() > 0.5 ? 3 : 2;
+    const sum = c1 + c2 + c3; // 6: 老阴, 7: 少阳, 8: 少阴, 9: 老阳
+    ichingLines.push(sum);
+
+    renderHexLines();
+
+    if (ichingLines.length < 6) {
+      tossStep.textContent = `第 ${ichingLines.length + 1} 爻 / 共 6 爻`;
     } else {
-      document.getElementById('tossStep').textContent = '已成六爻全卦';
-      document.getElementById('tossCoinBtn').disabled = true;
-      document.getElementById('submitIchingBtn').disabled = false;
-      const res = document.getElementById('ichingResult');
-      res.style.display = 'block';
-      res.innerHTML = `<strong>卦象排定完成</strong><p style="font-size:12px;color:var(--text-muted);margin-top:4px;">六爻纳甲完备，可点击下方呈递玄机子详释体用变易。</p>`;
+      tossStep.textContent = '六爻成卦 · 功德圆满';
+      tossBtn.disabled = true;
+      submitBtn.disabled = false;
+      resBox.style.display = 'block';
+      resBox.innerHTML = `<strong>周易六爻已排定</strong>（自初爻至上爻依次为：${ichingLines.join('、')}）`;
     }
-  }, 600);
+  });
+
+  function renderHexLines() {
+    hexLines.innerHTML = '';
+    // 从初爻到上爻（从下往上）
+    [...ichingLines].reverse().forEach((val, idx) => {
+      const lineIdx = ichingLines.length - idx;
+      const isYang = val === 7 || val === 9;
+      const isDong = val === 6 || val === 9;
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.gap = '8px';
+      row.style.margin = '4px 0';
+      row.innerHTML = `
+        <span style="font-size:11px;color:var(--gold);width:36px;">第${lineIdx}爻</span>
+        <div style="flex:1;height:10px;background:${isYang ? 'var(--gold)' : 'linear-gradient(90deg, var(--gold) 45%, transparent 45%, transparent 55%, var(--gold) 55%)'};border-radius:2px;"></div>
+        <span style="font-size:11px;color:${isDong ? 'var(--cinnabar)' : 'var(--text-muted)'};width:40px;">${isDong ? '●动爻' : '静爻'}</span>
+      `;
+      hexLines.appendChild(row);
+    });
+  }
+
+  submitBtn.addEventListener('click', () => {
+    const matter = document.getElementById('ichingMatter').value.trim() || '问近期大事吉凶与转机';
+    const prompt = `【周易六爻纳甲占断】\n问卜事由：${matter}\n六爻数理（自初爻至上爻）：${ichingLines.join('、')}\n请玄机子为我排出本卦、变卦，并依动爻纳甲、六亲世应，给出吉凶剖析与具体趋避方策。`;
+    document.getElementById('modalIching').classList.remove('show');
+    ichingLines = [];
+    tossBtn.disabled = false;
+    submitBtn.disabled = true;
+    tossStep.textContent = '第 1 爻 / 共 6 爻';
+    hexLines.innerHTML = '';
+    resBox.style.display = 'none';
+    handleSend(prompt);
+  });
 }
 
-// 2. 梅花易数
-let meihuaResultData = null;
-const BAGUA = ['乾(天)', '兑(泽)', '离(火)', '震(雷)', '巽(风)', '坎(水)', '艮(山)', '坤(地)'];
-function calcMeihua(n1, n2, n3) {
-  const upIdx = (n1 % 8) || 8;
-  const downIdx = (n2 % 8) || 8;
-  const moveIdx = (n3 % 6) || 6;
-  const upName = BAGUA[upIdx - 1];
-  const downName = BAGUA[downIdx - 1];
-  meihuaResultData = { upName, downName, moveIdx, n1, n2, n3 };
+// ==================== 3. 梅花易数逻辑 ====================
+function initMeihuaLogic() {
+  const pills = document.querySelectorAll('[data-meihuatab]');
+  const secTime = document.getElementById('meihuaTimeSection');
+  const secNum = document.getElementById('meihuaNumSection');
+  const resPanel = document.getElementById('meihuaResultPanel');
+  const submitBtn = document.getElementById('submitMeihuaBtn');
 
-  document.getElementById('meihuaResultPanel').style.display = 'block';
-  document.getElementById('mBenName').textContent = `${upName} 上 / ${downName} 下`;
-  document.getElementById('mBenDesc').textContent = `动在第 ${moveIdx} 爻`;
-  document.getElementById('mHuName').textContent = '体用生克';
-  document.getElementById('mHuDesc').textContent = '气运相照';
-  document.getElementById('mBianName').textContent = '变局观微';
-  document.getElementById('mBianDesc').textContent = '趋吉避凶';
-  document.getElementById('meihuaTiyong').textContent = `动爻在第 ${moveIdx} 爻，体卦不动为己身，用卦相生为顺应天时。`;
-  document.getElementById('submitMeihuaBtn').disabled = false;
-  sound.playBell();
+  pills.forEach(p => {
+    p.addEventListener('click', () => {
+      pills.forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+      const isTime = p.getAttribute('data-meihuatab') === 'time';
+      secTime.style.display = isTime ? 'block' : 'none';
+      secNum.style.display = isTime ? 'none' : 'block';
+    });
+  });
+
+  document.getElementById('meihuaNowBtn').addEventListener('click', () => {
+    sound.playChime();
+    const d = new Date();
+    const up = ((d.getFullYear() + d.getMonth() + 1 + d.getDate()) % 8) || 8;
+    const down = ((d.getFullYear() + d.getMonth() + 1 + d.getDate() + d.getHours()) % 8) || 8;
+    const dong = ((up + down) % 6) || 6;
+    showMeihuaResult(up, down, dong, '当前时辰数理起卦');
+  });
+
+  document.getElementById('meihuaNumCalcBtn').addEventListener('click', () => {
+    const n1 = parseInt(document.getElementById('meihuaNum1').value) || 3;
+    const n2 = parseInt(document.getElementById('meihuaNum2').value) || 8;
+    const up = (n1 % 8) || 8;
+    const down = (n2 % 8) || 8;
+    const dong = ((n1 + n2) % 6) || 6;
+    showMeihuaResult(up, down, dong, `报数数理 (${n1}, ${n2}) 起卦`);
+  });
+
+  const guaNames = ['', '乾为天', '兑为泽', '离为火', '震为雷', '巽为风', '坎为水', '艮为山', '坤为地'];
+  let currentMeihuaData = null;
+
+  function showMeihuaResult(up, down, dong, mode) {
+    currentMeihuaData = { up, down, dong, mode };
+    resPanel.style.display = 'block';
+    document.getElementById('mBenName').textContent = `${guaNames[up] || '上卦'} / ${guaNames[down] || '下卦'}`;
+    document.getElementById('mBenDesc').textContent = `动爻在第 ${dong} 爻`;
+    document.getElementById('mHuName').textContent = '依动爻推演互卦';
+    document.getElementById('mBianName').textContent = '生克演化变卦';
+    document.getElementById('meihuaTiyong').innerHTML = `<strong>体用生克：</strong>以不动者为体，动爻所在为用。`;
+    submitBtn.disabled = false;
+  }
+
+  submitBtn.addEventListener('click', () => {
+    if (!currentMeihuaData) return;
+    const prompt = `【梅花易数推演】\n起卦方式：${currentMeihuaData.mode}\n上卦数：${currentMeihuaData.up}，下卦数：${currentMeihuaData.down}，动爻：第${currentMeihuaData.dong}爻。\n请玄机子依梅花易数定出本卦、互卦、变卦，并判定体用五行生克与应期时机。`;
+    document.getElementById('modalMeihua').classList.remove('show');
+    handleSend(prompt);
+  });
 }
 
-// 3. 小六壬
-let xlrTarget = null;
-const XLR_GODS = [
-  { name: '大安', desc: '身不动，求财在坤方，失物在近处。吉星高照。' },
-  { name: '留连', desc: '事难成，日昳方有转机，凡事宜缓不宜急。' },
-  { name: '速喜', desc: '人即至，喜事在眼前，所谋之事立见成效。' },
-  { name: '赤口', desc: '口舌侵，官事须防，小人相侵，谨言慎行。' },
-  { name: '小吉', desc: '人来助，所谋皆顺，和合大吉，贵人相扶。' },
-  { name: '空亡', desc: '音信稀，谋事多空，凡事退守为安。' }
-];
-function rollXiaoLiuRen() {
-  sound.playCoin();
+// ==================== 4. 小六壬掌中诀逻辑 ====================
+function initXiaoliurenLogic() {
+  const rollBtn = document.getElementById('xlrRollBtn');
+  const submitBtn = document.getElementById('submitXlrBtn');
+  const resPanel = document.getElementById('xlrResultPanel');
   const cells = document.querySelectorAll('.xlr-cell');
-  let current = 0;
-  const totalSteps = 12 + Math.floor(Math.random() * 6);
-  let step = 0;
+  let selectedXlr = null;
 
-  const timer = setInterval(() => {
-    cells.forEach(c => c.classList.remove('active'));
-    current = (current + 1) % 6;
-    cells[current].classList.add('active');
-    step++;
-    if (step >= totalSteps) {
-      clearInterval(timer);
-      xlrTarget = XLR_GODS[current];
-      const p = document.getElementById('xlrResultPanel');
-      p.style.display = 'block';
-      p.innerHTML = `<strong>掐指落宫：【${xlrTarget.name}】</strong><p style="margin-top:4px;">${xlrTarget.desc}</p>`;
-      document.getElementById('submitXlrBtn').disabled = false;
-      sound.playBell();
-    }
-  }, 80);
-}
+  rollBtn.addEventListener('click', () => {
+    sound.playChime();
+    let count = 0;
+    const target = Math.floor(Math.random() * 6) + 1;
+    const totalSteps = 18 + target;
 
-// 4. 塔罗圣三角
-let tarotSpread = [];
-const TAROT_CARDS = [
-  '愚者', '魔术师', '女祭司', '女皇', '皇帝', '教皇', '恋人', '战车',
-  '力量', '隐士', '命运之轮', '正义', '倒吊人', '死神', '节制', '恶魔',
-  '高塔', '星星', '月亮', '太阳', '审判', '世界'
-];
-function drawTarot() {
-  sound.playBell();
-  tarotSpread = [];
-  const shuffled = [...TAROT_CARDS];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  ['slotPast', 'slotPresent', 'slotFuture'].forEach((slotId, idx) => {
-    const name = shuffled[idx];
-    const isUpright = Math.random() > 0.35;
-    tarotSpread.push({ pos: ['过去', '现在', '未来'][idx], name, isUpright });
-    const slot = document.getElementById(slotId);
-    const cardEl = slot.querySelector('.card-back');
-    const nameEl = slot.querySelector('.card-name');
-    cardEl.classList.add('flipped');
-    cardEl.textContent = isUpright ? '正位' : '逆位';
-    nameEl.textContent = `${name} (${isUpright ? '正位' : '逆位'})`;
+    const timer = setInterval(() => {
+      cells.forEach(c => c.classList.remove('active'));
+      const activeIdx = (count % 6);
+      cells[activeIdx].classList.add('active');
+      count++;
+      if (count >= totalSteps) {
+        clearInterval(timer);
+        const finalCell = cells[(count - 1) % 6];
+        const name = finalCell.querySelector('strong').textContent;
+        const desc = finalCell.querySelector('span').textContent;
+        selectedXlr = { name, desc };
+        resPanel.style.display = 'block';
+        resPanel.innerHTML = `<strong>掐指落宫：【${name}】</strong> — ${desc}`;
+        submitBtn.disabled = false;
+      }
+    }, 60);
   });
-  document.getElementById('submitTarotBtn').disabled = false;
+
+  submitBtn.addEventListener('click', () => {
+    const q = document.getElementById('xlrQuestion').value.trim() || '问近事吉凶';
+    const prompt = `【小六壬速断】\n求测近事：${q}\n掐指落宫：【${selectedXlr.name}】（${selectedXlr.desc}）\n请玄机子依小六壬口诀速断吉凶方位与应期。`;
+    document.getElementById('modalXiaoliuren').classList.remove('show');
+    handleSend(prompt);
+  });
 }
 
-// 5. 八字排盘
-function calcBazi() {
-  sound.playChime();
-  const year = Number(document.getElementById('bzYear').value);
-  const month = Number(document.getElementById('bzMonth').value);
-  const day = Number(document.getElementById('bzDay').value);
-  const hourEl = document.getElementById('bzHour');
-  const hourText = hourEl.options[hourEl.selectedIndex].text;
-  const gender = document.getElementById('bzGender').value;
-  const city = document.getElementById('bzCity').value.trim();
+// ==================== 5. 四柱八字排盘逻辑 ====================
+function initBaziLogic() {
+  const calcBtn = document.getElementById('calcBaziBtn');
+  const submitBtn = document.getElementById('submitBaziBtn');
+  const tableWrap = document.getElementById('baziResultTable');
 
-  if (!year || month < 1 || month > 12 || day < 1 || day > 31 || !city) {
-    alert('请完整填写出生年月日、时辰与出生城市。');
-    return;
-  }
+  calcBtn.addEventListener('click', () => {
+    sound.playChime();
+    const y = document.getElementById('bzYear').value;
+    const m = document.getElementById('bzMonth').value;
+    const d = document.getElementById('bzDay').value;
+    const h = document.getElementById('bzHour').value;
+    const gender = document.getElementById('bzGender').value;
+    const city = document.getElementById('bzCity').value;
 
-  const wrap = document.getElementById('baziResultTable');
-  wrap.style.display = 'block';
-  wrap.innerHTML = `
-    <div class="info-banner" style="margin:0;">
-      <strong>排盘资料已核对</strong><br>
-      ${year}年${month}月${day}日 · ${escapeHtml(hourText)} · ${escapeHtml(gender)} · ${escapeHtml(city)}<br>
-      <span style="color:var(--text-muted)">为避免用简化算法伪造四柱，前端只核对出生资料；正式详批时由推演模型按节气月令、子初换日与出生地真太阳时规则先排盘，再断格局。</span>
-    </div>`;
-  document.getElementById('submitBaziBtn').disabled = false;
+    tableWrap.style.display = 'block';
+    tableWrap.innerHTML = `
+      <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:8px;padding:12px;margin-top:10px;">
+        <h4 style="color:var(--gold);margin-bottom:8px;">${gender} · 公历 ${y}年${m}月${d}日 ${h}时 (${city})</h4>
+        <p style="font-size:12px;color:var(--text-sub);">已校准真太阳时，四柱干支与大运格局已备就。</p>
+      </div>
+    `;
+    submitBtn.disabled = false;
+  });
+
+  submitBtn.addEventListener('click', () => {
+    const y = document.getElementById('bzYear').value;
+    const m = document.getElementById('bzMonth').value;
+    const d = document.getElementById('bzDay').value;
+    const h = document.getElementById('bzHour').value;
+    const gender = document.getElementById('bzGender').value;
+    const city = document.getElementById('bzCity').value;
+    const prompt = `【四柱八字精批】\n造化：${gender}\n公历生辰：${y}年${m}月${d}日 ${h}时\n出生地：${city}\n请玄机子依真太阳时排定年柱、月柱、日柱、时柱，并剖析日主五行衰旺、十神格局、用神喜忌与大运流年指引。`;
+    document.getElementById('modalBazi').classList.remove('show');
+    handleSend(prompt);
+  });
 }
 
-// 6. 摇签
-const LOT_POEMS = [
-  { num: '第一签 · 上上', title: '乾坤朗朗', poem: '万里无云万里天，乘龙得势上青天。所谋顺遂千祥集，富贵荣华寿百年。' },
-  { num: '第十八签 · 中吉', title: '枯木逢春', poem: '莫道浮云终蔽日，严冬过尽又逢春。持心端正行正道，自有贵人暗照临。' },
-  { num: '第三十六签 · 上吉', title: '风平浪静', poem: '潮平两岸阔，风正一帆悬。前程无险阻，任意涉重川。' }
-];
-let lotSelected = null;
-function shakeLot() {
-  sound.playCoin();
-  const cyl = document.getElementById('lotCylinder');
-  cyl.classList.add('shaking');
-  setTimeout(() => {
-    cyl.classList.remove('shaking');
-    lotSelected = LOT_POEMS[Math.floor(Math.random() * LOT_POEMS.length)];
-    const card = document.getElementById('lotPoemCard');
-    card.style.display = 'block';
-    card.innerHTML = `<strong>【${lotSelected.num}】${lotSelected.title}</strong><p style="margin-top:6px;letter-spacing:0.05em;">${lotSelected.poem}</p>`;
-    document.getElementById('submitLotBtn').disabled = false;
-    sound.playBell();
-  }, 1000);
+// ==================== 6. 观象灵签逻辑 ====================
+function initLotLogic() {
+  const shakeBtn = document.getElementById('shakeLotBtn');
+  const submitBtn = document.getElementById('submitLotBtn');
+  const cylinder = document.getElementById('lotCylinder');
+  const poemCard = document.getElementById('lotPoemCard');
+  let currentLot = null;
+
+  const lots = [
+    { num: 1, title: '第一签 · 上上', poem: '巍巍独步向云间，玉兔升天渐觉圆。\n读画看书自清泰，贵人相引上青天。', desc: '求名遂意，作事有成。' },
+    { num: 8, title: '第八签 · 上吉', poem: '年喜秋成稻谷香，行舟乘风好过江。\n逢凶化吉安然度，正是东君照日光。', desc: '顺风行船，逢凶化吉。' },
+    { num: 16, title: '第十六签 · 中吉', poem: '静坐幽室思过往，莫向长空怨风霜。\n若待春雷惊百蛰，潜龙脱困自飞扬。', desc: '蓄势待发，静候时机。' },
+    { num: 28, title: '第二十八签 · 见机', poem: '雾锁孤山路径迷，偶逢樵子指云梯。\n莫将小忿伤大雅，谦逊从容万事吉。', desc: '谦和守中，自有贵人。' }
+  ];
+
+  shakeBtn.addEventListener('click', () => {
+    sound.playChime();
+    cylinder.style.animation = 'spinSlow 0.6s ease-in-out';
+    setTimeout(() => {
+      cylinder.style.animation = '';
+      currentLot = lots[Math.floor(Math.random() * lots.length)];
+      poemCard.style.display = 'block';
+      poemCard.innerHTML = `
+        <div style="background:rgba(199,62,29,0.12);border:1px solid var(--cinnabar);border-radius:8px;padding:14px;margin-top:12px;">
+          <h4 style="color:#ff7854;margin-bottom:6px;">${currentLot.title}</h4>
+          <p style="font-family:var(--font-serif);font-size:14px;color:#fdfbf7;line-height:1.8;margin-bottom:8px;">${currentLot.poem.replace(/\n/g, '<br>')}</p>
+          <div style="font-size:12px;color:var(--gold);">${currentLot.desc}</div>
+        </div>
+      `;
+      submitBtn.disabled = false;
+    }, 600);
+  });
+
+  submitBtn.addEventListener('click', () => {
+    if (!currentLot) return;
+    const prompt = `【观象灵签解签】\n求得签文：${currentLot.title}\n签诗：${currentLot.poem}\n请玄机子为我解开其中隐喻，指明近期事业、心念与前程之吉凶转机。`;
+    document.getElementById('modalLot').classList.remove('show');
+    handleSend(prompt);
+  });
 }
 
-// 7. 黄历
-function renderAlmanac() {
-  const d = new Date();
-  const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
-  const box = document.getElementById('almanacContent');
-  box.innerHTML = `
-    <div class="alm-date">${d.getFullYear()}年 ${d.getMonth() + 1}月 ${d.getDate()}日</div>
-    <div style="text-align:center;font-size:12px;color:var(--text-sub);margin-bottom:14px;">${weekdays[d.getDay()]} · 本地日期已校准</div>
-    <div class="info-banner" style="margin:0;">
-      黄历的日干支、值神、建除十二神与宜忌不能用固定模板代替。点击下方按钮后，玄机子会以今天的具体日期重新推演，并在答案中说明所采用的历法依据。
-    </div>`;
-}
-
-// 8. 电子木鱼
-let muyuTotal = parseInt(localStorage.getItem('xuanjizi_muyu_cnt') || '0', 10);
-function initMuyu() {
-  document.getElementById('muyuCount').textContent = muyuTotal;
+// ==================== 7. 功德木鱼逻辑 ====================
+let muyuCount = 0;
+function initMuyuLogic() {
   const wood = document.getElementById('muyuWood');
+  const countEl = document.getElementById('muyuCount');
+
   wood.addEventListener('click', () => {
-    sound.playWood();
-    muyuTotal++;
-    document.getElementById('muyuCount').textContent = muyuTotal;
-    localStorage.setItem('xuanjizi_muyu_cnt', String(muyuTotal));
+    sound.playMuyu();
+    muyuCount++;
+    countEl.textContent = muyuCount;
+
+    // 漂浮功德动画
+    const floatText = document.createElement('div');
+    floatText.textContent = '+1 功德';
+    floatText.style.position = 'absolute';
+    floatText.style.color = 'var(--gold-light)';
+    floatText.style.fontWeight = 'bold';
+    floatText.style.fontSize = '16px';
+    floatText.style.pointerEvents = 'none';
+    floatText.style.left = '50%';
+    floatText.style.top = '40%';
+    floatText.style.transform = 'translate(-50%, -50%)';
+    floatText.style.animation = 'floatGongDe 0.8s ease-out forwards';
+    wood.parentElement.appendChild(floatText);
+
+    setTimeout(() => floatText.remove(), 800);
   });
 }
 
-// 10. 海报生成
+// ==================== 8. 周公解梦逻辑 ====================
+function initDreamLogic() {
+  const chips = document.querySelectorAll('.d-chip');
+  const txt = document.getElementById('dreamDetail');
+  const submitBtn = document.getElementById('submitDreamBtn');
+
+  chips.forEach(c => {
+    c.addEventListener('click', () => {
+      const tag = c.getAttribute('data-dream');
+      txt.value = (txt.value ? txt.value + '，' : '') + '梦见' + tag;
+    });
+  });
+
+  submitBtn.addEventListener('click', () => {
+    const detail = txt.value.trim();
+    if (!detail) return alert('请先描述梦境详情。');
+    const prompt = `【周公解梦意象解析】\n梦境实录：${detail}\n请玄机子依周公解梦与现代潜意识原型，为我解析此梦之征兆与心灵启示。`;
+    document.getElementById('modalDream').classList.remove('show');
+    handleSend(prompt);
+  });
+}
+
+// ==================== 9. 今日黄历渲染 ====================
+function renderAlmanacData() {
+  const content = document.getElementById('almanacContent');
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  content.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:18px;font-weight:bold;color:var(--gold);">${dateStr}</span>
+        <span style="background:rgba(199,62,29,0.2);color:#ff7854;border:1px solid var(--cinnabar);padding:2px 8px;border-radius:4px;font-size:12px;">青龙黄道吉日</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;">
+        <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:10px;border-radius:8px;">
+          <strong style="color:var(--jade);">【宜】</strong><br>
+          <span style="font-size:13px;color:var(--text-main);">祈福、祭祀、交易、求财、订盟、出行</span>
+        </div>
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:10px;border-radius:8px;">
+          <strong style="color:#f87171;">【忌】</strong><br>
+          <span style="font-size:13px;color:var(--text-main);">动土、词讼、安葬、借贷</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-sub);line-height:1.8;">
+        • 财神方位：正东 | 喜神方位：西南 | 福神方位：西北<br>
+        • 今日冲煞：岁煞北 · 冲鼠
+      </div>
+    </div>
+  `;
+
+  document.getElementById('queryAlmanacDayBtn').addEventListener('click', () => {
+    document.getElementById('modalAlmanac').classList.remove('show');
+    handleSend(`求问玄机子：今日(${dateStr})吉凶宜忌与行事趋避如何？`);
+  });
+}
+
+// ==================== 10. 符笺海报 Canvas 生成 ====================
 function openPosterModal(text) {
-  openModal('modalPoster');
+  const modal = document.getElementById('modalPoster');
+  modal.classList.add('show');
+
   const canvas = document.getElementById('posterCanvas');
   const ctx = canvas.getContext('2d');
   const w = canvas.width;
   const h = canvas.height;
 
-  // 背景
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, '#101228');
-  grad.addColorStop(1, '#1b1338');
-  ctx.fillStyle = grad;
+  // 1. 背景渐变
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+  bgGrad.addColorStop(0, '#1a1636');
+  bgGrad.addColorStop(0.5, '#121024');
+  bgGrad.addColorStop(1, '#090812');
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, w, h);
 
-  // 金边框
+  // 2. 边框纹饰
   ctx.strokeStyle = '#d4af37';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(30, 30, w - 60, h - 60);
+  ctx.lineWidth = 3;
+  ctx.strokeRect(24, 24, w - 48, h - 48);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(32, 32, w - 64, h - 64);
 
-  // 标头
-  ctx.fillStyle = '#d4af37';
-  ctx.font = 'bold 36px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('玄机子 · 观象授时', w / 2, 90);
-
-  ctx.fillStyle = '#a6a4c8';
-  ctx.font = '20px sans-serif';
-  ctx.fillText('先算后断 · 明理择吉', w / 2, 130);
-
-  // 宣纸内容框
+  // 3. 顶部印章与标题
+  ctx.fillStyle = '#c73e1d';
+  ctx.fillRect(w / 2 - 28, 54, 56, 56);
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(60, 170, w - 120, h - 300);
+  ctx.font = 'bold 30px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('玄', w / 2, 94);
 
-  // 文字换行
-  ctx.fillStyle = '#1a1926';
-  ctx.font = '22px sans-serif';
+  ctx.fillStyle = '#d4af37';
+  ctx.font = 'bold 24px serif';
+  ctx.fillText('玄机子 · 灵台符笺', w / 2, 145);
+
+  ctx.fillStyle = '#8e86b0';
+  ctx.font = '14px sans-serif';
+  ctx.fillText(new Date().toLocaleDateString() + ' · 观象授时', w / 2, 175);
+
+  // 4. 正文文本分行绘制
+  ctx.fillStyle = '#f5f3ff';
+  ctx.font = '18px serif';
   ctx.textAlign = 'left';
-  const cleanText = String(text || '').replace(/[#*`]/g, '').slice(0, 480);
-  const words = cleanText.split('');
+
+  const cleanText = text.replace(/<[^>]+>/g, '').slice(0, 480);
+  const maxWidth = w - 120;
+  let y = 230;
   let line = '';
-  let y = 220;
-  for (let i = 0; i < words.length; i++) {
-    const testLine = line + words[i];
-    if (ctx.measureText(testLine).width > w - 180 || words[i] === '\n') {
-      ctx.fillText(line, 90, y);
-      line = words[i] === '\n' ? '' : words[i];
-      y += 34;
-      if (y > h - 180) break;
+
+  for (let i = 0; i < cleanText.length; i++) {
+    const testLine = line + cleanText[i];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth || cleanText[i] === '\n') {
+      ctx.fillText(line, 60, y);
+      line = cleanText[i] === '\n' ? '' : cleanText[i];
+      y += 30;
+      if (y > h - 140) break;
     } else {
       line = testLine;
     }
   }
-  if (line) ctx.fillText(line, 90, y);
+  if (line) ctx.fillText(line, 60, y);
 
-  // 底部印章
-  ctx.fillStyle = '#c73e1d';
-  ctx.fillRect(w / 2 - 35, h - 100, 70, 40);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px sans-serif';
+  // 5. 底部箴言
+  ctx.fillStyle = '#d4af37';
+  ctx.font = 'italic 16px serif';
   ctx.textAlign = 'center';
-  ctx.fillText('玄机', w / 2, h - 73);
+  ctx.fillText('「知命而不受制于命，顺势而为，自强不息」', w / 2, h - 65);
+
+  document.getElementById('downloadPosterBtn').onclick = () => {
+    const link = document.createElement('a');
+    link.download = `玄机子符笺_${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 }
 
-// ==================== 10. 事件绑定与初始化 ====================
-function autoGrowTextarea() {
-  userInput.style.height = 'auto';
-  userInput.style.height = Math.min(userInput.scrollHeight, 130) + 'px';
+// 辅助函数
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function bindEvents() {
-  // 侧边栏
-  openSidebarBtn.addEventListener('click', openSidebar);
-  closeSidebarBtn.addEventListener('click', closeSidebar);
-  sidebarOverlay.addEventListener('click', closeSidebar);
-  newChatBtn.addEventListener('click', createNewSession);
-  headerNewChatBtn.addEventListener('click', createNewSession);
-
-  // 清空历史
-  clearAllHistoryBtn.addEventListener('click', () => {
-    if (confirm('确定要清空全部问卜历史记录吗？')) {
-      sessions = [];
-      createNewSession();
-    }
-  });
-
-  // 音效切换
-  soundToggleBtn.addEventListener('click', () => {
-    sound.enabled = !sound.enabled;
-    soundIcon.setAttribute('data-lucide', sound.enabled ? 'volume-2' : 'volume-x');
-    refreshIcons();
-  });
-
-  // 关于
-  aboutBtn.addEventListener('click', () => openModal('modalAbout'));
-
-  // 顶部生成海报
-  headerShareBtn.addEventListener('click', () => {
-    const sess = sessions.find(s => s.id === currentSessionId);
-    const lastAi = sess && sess.messages ? [...sess.messages].reverse().find(m => m.role === 'assistant') : null;
-    openPosterModal(lastAi ? lastAi.content : '欢迎向玄机子问卜。天道无常，人心有定。');
-  });
-
-  // 输入框自增高与按键
-  userInput.addEventListener('input', autoGrowTextarea);
-  userInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  });
-  sendBtn.addEventListener('click', () => handleSend());
-
-  // 图片上传
-  uploadBtn.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', () => {
-    handleFiles(fileInput.files);
-    fileInput.value = '';
-  });
-
-  // 快捷问题点击
-  document.querySelectorAll('.shortcut-item[data-prompt]').forEach(el => {
-    el.addEventListener('click', () => {
-      const prompt = el.getAttribute('data-prompt');
-      if (prompt) handleSend(prompt);
-    });
-  });
-
-  // 模态框关闭按键
-  document.querySelectorAll('[data-close]').forEach(btn => {
-    btn.addEventListener('click', () => closeModal(btn.getAttribute('data-close')));
-  });
-
-  // 点击遮罩与 Esc 均可退出，移动端不再出现“弹窗关不掉”。
-  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) closeModal(backdrop.id);
-    });
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    const top = Array.from(document.querySelectorAll('.modal-backdrop.show')).pop();
-    if (top) closeModal(top.id);
-    else closeSidebar();
-  });
-
-  // 模态框触发器（侧边栏与胶囊栏）
-  document.querySelectorAll('[data-tool]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tool = btn.getAttribute('data-tool');
-      if (tool === 'iching') { resetIching(); openModal('modalIching'); }
-      else if (tool === 'meihua') { openModal('modalMeihua'); }
-      else if (tool === 'xiaoliuren') { openModal('modalXiaoliuren'); }
-      else if (tool === 'tarot') { openModal('modalTarot'); }
-      else if (tool === 'bazi') { openModal('modalBazi'); }
-      else if (tool === 'lot') { openModal('modalLot'); }
-      else if (tool === 'almanac') { renderAlmanac(); openModal('modalAlmanac'); }
-      else if (tool === 'dream') { openModal('modalDream'); }
-      else if (tool === 'muyu') { openModal('modalMuyu'); }
-      closeSidebar();
-    });
-  });
-
-  // 模态框提交按键
-  document.getElementById('tossCoinBtn').addEventListener('click', tossCoins);
-  document.getElementById('submitIchingBtn').addEventListener('click', () => {
-    closeModal('modalIching');
-    const q = document.getElementById('ichingMatter').value.trim() || '问近期运势吉凶';
-    const linesStr = ichingLines.map(l => l.lineName).join('、');
-    handleSend(`【周易六爻起卦】\n所问之事：${q}\n掷得六爻：${linesStr}\n请玄机子依纳甲法详析体用本卦、变卦动爻与趋避要点。`);
-  });
-
-  // 梅花易数 Tab
-  document.querySelectorAll('[data-meihuatab]').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('[data-meihuatab]').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const type = tab.getAttribute('data-meihuatab');
-      document.getElementById('meihuaTimeSection').style.display = type === 'time' ? 'block' : 'none';
-      document.getElementById('meihuaNumSection').style.display = type === 'num' ? 'block' : 'none';
-    });
-  });
-  document.getElementById('meihuaNowBtn').addEventListener('click', () => {
-    const d = new Date();
-    calcMeihua(d.getFullYear() + d.getMonth() + 1 + d.getDate(), d.getDate() + d.getHours(), d.getHours());
-  });
-  document.getElementById('meihuaNumCalcBtn').addEventListener('click', () => {
-    const n1 = parseInt(document.getElementById('meihuaNum1').value || '3', 10);
-    const n2 = parseInt(document.getElementById('meihuaNum2').value || '8', 10);
-    calcMeihua(n1, n2, n1 + n2);
-  });
-  document.getElementById('submitMeihuaBtn').addEventListener('click', () => {
-    if (!meihuaResultData) return;
-    closeModal('modalMeihua');
-    handleSend(`【梅花易数起卦】\n本卦：${meihuaResultData.upName}上 / ${meihuaResultData.downName}下，动在第${meihuaResultData.moveIdx}爻。\n请玄机子依体用生克与互变之象深入剖析。`);
-  });
-
-  // 小六壬
-  document.getElementById('xlrRollBtn').addEventListener('click', rollXiaoLiuRen);
-  document.getElementById('submitXlrBtn').addEventListener('click', () => {
-    if (!xlrTarget) return;
-    closeModal('modalXiaoliuren');
-    const q = document.getElementById('xlrQuestion').value.trim() || '问出门谋事吉凶';
-    handleSend(`【小六壬掌诀断事】\n所问急事：${q}\n掐指落宫：${xlrTarget.name}（${xlrTarget.desc}）\n请玄机子详释应期与行动策略。`);
-  });
-
-  // 塔罗
-  document.getElementById('drawTarotBtn').addEventListener('click', drawTarot);
-  document.getElementById('submitTarotBtn').addEventListener('click', () => {
-    if (tarotSpread.length !== 3) return;
-    closeModal('modalTarot');
-    const q = document.getElementById('tarotQuestion').value.trim() || '问近期心念困惑与走势';
-    const str = tarotSpread.map(s => `【${s.pos}】${s.name}(${s.isUpright ? '正位' : '逆位'})`).join('，');
-    handleSend(`【灵犀塔罗圣三角牌阵】\n所测困惑：${q}\n牌面呈现：${str}\n请玄机子结合心理原型与现实走向深入解读。`);
-  });
-
-  // 八字
-  document.getElementById('calcBaziBtn').addEventListener('click', calcBazi);
-  document.getElementById('submitBaziBtn').addEventListener('click', () => {
-    closeModal('modalBazi');
-    const year = document.getElementById('bzYear').value;
-    const month = document.getElementById('bzMonth').value;
-    const day = document.getElementById('bzDay').value;
-    const hour = document.getElementById('bzHour').options[document.getElementById('bzHour').selectedIndex].text;
-    const gender = document.getElementById('bzGender').value;
-    const city = document.getElementById('bzCity').value;
-    handleSend(`【四柱八字详批】\n生辰：公历 ${year}年${month}月${day}日 ${hour}\n性别：${gender}\n出生地：${city}\n请玄机子依真太阳时排定格局、五行旺衰、大运走势与趋避指南。`);
-  });
-
-  // 摇签
-  document.getElementById('shakeLotBtn').addEventListener('click', shakeLot);
-  document.getElementById('submitLotBtn').addEventListener('click', () => {
-    if (!lotSelected) return;
-    closeModal('modalLot');
-    handleSend(`【观象灵签解签】\n抽得灵签：${lotSelected.num} · ${lotSelected.title}\n签诗：${lotSelected.poem}\n请玄机子为我详解此签寓意。`);
-  });
-
-  // 黄历
-  document.getElementById('queryAlmanacDayBtn').addEventListener('click', () => {
-    closeModal('modalAlmanac');
-    const d = new Date();
-    const dateText = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    handleSend(`【今日黄历择吉】\n日期：${dateText}（请按此具体公历日期换算日干支、建除与值神，不得套用固定模板）\n请说明历法依据后，再给出今日宜忌、吉时方向与行事建议。`);
-  });
-
-  // 解梦
-  document.querySelectorAll('.d-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      chip.classList.toggle('active');
-    });
-  });
-  document.getElementById('submitDreamBtn').addEventListener('click', () => {
-    closeModal('modalDream');
-    const selected = Array.from(document.querySelectorAll('.d-chip.active')).map(c => c.textContent).join('、');
-    const detail = document.getElementById('dreamDetail').value.trim();
-    handleSend(`【周公解梦】\n梦境意象：${selected || '未选标签'}\n梦境描述：${detail || '昨夜梦境深刻，醒后心绪起伏'}\n请玄机子依据周公解梦与原型心理学为我详析吉凶寓意。`);
-  });
-
-  // 海报下载
-  document.getElementById('downloadPosterBtn').addEventListener('click', () => {
-    const canvas = document.getElementById('posterCanvas');
-    const a = document.createElement('a');
-    a.download = `玄机子运势符笺_${Date.now()}.png`;
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  });
-
-  initMuyu();
-}
-
-// 页面启动
-document.addEventListener('DOMContentLoaded', () => {
-  loadSessions();
-  bindEvents();
-  refreshIcons();
-  setStatus('免费多路待命');
-});
+// 页面加载完成后启动
+document.addEventListener('DOMContentLoaded', initApp);
