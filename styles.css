@@ -2124,15 +2124,33 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
 .footer-btn span {
   white-space: nowrap;
 }
-.send-btn:disabled {
-  cursor: not-allowed;
-  filter: saturate(0.72) brightness(0.82);
-  transform: none;
+/* 推演中（is-requesting）：按钮变为「停止」键，保持可点以便随时中止；
+   沿用脉冲动画提示正在推演，但游标改为 pointer 而非禁用态。 */
+.send-btn.is-requesting {
+  cursor: pointer;
+  filter: saturate(0.8) brightness(0.92);
   animation: sealPulse 1.6s ease-in-out infinite;
 }
-.send-btn:disabled::before {
+.send-btn.is-requesting::before {
+  border-color: rgba(246, 231, 204, 0.55);
   animation: sealFramePulse 1.6s ease-in-out infinite;
 }
+/* 双态图标：空闲显「呈」印，推演中显停止方块；任一时刻只有一个在布局内，
+   由 .send-btn 的 place-items:center 居中。 */
+.send-btn .stop-seal {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.send-btn .stop-seal svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  stroke: currentColor;
+}
+.send-btn.is-requesting .send-seal { display: none; }
+.send-btn.is-requesting .stop-seal { display: flex; }
 @keyframes sealPulse {
   0%, 100% { box-shadow: 0 4px 14px rgba(124, 40, 31, 0.25); }
   50% { box-shadow: 0 4px 24px rgba(190, 90, 60, 0.42); }

@@ -272,6 +272,42 @@ function friendlyFailMessage(fail) {
   return '此模型推演受阻（限流、超时或线路波动）。可稍候重试，或另择一尊法器（模型）再问。';
 }
 
+// ── 多用户公平性：按 IP 限流 ──────────────────────────────────────────────
+// 上游为免费档密钥（Groq / b.ai / 智谱），配额全体用户共享。个别高频或脚本用户
+// 可在短时间内打满配额，令其他在线问卜者尽数受阻。此处对单个 IP 做分钟级软限流，
+// 保护共享香火。KV 读写异常时放行（fail-open），避免限流组件故障把所有人拒之门外。
+// 采用非原子「读后自增」：高并发下可能轻微少计，作为软限流可接受。
+const RATE_WINDOW_MS = 60 * 1000; // 1 分钟窗口
+const RATE_MAX = 30;              // 每 IP 每分钟最多问卜次数
+
+async function checkRateLimit(env, request) {
+  if (!env.CHAT_LOGS) return { allowed: true };
+  const ip = request.headers.get('CF-Connecting-IP') || 'anon';
+  const windowStart = Math.floor(Date.now() / RATE_WINDOW_MS);
+  const key = `rl_${windowStart}_${ip}`;
+  try {
+    const cur = Number(await env.CHAT_LOGS.get(key)) || 0;
+    if (cur >= RATE_MAX) return { allowed: false };
+    // TTL 略大于窗口，窗口滚过后自动清理，不与 chat_ 日志混淆。
+    await env.CHAT_LOGS.put(key, String(cur + 1), { expirationTtl: 120 });
+    return { allowed: true };
+  } catch {
+    return { allowed: true }; // KV 异常放行
+  }
+}
+
+// 以「普通助手消息帧」温和提示（区别于 model_error：不触发前端重选模型弹窗）。
+function plainSseMessage(text) {
+  const frame = `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\ndata: [DONE]\n\n`;
+  return new Response(frame, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+    },
+  });
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   let body;
@@ -279,6 +315,12 @@ export async function onRequestPost(context) {
     body = await request.json();
   } catch {
     return responseJson({ error: '请求格式有误' }, 400);
+  }
+
+  // 多用户公平：同一 IP 分钟级问卜次数过多时温和劝阻，保护共享免费配额。
+  const rateCheck = await checkRateLimit(env, request);
+  if (!rateCheck.allowed) {
+    return plainSseMessage('此刻问卜者众，灵台稍显拥挤。为护共享香火，请息心片刻，稍候再呈即可。');
   }
 
   // 解析用户所选模型 id，未携带则用默认线路。

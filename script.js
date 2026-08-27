@@ -269,6 +269,8 @@ let sessions = [];
 let currentSessionId = null;
 let pendingImages = [];
 let isRequesting = false;
+// 当前推演的中断控制器：供「停止」键随时 abort，避免请求卡死而无人可解
+let activeController = null;
 
 const chatContainer = document.getElementById('chatContainer');
 const chatInner = document.getElementById('chatInner');
@@ -621,6 +623,25 @@ function guardToolSubmit() {
   return true;
 }
 
+// 发送/停止双态键：推演中切换为「停止」样式且保持可点，以便随时中断；结束后还原「呈」。
+// 全程不再 disabled——禁用会让卡住的请求无从中止，正是本次要解决的问题。
+function setSendBtnRequesting(on) {
+  sendBtn.disabled = false;
+  sendBtn.classList.toggle('is-requesting', on);
+  const label = on ? '中止推演' : '呈递问卜';
+  sendBtn.title = label;
+  sendBtn.setAttribute('aria-label', label);
+}
+
+// 中止当前推演：善信点击「停止」即触发，abort 会让 fetch/reader 抛出 AbortError，
+// 交由 handleSend 的 catch 统一收尾（保留已得卦辞、复位按钮与会话状态）。
+function stopRequest() {
+  if (!isRequesting || !activeController) return;
+  activeController.abort('user-cancel');
+  setStatus('已中止推演');
+  sound.play('deny');
+}
+
 // 消息发送与 API 实时流式请求 (SSE Streaming)
 async function handleSend(customText = null, includeImages = true) {
   const text = (customText !== null ? customText : userInput.value).trim();
@@ -662,7 +683,7 @@ async function handleSend(customText = null, includeImages = true) {
     userInput.value = '';
     autoGrowTextarea();
   }
-  sendBtn.disabled = true;
+  setSendBtnRequesting(true);
 
   // 创建即时占位的 AI 消息节点（带流式闪烁光标）
   const row = document.createElement('div');
@@ -699,8 +720,9 @@ async function handleSend(customText = null, includeImages = true) {
       }
     });
 
-    const controller = new AbortController();
-    requestTimer = setTimeout(() => controller.abort(), 120000);
+    activeController = new AbortController();
+    const controller = activeController;
+    requestTimer = setTimeout(() => controller.abort('timeout'), 120000);
 
     const resp = await fetch(API_ENDPOINT, {
       method: 'POST',
@@ -783,15 +805,33 @@ async function handleSend(customText = null, includeImages = true) {
     saveSessions();
     sound.play('oracle');
   } catch (err) {
-    console.error('Stream error', err);
+    // abort('user-cancel'/'timeout') 会让 fetch/reader 直接以该「原因字符串」reject，
+    // 此时 err 本身即 'user-cancel' 或 'timeout'，并非 name==='AbortError' 的 DOMException，
+    // 故不能以 err.name 判断；须取控制器 signal 的 aborted 与 reason 方能正确区分主动中止与超时。
+    const sig = activeController?.signal;
+    const wasAborted = !!(sig && sig.aborted);
+    const abortedByUser = wasAborted && sig.reason === 'user-cancel';
+    const timedOut = wasAborted && !abortedByUser;
+    if (!wasAborted) console.error('Stream error', err);
     let fallback;
-    if (err && err.modelError) {
+    if (abortedByUser) {
+      // 善信主动中止：保留已推演出的卦辞片段并注明中止；尚无内容则温和告知。
+      setStatus('推演已中止');
+      if (accumulatedText.trim()) {
+        fallback = `${accumulatedText.trim()}\n\n——（善信中止推演，卦辞至此）——`;
+      } else {
+        fallback = '推演已应善信之请中止。心中所问仍在，可随时重新起卦。';
+      }
+    } else if (err && err.modelError) {
       // 所选模型线路受阻：如实告知，并引导另择一尊法器（模型）。
       setStatus('此路受阻 · 请另择法器');
       const detail = err.message || '所选模型推演受阻';
       fallback = `此尊法器（${getModelById(currentModelId)?.name || '所选模型'}）此番推演受阻。\n\n【缘由】${detail}\n\n【建议趋避】点击输入框上方的模型选择器，另择一尊法器再问；深度推理类法器较稳，极速类法器较快。`;
       // 主动展开模型选择器，方便用户立即重选。
       openModelSelector();
+    } else if (timedOut) {
+      setStatus('推演超时 · 可另择法器');
+      fallback = `推演耗时过久，已自动中止。\n\n【建议趋避】稍候重新问卜，或另择一尊较快的法器（模型）；深度推理类法器本就耗时较长。\n\n【玄机箴言】静水流深，急则生变。`;
     } else {
       setStatus('推演遇到波动 · 可另择法器');
       fallback = `推演暂遇阻滞。\n\n【建议趋避】稍候片刻重新问卜，或点击输入框上方的模型选择器另择一尊法器；若上传了图片请稍作压缩后重试。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
@@ -805,7 +845,8 @@ async function handleSend(customText = null, includeImages = true) {
     // 异常路径（model_error/网络错误）须释放 reader，避免底层响应体连接悬置；
     // 正常读完的流 cancel 为无害空操作。
     if (reader) { try { await reader.cancel(); } catch { /* 流已关闭 */ } }
-    sendBtn.disabled = false;
+    activeController = null;
+    setSendBtnRequesting(false);
     isRequesting = false;
   }
 }
@@ -963,7 +1004,11 @@ function bindEvents() {
     }
   });
 
-  sendBtn.addEventListener('click', () => handleSend());
+  // 双态键：空闲则呈递，推演中则中止（卡住时也能随时点停）
+  sendBtn.addEventListener('click', () => {
+    if (isRequesting) stopRequest();
+    else handleSend();
+  });
   document.getElementById('newChatBtn').addEventListener('click', createNewSession);
   document.getElementById('headerNewChatBtn').addEventListener('click', createNewSession);
   document.getElementById('clearAllHistoryBtn').addEventListener('click', () => {
