@@ -314,14 +314,18 @@ function formatDivinationContent(text) {
   // 1. 过滤任何遗留的思考标签
   let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '').trim();
   
-  // 2. 格式化玄机箴言金框
+  // 2. 格式化 Markdown 粗体与符号
+  cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  cleaned = cleaned.replace(/\*\*/g, '');
+  
+  // 3. 格式化玄机箴言金框
   cleaned = cleaned.replace(/【玄机箴言】([\s\S]*?)(?=(\n\n|$))/g, '<div class="fortune-box"><i data-lucide="sparkles"></i><div><strong>玄机箴言：</strong>$1</div></div>');
   cleaned = cleaned.replace(/【建议趋避】/g, '<div class="section-title"><i data-lucide="shield"></i> 建议趋避</div>');
   cleaned = cleaned.replace(/【象数解析】/g, '<div class="section-title"><i data-lucide="compass"></i> 象数解析</div>');
   cleaned = cleaned.replace(/【吉凶趋避】/g, '<div class="section-title"><i data-lucide="flame"></i> 吉凶趋避</div>');
   cleaned = cleaned.replace(/【可行建议】/g, '<div class="section-title"><i data-lucide="target"></i> 可行建议</div>');
   
-  // 3. 段落包装
+  // 4. 段落包装
   const paras = cleaned.split(/\n\s*\n/);
   return paras.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
 }
