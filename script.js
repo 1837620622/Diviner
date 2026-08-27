@@ -484,6 +484,23 @@ function bindEvents() {
     });
   });
 
+  // 头部海报按钮绑定
+  const headerShareBtn = document.getElementById('headerShareBtn');
+  if (headerShareBtn) {
+    headerShareBtn.addEventListener('click', () => {
+      const sess = sessions.find(s => s.id === currentSessionId);
+      const lastMsg = sess?.messages?.filter(m => m.role === 'assistant')?.slice(-1)[0]?.content || '天道酬勤，顺势而为。易理幽微，神明默会。';
+      openPosterModal(lastMsg);
+    });
+  }
+
+  // 点击遮罩空白区域关闭模态框
+  document.querySelectorAll('.modal-backdrop').forEach(mb => {
+    mb.addEventListener('click', (e) => {
+      if (e.target === mb) mb.classList.remove('show');
+    });
+  });
+
   // 法器打开弹窗绑定
   document.querySelectorAll('[data-tool]').forEach(btn => {
     btn.addEventListener('click', () => {
