@@ -9,8 +9,14 @@ const ADMIN_PASSWORD = (typeof process !== 'undefined' ? null : null); // 占位
 export async function onRequestGet(context) {
     const { request, env } = context;
     
-    // 验证管理员密码（从环境变量读取，默认回落旧值以兼容）
-    const expected = (env.ADMIN_PASSWORD || 'chuankangkk').trim();
+    // 管理后台必须显式配置口令，禁止使用公开默认密码。
+    const expected = (env.ADMIN_PASSWORD || '').trim();
+    if (!expected) {
+        return new Response(JSON.stringify({ error: '管理后台尚未配置 ADMIN_PASSWORD' }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+    }
     const password = (request.headers.get('X-Admin-Password') || '').trim();
     if (password !== expected) {
         return new Response(JSON.stringify({

@@ -2,15 +2,14 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>玄机子 · 东方智慧与数理推演</title>
   <meta name="description" content="玄机子 - 融汇东方传统数术与现代逻辑推理的智能问卜系统。周易六爻、梅花易数、四柱八字、小六壬、灵犀塔罗、周公解梦。" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%237016be'/><text x='50' y='64' text-anchor='middle' font-size='52' fill='%23ffffff' font-family='sans-serif' font-weight='bold'>玄</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+SC:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=20260827_v5" />
+  <meta name="theme-color" content="#171510" />
+  <meta name="color-scheme" content="light" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20260827_v6" />
 </head>
 <body>
   <div id="app" class="app-layout">
@@ -92,7 +91,7 @@
           </button>
           <div class="current-chat-info">
             <h2 id="chatTitle" class="current-title">问卜推演</h2>
-            <span class="status-badge"><span class="status-dot"></span>气场通达</span>
+            <span class="status-badge" id="statusBadge"><span class="status-dot"></span><span id="statusBadgeText">多路推演待命</span></span>
           </div>
         </div>
         <div class="header-right">
@@ -111,42 +110,60 @@
         <div class="chat-inner" id="chatInner">
           <!-- 初始欢迎卡片 -->
           <div class="welcome-card" id="welcomeCard">
-            <div class="welcome-badge">
-              <i data-lucide="sparkles"></i>
-              <span>先算后断 · 明理择吉</span>
+            <div class="welcome-ritual">
+              <div class="oracle-emblem" aria-hidden="true">
+                <div class="oracle-ring oracle-ring-outer"><span>乾</span><span>坎</span><span>艮</span><span>震</span><span>巽</span><span>离</span><span>坤</span><span>兑</span></div>
+                <div class="oracle-ring oracle-ring-inner"></div>
+                <div class="oracle-core"><span>玄</span><small>观象</small></div>
+              </div>
+              <div class="welcome-copy">
+                <div class="welcome-badge"><i data-lucide="sparkles"></i><span>一念既起 · 万象可参</span></div>
+                <h2 class="welcome-title">向玄机子问一件真正想问的事</h2>
+                <p class="welcome-desc">先立问题，再取象数，最后给现实可执行的趋避建议。可直接问事，也可用六爻、梅花、八字、塔罗等法器先起盘。</p>
+                <div class="ritual-notes">
+                  <span><i data-lucide="target"></i> 一次一问，意念更清</span>
+                  <span><i data-lucide="book-open"></i> 先盘后断，过程可追</span>
+                  <span><i data-lucide="shield-check"></i> 不作绝对宿命断言</span>
+                </div>
+              </div>
             </div>
-            <h2 class="welcome-title">欢迎向玄机子问卜</h2>
-            <p class="welcome-desc">融汇子平八字、周易六爻、梅花易数与紫微斗数。请详述生辰八字、具体困惑或上传相格户型图，玄机子将依数理排盘推演。</p>
-            
+
+            <div class="oracle-divider"><span>择一法门</span></div>
             <div class="welcome-shortcuts">
-              <div class="shortcut-item" data-prompt="请问玄机子：报数 3 与 8，问近期事业转换与合作机缘如何？">
-                <i data-lucide="flower-2"></i>
-                <div class="sc-text">
-                  <strong>报数问事业</strong>
-                  <span>梅花易数推演吉凶方位</span>
-                </div>
-              </div>
-              <div class="shortcut-item" data-prompt="请为我排八字：公历 1996年8月15日 辰时，出生地北京，重点看下半年财运与贵人。">
-                <i data-lucide="calendar"></i>
-                <div class="sc-text">
-                  <strong>四柱八字详批</strong>
-                  <span>真太阳时校正与十神五行</span>
-                </div>
-              </div>
-              <div class="shortcut-item" data-prompt="我昨夜梦见登高望远忽见江海翻腾，请依据周公解梦与原型象征详释吉凶。">
-                <i data-lucide="moon"></i>
-                <div class="sc-text">
-                  <strong>周公解梦象意</strong>
-                  <span>梦境意象与近期心境剖析</span>
-                </div>
-              </div>
-              <div class="shortcut-item" data-prompt="今日欲洽谈一笔重要合约，请以小六壬推断今日出门谈判的吉凶时辰与应期。">
-                <i data-lucide="hand"></i>
-                <div class="sc-text">
-                  <strong>小六壬掐指速断</strong>
-                  <span>时辰落宫与吉凶应期</span>
-                </div>
-              </div>
+              <button type="button" class="shortcut-item" data-prompt="请问玄机子：报数 3 与 8，问近期事业转换与合作机缘如何？">
+                <span class="shortcut-symbol">梅</span>
+                <span class="sc-text"><strong>梅花问事</strong><span>报数起卦 · 事业与抉择</span></span>
+                <i data-lucide="chevron-right"></i>
+              </button>
+              <button type="button" class="shortcut-item" data-tool="bazi">
+                <span class="shortcut-symbol">命</span>
+                <span class="sc-text"><strong>四柱八字</strong><span>生辰排盘 · 运势与格局</span></span>
+                <i data-lucide="chevron-right"></i>
+              </button>
+              <button type="button" class="shortcut-item" data-tool="iching">
+                <span class="shortcut-symbol">易</span>
+                <span class="sc-text"><strong>周易六爻</strong><span>铜钱起卦 · 具体一事</span></span>
+                <i data-lucide="chevron-right"></i>
+              </button>
+              <button type="button" class="shortcut-item" data-tool="tarot">
+                <span class="shortcut-symbol">灵</span>
+                <span class="sc-text"><strong>灵犀塔罗</strong><span>三牌观心 · 感情与关系</span></span>
+                <i data-lucide="chevron-right"></i>
+              </button>
+              <button type="button" class="shortcut-item" data-tool="dream">
+                <span class="shortcut-symbol">梦</span>
+                <span class="sc-text"><strong>梦象解析</strong><span>意象映心 · 情绪与提醒</span></span>
+                <i data-lucide="chevron-right"></i>
+              </button>
+              <button type="button" class="shortcut-item" data-tool="xiaoliuren">
+                <span class="shortcut-symbol">诀</span>
+                <span class="sc-text"><strong>小六壬速断</strong><span>掌诀取象 · 近事与应期</span></span>
+                <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+
+            <div class="welcome-bottom-note">
+              <span class="ink-dot"></span> 问卜适合用来整理不确定性与行动方案；涉及医疗、法律、投资等重大决定，请以专业意见为准。
             </div>
           </div>
           <!-- 动态消息列表注入在此 -->
@@ -510,6 +527,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=20260827_v5"></script>
+  <script src="script.js?v=20260827_v6"></script>
 </body>
 </html>

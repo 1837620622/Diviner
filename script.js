@@ -1,5 +1,5 @@
 /**
- * 玄机子 · 东方智慧与数理推演 (XuanJiZi v4.0)
+ * 玄机子 · 东方智慧与数理推演 (XuanJiZi v6.0)
  * 纯原生现代化架构，豆包/Claude 级流畅交互体验，零 Emoji 经卷规范
  */
 
@@ -135,6 +135,11 @@ const soundIcon = document.getElementById('soundIcon');
 const aboutBtn = document.getElementById('aboutBtn');
 const headerShareBtn = document.getElementById('headerShareBtn');
 const chatTitle = document.getElementById('chatTitle');
+const statusBadgeText = document.getElementById('statusBadgeText');
+
+function setStatus(text) {
+  if (statusBadgeText) statusBadgeText.textContent = text;
+}
 
 function refreshIcons() {
   if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -227,7 +232,7 @@ function injectWuxing(html, raw) {
 // ==================== 4. 会话管理与本地存储 ====================
 function loadSessions() {
   try {
-    const raw = localStorage.getItem('xuanjizi_sessions_v4');
+    const raw = localStorage.getItem('xuanjizi_sessions_v6') || localStorage.getItem('xuanjizi_sessions_v4');
     sessions = raw ? JSON.parse(raw) : [];
   } catch {
     sessions = [];
@@ -243,7 +248,26 @@ function loadSessions() {
 
 function saveSessions() {
   try {
-    localStorage.setItem('xuanjizi_sessions_v4', JSON.stringify(sessions.slice(0, 30)));
+    // 浏览器 localStorage 通常只有约 5MB；历史图片最容易把整个会话存储挤爆。
+    // 先完整保存最近会话，若超额则逐级移除历史图片，但保留文字问卜记录。
+    const snapshot = JSON.parse(JSON.stringify(sessions.slice(0, 30)));
+    let payload = JSON.stringify(snapshot);
+    try {
+      localStorage.setItem('xuanjizi_sessions_v6', payload);
+      return;
+    } catch {}
+
+    for (let si = snapshot.length - 1; si >= 0; si--) {
+      const msgs = snapshot[si].messages || [];
+      for (const m of msgs) {
+        if (m.images) m.images = [];
+      }
+      payload = JSON.stringify(snapshot);
+      try {
+        localStorage.setItem('xuanjizi_sessions_v6', payload);
+        return;
+      } catch {}
+    }
   } catch {}
 }
 
@@ -453,20 +477,43 @@ async function handleSend(customText = null) {
       }
     });
 
-    const resp = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: apiMessages,
-        temperature: 0.75,
-        max_tokens: 2048
-      })
-    });
-
-    if (!resp.ok) {
-      throw new Error(`网络状态码异常 ${resp.status}`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 50000);
+    setStatus('正在择路推演');
+    let resp;
+    try {
+      resp = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: apiMessages,
+          temperature: 0.72,
+          max_tokens: 2200
+        }),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timer);
     }
 
+    if (!resp.ok) {
+      let detail = '';
+      try { detail = (await resp.json())?.error || ''; } catch {}
+      throw new Error(detail || `网络状态码异常 ${resp.status}`);
+    }
+
+    const route = resp.headers.get('X-Diviner-Route');
+    if (route) {
+      const routeNames = {
+        groq: '玄机主路',
+        zhipu: '中文稳路',
+        cloudflare: '边缘稳路',
+        hfpublic: '免钥云路',
+        gemini: '灵视备路',
+        custom: '兼容备路'
+      };
+      setStatus(`${routeNames[route] || '推演线路'} · 已接通`);
+    }
     const data = await resp.json();
     const reply = data.choices && data.choices[0]?.message?.content
       ? data.choices[0].message.content
@@ -478,6 +525,7 @@ async function handleSend(customText = null) {
     sound.playBell();
   } catch (err) {
     console.error(err);
+    setStatus(err?.name === 'AbortError' ? '推演超时 · 可重试' : '线路波动 · 已止损');
     const fallback = `推演暂遇阻滞。\n\n建议趋避：稍候片刻重新问卜，若上传了图片请将大小保持在2MB以内。\n\n箴言：静水流深，急则生变；稍安勿躁，自有明断。`;
     sess.messages.push({ role: 'assistant', content: fallback });
     saveSessions();
@@ -490,27 +538,25 @@ async function handleSend(customText = null) {
 }
 
 function showLoading(show) {
-  if (show) loadingOverlay.classList.add('active');
-  else loadingOverlay.classList.remove('active');
+  loadingOverlay.classList.toggle('active', show);
+  loadingOverlay.setAttribute('aria-hidden', show ? 'false' : 'true');
 }
 
 // ==================== 7. 图片上传与压缩 ====================
-function compressImage(file, maxSide = 1280, quality = 0.82) {
-  return new Promise((resolve) => {
+function compressImage(file, maxSide = 1100, quality = 0.76) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onerror = () => reject(new Error('图片读取失败'));
     reader.onload = (e) => {
       const img = new Image();
+      img.onerror = () => reject(new Error('图片格式无法识别'));
       img.onload = () => {
         let w = img.width;
         let h = img.height;
         if (w > maxSide || h > maxSide) {
-          if (w > h) {
-            h = Math.round((h * maxSide) / w);
-            w = maxSide;
-          } else {
-            w = Math.round((w * maxSide) / h);
-            h = maxSide;
-          }
+          const ratio = Math.min(maxSide / w, maxSide / h);
+          w = Math.max(1, Math.round(w * ratio));
+          h = Math.max(1, Math.round(h * ratio));
         }
         const canvas = document.createElement('canvas');
         canvas.width = w;
@@ -530,8 +576,17 @@ async function handleFiles(files) {
   if (!list.length) return;
   for (const f of list) {
     if (!f.type.startsWith('image/')) continue;
-    const dataUrl = await compressImage(f);
-    pendingImages.push({ file: f, dataUrl });
+    if (f.size > 12 * 1024 * 1024) {
+      alert('单张图片请控制在 12MB 以内。');
+      continue;
+    }
+    try {
+      const dataUrl = await compressImage(f);
+      pendingImages.push({ file: f, dataUrl });
+    } catch (err) {
+      console.error(err);
+      alert('这张图片未能读取，请换一张 JPG / PNG / WebP。');
+    }
   }
   renderAttachPreview();
 }
@@ -571,11 +626,16 @@ function closeSidebar() {
 
 function openModal(id) {
   const modal = document.getElementById(id);
-  if (modal) modal.classList.add('show');
+  if (!modal) return;
+  modal.classList.add('show');
+  document.body.classList.add('modal-open');
+  const focusable = modal.querySelector('input, textarea, select, button');
+  setTimeout(() => focusable?.focus({ preventScroll: true }), 80);
 }
 function closeModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.classList.remove('show');
+  if (!document.querySelector('.modal-backdrop.show')) document.body.classList.remove('modal-open');
 }
 
 // ==================== 9. 九大法器交互实现 ====================
@@ -707,7 +767,11 @@ const TAROT_CARDS = [
 function drawTarot() {
   sound.playBell();
   tarotSpread = [];
-  const shuffled = [...TAROT_CARDS].sort(() => 0.5 - Math.random());
+  const shuffled = [...TAROT_CARDS];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   ['slotPast', 'slotPresent', 'slotFuture'].forEach((slotId, idx) => {
     const name = shuffled[idx];
     const isUpright = Math.random() > 0.35;
@@ -725,26 +789,27 @@ function drawTarot() {
 // 5. 八字排盘
 function calcBazi() {
   sound.playChime();
-  const year = document.getElementById('bzYear').value;
-  const month = document.getElementById('bzMonth').value;
-  const day = document.getElementById('bzDay').value;
-  const hour = document.getElementById('bzHour').value;
+  const year = Number(document.getElementById('bzYear').value);
+  const month = Number(document.getElementById('bzMonth').value);
+  const day = Number(document.getElementById('bzDay').value);
+  const hourEl = document.getElementById('bzHour');
+  const hourText = hourEl.options[hourEl.selectedIndex].text;
   const gender = document.getElementById('bzGender').value;
-  const city = document.getElementById('bzCity').value;
+  const city = document.getElementById('bzCity').value.trim();
+
+  if (!year || month < 1 || month > 12 || day < 1 || day > 31 || !city) {
+    alert('请完整填写出生年月日、时辰与出生城市。');
+    return;
+  }
 
   const wrap = document.getElementById('baziResultTable');
   wrap.style.display = 'block';
   wrap.innerHTML = `
-    <table class="bazi-table">
-      <thead><tr><th>四柱</th><th>年柱</th><th>月柱</th><th>日柱</th><th>时柱</th></tr></thead>
-      <tbody>
-        <tr><td><strong>天干</strong></td><td class="gz">甲木</td><td class="gz">丙火</td><td class="gz">戊土</td><td class="gz">癸水</td></tr>
-        <tr><td><strong>地支</strong></td><td class="gz">申金</td><td class="gz">寅木</td><td class="gz">辰土</td><td class="gz">巳火</td></tr>
-        <tr><td><strong>十神</strong></td><td>七杀</td><td>偏印</td><td>日元</td><td>正财</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:12px;color:#666;margin-top:8px;text-align:center;">已结合【${escapeHtml(city)}】经度校正真太阳时</p>
-  `;
+    <div class="info-banner" style="margin:0;">
+      <strong>排盘资料已核对</strong><br>
+      ${year}年${month}月${day}日 · ${escapeHtml(hourText)} · ${escapeHtml(gender)} · ${escapeHtml(city)}<br>
+      <span style="color:var(--text-muted)">为避免用简化算法伪造四柱，前端只核对出生资料；正式详批时由推演模型按节气月令、子初换日与出生地真太阳时规则先排盘，再断格局。</span>
+    </div>`;
   document.getElementById('submitBaziBtn').disabled = false;
 }
 
@@ -773,15 +838,14 @@ function shakeLot() {
 // 7. 黄历
 function renderAlmanac() {
   const d = new Date();
+  const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
   const box = document.getElementById('almanacContent');
   box.innerHTML = `
     <div class="alm-date">${d.getFullYear()}年 ${d.getMonth() + 1}月 ${d.getDate()}日</div>
-    <div style="text-align:center;font-size:13px;color:var(--text-sub);margin-bottom:12px;">岁次丙午 · 天德合日 · 吉神方位：正东</div>
-    <div class="alm-grid">
-      <div class="alm-item yi"><strong>【宜】</strong><br>祈福、开光、会友、订盟、纳财、求医、动土</div>
-      <div class="alm-item ji"><strong>【忌】</strong><br>词讼、远行、作灶、安葬、出师、争辩</div>
-    </div>
-  `;
+    <div style="text-align:center;font-size:12px;color:var(--text-sub);margin-bottom:14px;">${weekdays[d.getDay()]} · 本地日期已校准</div>
+    <div class="info-banner" style="margin:0;">
+      黄历的日干支、值神、建除十二神与宜忌不能用固定模板代替。点击下方按钮后，玄机子会以今天的具体日期重新推演，并在答案中说明所采用的历法依据。
+    </div>`;
 }
 
 // 8. 电子木鱼
@@ -918,16 +982,29 @@ function bindEvents() {
   });
 
   // 快捷问题点击
-  document.querySelectorAll('.shortcut-item').forEach(el => {
+  document.querySelectorAll('.shortcut-item[data-prompt]').forEach(el => {
     el.addEventListener('click', () => {
       const prompt = el.getAttribute('data-prompt');
-      handleSend(prompt);
+      if (prompt) handleSend(prompt);
     });
   });
 
   // 模态框关闭按键
   document.querySelectorAll('[data-close]').forEach(btn => {
     btn.addEventListener('click', () => closeModal(btn.getAttribute('data-close')));
+  });
+
+  // 点击遮罩与 Esc 均可退出，移动端不再出现“弹窗关不掉”。
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeModal(backdrop.id);
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const top = Array.from(document.querySelectorAll('.modal-backdrop.show')).pop();
+    if (top) closeModal(top.id);
+    else closeSidebar();
   });
 
   // 模态框触发器（侧边栏与胶囊栏）
@@ -976,6 +1053,7 @@ function bindEvents() {
     calcMeihua(n1, n2, n1 + n2);
   });
   document.getElementById('submitMeihuaBtn').addEventListener('click', () => {
+    if (!meihuaResultData) return;
     closeModal('modalMeihua');
     handleSend(`【梅花易数起卦】\n本卦：${meihuaResultData.upName}上 / ${meihuaResultData.downName}下，动在第${meihuaResultData.moveIdx}爻。\n请玄机子依体用生克与互变之象深入剖析。`);
   });
@@ -983,6 +1061,7 @@ function bindEvents() {
   // 小六壬
   document.getElementById('xlrRollBtn').addEventListener('click', rollXiaoLiuRen);
   document.getElementById('submitXlrBtn').addEventListener('click', () => {
+    if (!xlrTarget) return;
     closeModal('modalXiaoliuren');
     const q = document.getElementById('xlrQuestion').value.trim() || '问出门谋事吉凶';
     handleSend(`【小六壬掌诀断事】\n所问急事：${q}\n掐指落宫：${xlrTarget.name}（${xlrTarget.desc}）\n请玄机子详释应期与行动策略。`);
@@ -991,6 +1070,7 @@ function bindEvents() {
   // 塔罗
   document.getElementById('drawTarotBtn').addEventListener('click', drawTarot);
   document.getElementById('submitTarotBtn').addEventListener('click', () => {
+    if (tarotSpread.length !== 3) return;
     closeModal('modalTarot');
     const q = document.getElementById('tarotQuestion').value.trim() || '问近期心念困惑与走势';
     const str = tarotSpread.map(s => `【${s.pos}】${s.name}(${s.isUpright ? '正位' : '逆位'})`).join('，');
@@ -1013,6 +1093,7 @@ function bindEvents() {
   // 摇签
   document.getElementById('shakeLotBtn').addEventListener('click', shakeLot);
   document.getElementById('submitLotBtn').addEventListener('click', () => {
+    if (!lotSelected) return;
     closeModal('modalLot');
     handleSend(`【观象灵签解签】\n抽得灵签：${lotSelected.num} · ${lotSelected.title}\n签诗：${lotSelected.poem}\n请玄机子为我详解此签寓意。`);
   });
@@ -1020,7 +1101,9 @@ function bindEvents() {
   // 黄历
   document.getElementById('queryAlmanacDayBtn').addEventListener('click', () => {
     closeModal('modalAlmanac');
-    handleSend(`请结合今日黄历干支与神煞宜忌，为我推演今日行事要点与方位吉凶。`);
+    const d = new Date();
+    const dateText = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    handleSend(`【今日黄历择吉】\n日期：${dateText}（请按此具体公历日期换算日干支、建除与值神，不得套用固定模板）\n请说明历法依据后，再给出今日宜忌、吉时方向与行事建议。`);
   });
 
   // 解梦
@@ -1053,4 +1136,5 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSessions();
   bindEvents();
   refreshIcons();
+  setStatus('免费多路待命');
 });
