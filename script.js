@@ -331,8 +331,9 @@ function formatDivinationContent(text) {
   cleaned = cleaned.replace(/(?:【吉凶趋避】|###\s*吉凶趋避)/g, '<div class="section-title"><i data-lucide="flame"></i> 吉凶趋避</div>');
   cleaned = cleaned.replace(/(?:【可行建议】|###\s*可行建议)/g, '<div class="section-title"><i data-lucide="target"></i> 可行建议</div>');
 
-  // 4. 清理 Markdown 引用符 (>) 与列表符
+  // 4. 清理 Markdown 引用符 (>)、水平分割线 (---) 与列表符
   cleaned = cleaned.replace(/^[ \t]*>[ \t]?/gm, '');
+  cleaned = cleaned.replace(/^[ \t]*[-*_]{3,}[ \t]*$/gm, '');
   cleaned = cleaned.replace(/^[ \t]*[-*]\s+/gm, '• ');
 
   // 5. 格式化粗体 **text** -> <strong>text</strong>
