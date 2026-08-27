@@ -362,7 +362,7 @@ function scrollToBottom() {
   }, 60);
 }
 
-// 消息发送与 API 请求
+// 消息发送与 API 实时流式请求 (SSE Streaming)
 async function handleSend(customText = null) {
   const text = (customText !== null ? customText : userInput.value).trim();
   const hasImages = pendingImages.length > 0;
@@ -399,7 +399,25 @@ async function handleSend(customText = null) {
   userInput.value = '';
   autoGrowTextarea();
   sendBtn.disabled = true;
-  showLoading(true);
+
+  // 创建即时占位的 AI 消息节点（带流式闪烁光标）
+  const row = document.createElement('div');
+  row.className = 'msg-row assistant';
+  row.innerHTML = `
+    <div class="msg-avatar ai-avatar">玄</div>
+    <div class="msg-content-wrapper">
+      <div class="msg-meta">玄机子</div>
+      <div class="msg-bubble"><span class="typing-cursor"></span></div>
+    </div>
+  `;
+  chatInner.appendChild(row);
+  scrollToBottom();
+  const bubble = row.querySelector('.msg-bubble');
+  const wrapper = row.querySelector('.msg-content-wrapper');
+
+  setStatus('玄机子正在排盘推演……');
+
+  let accumulatedText = '';
 
   try {
     const apiMessages = [{ role: 'system', content: SYSTEM_PROMPT }];
@@ -414,8 +432,7 @@ async function handleSend(customText = null) {
     });
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45000);
-    setStatus('玄机子正在排盘推演……');
+    const timer = setTimeout(() => controller.abort(), 60000);
 
     let resp;
     try {
@@ -425,7 +442,8 @@ async function handleSend(customText = null) {
         body: JSON.stringify({
           messages: apiMessages,
           temperature: 0.72,
-          max_tokens: 2200
+          max_tokens: 2200,
+          stream: true
         }),
         signal: controller.signal
       });
@@ -434,31 +452,94 @@ async function handleSend(customText = null) {
     }
 
     if (!resp.ok) {
-      let detail = '';
-      try { detail = (await resp.json())?.error || ''; } catch {}
-      throw new Error(detail || `网络状态码 ${resp.status}`);
+      throw new Error(`网络状态码 ${resp.status}`);
     }
 
     setStatus('灵台清明 · 气场通达');
 
-    const data = await resp.json();
-    const reply = data.choices && data.choices[0]?.message?.content
-      ? data.choices[0].message.content
-      : '天机稍晦，方才推演未得定数。建议稍候重新问卜。';
+    // 处理 SSE 流式返回
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let isDone = false;
 
-    sess.messages.push({ role: 'assistant', content: reply });
+    while (!isDone) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+        if (trimmed === 'data: [DONE]') {
+          isDone = true;
+          break;
+        }
+
+        try {
+          const parsed = JSON.parse(trimmed.slice(6));
+          const delta = parsed.choices?.[0]?.delta?.content || '';
+          if (delta) {
+            accumulatedText += delta;
+            bubble.innerHTML = formatDivinationContent(accumulatedText) + '<span class="typing-cursor"></span>';
+            scrollToBottom();
+          }
+        } catch (e) {
+          // 容错单行解析
+        }
+      }
+    }
+
+    if (!accumulatedText.trim()) {
+      accumulatedText = '天机稍晦，方才推演未得定数。建议稍候重新问卜。';
+    }
+
+    // 渲染最终结果并移除光标
+    bubble.innerHTML = formatDivinationContent(accumulatedText);
+    
+    // 追加操作按钮
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+    actions.innerHTML = `
+      <button class="msg-action-btn" data-act="copy"><i data-lucide="copy"></i><span>复制卦辞</span></button>
+      <button class="msg-action-btn" data-act="share"><i data-lucide="share-2"></i><span>符笺海报</span></button>
+      <button class="msg-action-btn" data-act="up"><i data-lucide="thumbs-up"></i><span>有启发</span></button>
+    `;
+    actions.querySelector('[data-act="copy"]').addEventListener('click', (e) => {
+      navigator.clipboard.writeText(accumulatedText).then(() => {
+        const btn = e.target.closest('button');
+        btn.innerHTML = '<i data-lucide="check"></i><span>已复制</span>';
+        if (window.lucide) window.lucide.createIcons();
+        setTimeout(() => {
+          btn.innerHTML = '<i data-lucide="copy"></i><span>复制卦辞</span>';
+          if (window.lucide) window.lucide.createIcons();
+        }, 1500);
+      });
+    });
+    actions.querySelector('[data-act="share"]').addEventListener('click', () => {
+      openPosterModal(accumulatedText);
+    });
+    actions.querySelector('[data-act="up"]').addEventListener('click', (e) => {
+      e.target.closest('button').classList.add('active');
+      sound.playChime();
+    });
+    wrapper.appendChild(actions);
+
+    sess.messages.push({ role: 'assistant', content: accumulatedText });
     saveSessions();
-    renderMessageNode('assistant', reply, [], true);
     sound.playChime();
+    if (window.lucide) window.lucide.createIcons();
   } catch (err) {
-    console.error(err);
+    console.error('Stream error', err);
     setStatus('推演遇到波动 · 已自动兜底');
     const fallback = `推演暂遇阻滞。\n\n【建议趋避】稍候片刻重新问卜，若上传了图片请将大小保持在2MB以内。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
+    bubble.innerHTML = formatDivinationContent(fallback);
     sess.messages.push({ role: 'assistant', content: fallback });
     saveSessions();
-    renderMessageNode('assistant', fallback, [], true);
   } finally {
-    showLoading(false);
     sendBtn.disabled = false;
     isRequesting = false;
   }
