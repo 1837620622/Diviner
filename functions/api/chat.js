@@ -470,8 +470,8 @@ export async function onRequestPost(context) {
   }
 
   return jsonResponse(sanitizedResponse, 200, {
-    'X-Diviner-Engine': 'xuanjizi-v6-multiprovider',
-    'X-Diviner-Route': provider.id,
+    'X-Diviner-Engine': 'xuanjizi-core',
+    'X-Diviner-Route': 'xuanjizi',
   });
 }
 

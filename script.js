@@ -312,11 +312,11 @@ function renderMessageNode(role, rawContent, images = [], isNew = false) {
 
 function formatDivinationContent(text) {
   if (!text) return '';
-  // 1. 彻底过滤思考与推理标签
-  let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '').trim();
+  // 1. 彻底过滤任何思考、推理、搜索内部标签
+  let cleaned = text.replace(/<(think|thought|reasoning|search)>[\s\S]*?<\/\1>/gi, '').trim();
 
   // 2. 格式化玄机箴言（支持多行引用 > **...** 以及各种前缀格式）
-  cleaned = cleaned.replace(/(?:【玄机箴言】|###\s*玄机箴言|玄机箴言[：:])[\s*#]*([\s\S]*?)(?=(?:\n\s*\n\s*【|\n\s*\n\s*###|$))/gi, (match, content) => {
+  cleaned = cleaned.replace(/(?:【玄机箴言】|###\s*玄机箴言|\*\*玄机箴言\*\*|玄机箴言[：:])[\s*#]*([\s\S]*?)(?=(?:\n\s*\n\s*(?:【|###|\*\*)|$))/gi, (match, content) => {
     const lines = content
       .split('\n')
       .map(l => l.replace(/^[>\s*#]+/, '').replace(/[\s*#]+$/, '').replace(/\*\*/g, '').replace(/\*/g, '').trim())
@@ -325,11 +325,11 @@ function formatDivinationContent(text) {
     return `<div class="fortune-box"><i data-lucide="sparkles"></i><div><strong>玄机箴言：</strong><br>${poem}</div></div>`;
   });
 
-  // 3. 核心分段标题转换为神圣标识
-  cleaned = cleaned.replace(/(?:【建议趋避】|###\s*建议趋避)/g, '<div class="section-title"><i data-lucide="shield"></i> 建议趋避</div>');
-  cleaned = cleaned.replace(/(?:【象数解析】|###\s*象数解析)/g, '<div class="section-title"><i data-lucide="compass"></i> 象数解析</div>');
-  cleaned = cleaned.replace(/(?:【吉凶趋避】|###\s*吉凶趋避)/g, '<div class="section-title"><i data-lucide="flame"></i> 吉凶趋避</div>');
-  cleaned = cleaned.replace(/(?:【可行建议】|###\s*可行建议)/g, '<div class="section-title"><i data-lucide="target"></i> 可行建议</div>');
+  // 3. 核心分段标题转换为神圣标识（支持 【】、###、** 等格式）
+  cleaned = cleaned.replace(/(?:【建议趋避】|###\s*建议趋避|\*\*建议趋避\*\*|建议趋避[：:])/g, '<div class="section-title"><i data-lucide="shield"></i> 建议趋避</div>');
+  cleaned = cleaned.replace(/(?:【象数解析】|###\s*象数解析|\*\*象数解析\*\*|象数解析[：:])/g, '<div class="section-title"><i data-lucide="compass"></i> 象数解析</div>');
+  cleaned = cleaned.replace(/(?:【吉凶趋避】|###\s*吉凶趋避|\*\*吉凶趋避\*\*|吉凶趋避[：:])/g, '<div class="section-title"><i data-lucide="flame"></i> 吉凶趋避</div>');
+  cleaned = cleaned.replace(/(?:【可行建议】|###\s*可行建议|\*\*可行建议\*\*|可行建议[：:])/g, '<div class="section-title"><i data-lucide="target"></i> 可行建议</div>');
 
   // 4. 清理 Markdown 引用符 (>)、水平分割线 (---) 与列表符
   cleaned = cleaned.replace(/^[ \t]*>[ \t]?/gm, '');
@@ -415,7 +415,7 @@ async function handleSend(customText = null) {
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 45000);
-    setStatus('玄机子正在择路推演……');
+    setStatus('玄机子正在排盘推演……');
 
     let resp;
     try {
@@ -439,15 +439,7 @@ async function handleSend(customText = null) {
       throw new Error(detail || `网络状态码 ${resp.status}`);
     }
 
-    const route = resp.headers.get('X-Diviner-Route');
-    const routeNames = {
-      groq: '玄机一号 (Groq·高速)',
-      zhipu: '玄机二号 (智谱·清言)',
-      hfpublic: '玄机四号 (云游·太素)',
-      cloudflare: '玄机五号 (边缘·星阵)',
-      custom: '玄机三号 (星宿·灵运)'
-    };
-    setStatus(`${routeNames[route] || '气场通达'} · 已接通`);
+    setStatus('灵台清明 · 气场通达');
 
     const data = await resp.json();
     const reply = data.choices && data.choices[0]?.message?.content
