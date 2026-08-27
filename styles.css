@@ -946,21 +946,51 @@ textarea#userInput::placeholder {
 }
 
 .send-btn {
-  width: 36px;
-  height: 36px;
-  background: var(--cinnabar);
-  color: #fff;
-  border-radius: 50%;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 7px;
   display: grid;
   place-items: center;
+  background: linear-gradient(150deg, #c0563f 0%, #93311f 52%, #6e2117 100%);
+  border: 1px solid rgba(232, 190, 141, 0.4);
+  color: #f6e7cc;
   flex-shrink: 0;
-  box-shadow: 0 2px 10px var(--cinnabar-glow);
-  transition: all 0.15s ease;
+  box-shadow: 0 6px 20px rgba(124, 40, 31, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: transform 0.18s var(--ritual-ease), box-shadow 0.18s var(--ritual-ease), filter 0.18s var(--ritual-ease);
 }
-
-.send-btn:hover {
-  background: var(--cinnabar-bright);
-  transform: scale(1.05);
+/* 印章内框，呼应观象台 .seal 的双线印边 */
+.send-btn::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(246, 231, 204, 0.28);
+  border-radius: 4px;
+  pointer-events: none;
+  transition: border-color 0.18s var(--ritual-ease);
+}
+.send-btn .send-seal {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  transform: translateY(-1px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+.send-btn:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.04);
+  filter: brightness(1.07);
+  box-shadow: 0 10px 26px rgba(150, 48, 34, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.send-btn:hover:not(:disabled)::before {
+  border-color: rgba(246, 231, 204, 0.5);
+}
+/* 按压如落印 */
+.send-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 0 3px 10px rgba(124, 40, 31, 0.3);
 }
 
 .composer-legal-text {
@@ -1678,9 +1708,40 @@ body::after {
 .oracle-trigrams span:nth-child(6){transform:rotate(225deg) translateY(-103px) rotate(-225deg)}
 .oracle-trigrams span:nth-child(7){transform:rotate(270deg) translateY(-103px) rotate(-270deg)}
 .oracle-trigrams span:nth-child(8){transform:rotate(315deg) translateY(-103px) rotate(-315deg)}
-.oracle-core { width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,rgba(153,48,38,.18),rgba(9,8,13,.9) 70%);border:1px solid rgba(195,65,49,.45);box-shadow:0 0 50px rgba(133,38,31,.13),inset 0 0 24px rgba(198,161,91,.04); }
-.oracle-core strong { font:600 27px/1 var(--font-serif);color:#e5c480;letter-spacing:0; }
-.oracle-core-small { position:absolute;font:500 8px/1 var(--font-serif);letter-spacing:.3em;color:#8b7959;transform:translateY(27px); }
+/* ================== 玄机表盘 · 罗盘化升级 ================== */
+/* 外圈固定十二地支（罗盘地盘，不随天盘转动） */
+.oracle-earthly { --earthly-r:-124px; position:absolute; inset:0; border-radius:50%; pointer-events:none; }
+.oracle-earthly span { position:absolute;left:50%;top:50%;font:500 11px/1 var(--font-serif);color:rgba(200,172,112,.52);letter-spacing:0;transform-origin:0 0; }
+.oracle-earthly span:nth-child(1){transform:rotate(0deg) translateY(var(--earthly-r)) rotate(0deg)}
+.oracle-earthly span:nth-child(2){transform:rotate(30deg) translateY(var(--earthly-r)) rotate(-30deg)}
+.oracle-earthly span:nth-child(3){transform:rotate(60deg) translateY(var(--earthly-r)) rotate(-60deg)}
+.oracle-earthly span:nth-child(4){transform:rotate(90deg) translateY(var(--earthly-r)) rotate(-90deg)}
+.oracle-earthly span:nth-child(5){transform:rotate(120deg) translateY(var(--earthly-r)) rotate(-120deg)}
+.oracle-earthly span:nth-child(6){transform:rotate(150deg) translateY(var(--earthly-r)) rotate(-150deg)}
+.oracle-earthly span:nth-child(7){transform:rotate(180deg) translateY(var(--earthly-r)) rotate(-180deg)}
+.oracle-earthly span:nth-child(8){transform:rotate(210deg) translateY(var(--earthly-r)) rotate(-210deg)}
+.oracle-earthly span:nth-child(9){transform:rotate(240deg) translateY(var(--earthly-r)) rotate(-240deg)}
+.oracle-earthly span:nth-child(10){transform:rotate(270deg) translateY(var(--earthly-r)) rotate(-270deg)}
+.oracle-earthly span:nth-child(11){transform:rotate(300deg) translateY(var(--earthly-r)) rotate(-300deg)}
+.oracle-earthly span:nth-child(12){transform:rotate(330deg) translateY(var(--earthly-r)) rotate(-330deg)}
+/* 天盘刻度环：细密 graduations，缓慢自转 */
+.oracle-ticks { position:absolute; inset:3px; border-radius:50%; opacity:.75; pointer-events:none;
+  background:repeating-conic-gradient(from 0deg, rgba(228,196,128,.6) 0deg .5deg, transparent .5deg 6deg);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+  mask:radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+  animation:orbitSlow 48s linear infinite; }
+/* 八卦字符：烫金 + 微光 */
+.oracle-trigrams span { font-size:13.5px; color:#d6bb7e; text-shadow:0 0 12px rgba(214,178,102,.28); }
+/* 中央玄核：宝石质感 + 金边 + 流光 */
+.oracle-core { position:relative; overflow:hidden; width:80px;height:80px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 32% 28%, rgba(200,92,62,.42), rgba(122,38,27,.5) 46%, rgba(9,7,12,.96) 80%);
+  border:1px solid rgba(216,168,90,.6);
+  box-shadow:0 0 48px rgba(152,52,36,.2), 0 0 0 4px rgba(214,168,88,.06), inset 0 0 28px rgba(198,161,91,.09); }
+.oracle-core::before { content:""; position:absolute; inset:5px; border-radius:50%; border:1px solid rgba(238,214,160,.22); pointer-events:none; }
+.oracle-core::after { content:""; position:absolute; inset:-20%; background:linear-gradient(115deg, transparent 38%, rgba(248,228,172,.18) 50%, transparent 62%); transform:translateX(-90%); animation:coreGlint 6s var(--ritual-ease) infinite; pointer-events:none; }
+.oracle-core strong { position:relative; z-index:1; font:700 30px/1 var(--font-serif); color:#f0dca6; letter-spacing:0; text-shadow:0 0 20px rgba(232,198,122,.42); }
+.oracle-core-small { position:absolute; z-index:1; font:500 8px/1 var(--font-serif);letter-spacing:.3em;color:#9a855f;transform:translateY(28px); }
+@keyframes coreGlint { 0%{transform:translateX(-90%)} 55%,100%{transform:translateX(90%)} }
 .hero-text-content { max-width:540px;padding-left:12px; }
 .hero-tag { display:flex;align-items:center;gap:10px;color:#8f8065;font:500 10px/1 var(--font-title);letter-spacing:.22em;text-transform:uppercase;margin-bottom:15px; }
 .tag-line { width:36px;height:1px;background:linear-gradient(90deg,transparent,#9c7d45); }
@@ -1721,8 +1782,9 @@ body::after {
 textarea#userInput { font-family:var(--font-serif);color:#ede4d5;letter-spacing:.025em; }
 textarea#userInput::placeholder{color:#655f57}
 .upload-btn { color:#8f8065; }
-.send-btn { border-radius:50%;width:38px;height:38px;background:radial-gradient(circle at 35% 30%,#b75342,#7c281f 70%);box-shadow:0 5px 22px rgba(124,40,31,.25); }
-.send-btn:not(:disabled):hover { transform:rotate(8deg) scale(1.06);box-shadow:0 8px 28px rgba(143,46,35,.35); }
+.send-btn { border-radius:7px;width:40px;height:40px;background:linear-gradient(150deg,#c0563f,#93311f 52%,#6e2117);border:1px solid rgba(232,190,141,.4);box-shadow:0 6px 20px rgba(124,40,31,.32),inset 0 1px rgba(255,255,255,.1); }
+.send-btn:not(:disabled):hover { transform:translateY(-1px) scale(1.04);filter:brightness(1.07);box-shadow:0 10px 26px rgba(150,48,34,.4),inset 0 1px rgba(255,255,255,.12); }
+.send-btn:not(:disabled):active { transform:translateY(1px) scale(.96);box-shadow:0 3px 10px rgba(124,40,31,.3); }
 .composer-legal-text { color:#5d5852;letter-spacing:.08em;font-family:var(--font-serif); }
 
 /* 消息：取消“AI 气泡感”，改为签批式阅读 */
@@ -1869,6 +1931,7 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
 @media (max-width: 900px) {
   .hero-ritual-box { grid-template-columns:230px 1fr;min-height:230px;gap:22px; }
   .hero-oracle{width:220px;height:220px}.oracle-wheel{width:180px;height:180px}
+  .oracle-earthly{--earthly-r:-101px}.oracle-earthly span{font-size:10px}
   .oracle-trigrams span:nth-child(1){transform:rotate(0deg) translateY(-83px) rotate(0deg)}
   .oracle-trigrams span:nth-child(2){transform:rotate(45deg) translateY(-83px) rotate(-45deg)}
   .oracle-trigrams span:nth-child(3){transform:rotate(90deg) translateY(-83px) rotate(-90deg)}
@@ -1886,6 +1949,7 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
   .hero-ritual-box { display:flex;flex-direction:column;min-height:auto;gap:8px;margin-top:0;text-align:center; }
   .hero-ritual-box::before{display:none}
   .hero-oracle { width:174px;height:174px;margin-top:-6px; }
+  .oracle-earthly{display:none}
   .oracle-wheel { width:146px;height:146px; }
   .ring-b{inset:16px}.ring-c{inset:34px}.oracle-core{width:56px;height:56px}.oracle-core strong{font-size:22px}.oracle-core-small{display:none}
   .oracle-trigrams span{font-size:10px}
@@ -1980,9 +2044,21 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
   white-space: nowrap;
 }
 .send-btn:disabled {
-  opacity: 0.45;
   cursor: not-allowed;
+  filter: saturate(0.72) brightness(0.82);
   transform: none;
+  animation: sealPulse 1.6s ease-in-out infinite;
+}
+.send-btn:disabled::before {
+  animation: sealFramePulse 1.6s ease-in-out infinite;
+}
+@keyframes sealPulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(124, 40, 31, 0.25); }
+  50% { box-shadow: 0 4px 24px rgba(190, 90, 60, 0.42); }
+}
+@keyframes sealFramePulse {
+  0%, 100% { border-color: rgba(246, 231, 204, 0.18); }
+  50% { border-color: rgba(246, 231, 204, 0.55); }
 }
 
 .attach-preview {
