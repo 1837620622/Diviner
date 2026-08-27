@@ -321,7 +321,8 @@ function restoreSidebar() {
 function loadSessions() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    sessions = raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    sessions = Array.isArray(parsed) ? parsed : [];
   } catch (e) {
     sessions = [];
   }
@@ -335,7 +336,9 @@ function loadSessions() {
 
 function saveSessions() {
   const serialize = () => JSON.stringify(sessions);
-  const persist = () => safeStorage.set(STORAGE_KEY, serialize());
+  // 裸调 setItem 让 QuotaExceededError 抛给外层 try/catch，从而激活下方分级降级；
+  // safeStorage.set 会吞掉异常，导致整套降级成为死代码、会话静默丢失。
+  const persist = () => localStorage.setItem(STORAGE_KEY, serialize());
   try { persist(); return; } catch (e) { /* 进入分级降级 */ }
 
   // 图片最先撑爆配额：先剥离所有会话中的图片
@@ -654,8 +657,11 @@ async function handleSend(customText = null, includeImages = true) {
   renderMessageNode('user', userContent, currentImgs.map(img => img.dataUrl), true);
   saveSessions();
 
-  userInput.value = '';
-  autoGrowTextarea();
+  // 仅当本次用的是输入框文本时才清空；法器/快捷话题提交（customText）须保留草稿
+  if (customText === null) {
+    userInput.value = '';
+    autoGrowTextarea();
+  }
   sendBtn.disabled = true;
 
   // 创建即时占位的 AI 消息节点（带流式闪烁光标）
@@ -677,11 +683,14 @@ async function handleSend(customText = null, includeImages = true) {
 
   let accumulatedText = '';
   let requestTimer = null;
+  let reader = null;
 
   try {
     const apiMessages = [{ role: 'system', content: SYSTEM_PROMPT }];
+    // 非视觉法器不携图：与 UI 承诺一致，亦省去无效 base64 上行（后端仍会按 vision 兜底剥离）
+    const visionOk = !!getModelById(currentModelId)?.vision;
     sess.messages.forEach(m => {
-      if (m.role === 'user' && m.images && m.images.length) {
+      if (visionOk && m.role === 'user' && m.images && m.images.length) {
         const parts = [{ type: 'text', text: m.content }];
         m.images.forEach(u => parts.push({ type: 'image_url', image_url: { url: u } }));
         apiMessages.push({ role: 'user', content: parts });
@@ -715,7 +724,7 @@ async function handleSend(customText = null, includeImages = true) {
     setStatus('灵台清明 · 气场通达');
 
     // 处理 SSE 流式返回
-    const reader = resp.body.getReader();
+    reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let isDone = false;
@@ -793,6 +802,9 @@ async function handleSend(customText = null, includeImages = true) {
     saveSessions();
   } finally {
     if (requestTimer) clearTimeout(requestTimer);
+    // 异常路径（model_error/网络错误）须释放 reader，避免底层响应体连接悬置；
+    // 正常读完的流 cancel 为无害空操作。
+    if (reader) { try { await reader.cancel(); } catch { /* 流已关闭 */ } }
     sendBtn.disabled = false;
     isRequesting = false;
   }
@@ -1171,6 +1183,8 @@ function compressImage(file, maxSide = 1100, quality = 0.76) {
 
 async function handleFiles(files) {
   const list = Array.from(files || []).slice(0, 3 - pendingImages.length);
+  // 立即复位 input：即便因配额已满早退，也须重置，否则同一文件无法再次触发 change
+  fileInput.value = '';
   if (!list.length) return;
   for (const f of list) {
     if (!f.type.startsWith('image/')) continue;
@@ -1182,7 +1196,6 @@ async function handleFiles(files) {
       console.error(err);
     }
   }
-  fileInput.value = '';
   renderAttachPreview();
 }
 
