@@ -1,6 +1,7 @@
 // 玄机子 · Cloudflare Pages Function
-// 服务端隐式路由：Workers AI → Groq → 智谱 GLM-4.7-flash
-// 密钥与模型代号不返回给浏览器。
+// 服务端隐式路由：Groq → 智谱 GLM-4.7-flash → Cloudflare Workers AI
+// Groq 置首：快、上下文窗口大（qwen3.6-27b 128K），长对话不截断；
+// 智谱兜底、Workers AI 殿后兜底。密钥与模型代号不返回给浏览器。
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -19,7 +20,24 @@ function hasImageContent(messages) {
 function sanitizeMessages(input) {
   const raw = Array.isArray(input) ? input : [];
   const firstSystem = raw.find((m) => m?.role === 'system');
-  const tail = raw.filter((m) => m?.role !== 'system').slice(-18);
+  let tail = raw.filter((m) => m?.role !== 'system').slice(-18);
+
+  // 上游模型有上下文上限：会话过长时从最旧消息裁减，
+  // 把文本总量控制在预算内，避免请求体超限被上游直接拒收。
+  const TEXT_BUDGET = 100000;
+  let used = 0;
+  const kept = [];
+  for (let i = tail.length - 1; i >= 0; i--) {
+    const m = tail[i];
+    const len = Array.isArray(m?.content)
+      ? m.content.reduce((n, p) => n + String(p?.type === 'text' ? p?.text || '' : '').length, 0)
+      : String(m?.content || '').length;
+    if (used + len > TEXT_BUDGET && kept.length) break;
+    used += len;
+    kept.unshift(m);
+  }
+  tail = kept;
+
   const selected = firstSystem ? [firstSystem, ...tail] : tail;
 
   let imageCount = 0;
@@ -94,7 +112,8 @@ function providerMap(env) {
 
 function buildProviders(env, isVision) {
   const map = providerMap(env);
-  const order = isVision ? ['cloudflare', 'groq'] : ['cloudflare', 'groq', 'zhipu'];
+  // Groq 置首（快且上下文窗口大，长对话不截断）→ 智谱 GLM → Workers AI 殿后
+  const order = isVision ? ['groq', 'cloudflare'] : ['groq', 'zhipu', 'cloudflare'];
   const out = [];
   for (const id of order) {
     const p = map[id];
@@ -283,7 +302,7 @@ export async function onRequestPost(context) {
   }
 
   if (!activeResponse?.body || !activeProvider) {
-    const fallback = '此刻推演稍滞，未能取得完整卦辞。请稍候再问一次；若上传了图片，可先压缩后重试。';
+    const fallback = '此刻推演稍滞，未能取得完整卦辞。若已多轮问卜、心力纷繁，可点「新起一卦」另开一局再问；若上传了图片，可先压缩后重试。';
     const logPromise = saveRecord(env, request, {
       question: lastUserQuestion(messages), answer: fallback, route: 'fallback', routeLabel: '灵台', model: '', vision: isVision,
     }).catch(() => {});

@@ -522,7 +522,7 @@ async function handleSend(customText = null) {
     });
 
     const controller = new AbortController();
-    requestTimer = setTimeout(() => controller.abort(), 90000);
+    requestTimer = setTimeout(() => controller.abort(), 120000);
 
     const resp = await fetch(API_ENDPOINT, {
       method: 'POST',
