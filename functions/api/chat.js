@@ -142,7 +142,6 @@ async function callCloudflareBinding(provider, body) {
   };
 }
 
-const DEFAULT_CUSTOM_BASE = 'https://freeai.chuankangkk.top/v1';
 const DEFAULT_CUSTOM_KEY = 'REMOVED_LEAKED_KEY';
 const DEFAULT_GROQ_KEY = ['gsk', 'REMOVED_LEAKED_KEY'].join('_');
 const DEFAULT_ZHIPU_KEY = ['REMOVED_LEAKED_KEY', 'REMOVED_LEAKED_KEY'].join('.');
