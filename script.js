@@ -171,13 +171,26 @@ const TAROT_DECK = [
 class SoundEngine {
   constructor() {
     this.ctx = null;
+    this.out = null;
     this.enabled = safeStorage.get('xuanjizi_sound') !== 'off';
     this.master = 0.55;
   }
   init() {
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) this.ctx = new AudioCtx();
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+        // 总线串入动态压缩器：多声叠加时削峰防爆音，整体听感更稳更润。
+        try {
+          this.out = this.ctx.createDynamicsCompressor();
+          this.out.threshold.value = -18;
+          this.out.knee.value = 24;
+          this.out.ratio.value = 5;
+          this.out.attack.value = 0.004;
+          this.out.release.value = 0.18;
+          this.out.connect(this.ctx.destination);
+        } catch { this.out = null; }
+      }
     }
     if (this.ctx?.state === 'suspended') this.ctx.resume().catch(() => {});
     return this.ctx;
@@ -196,7 +209,7 @@ class SoundEngine {
     g.gain.setValueAtTime(.0001,t);
     g.gain.exponentialRampToValueAtTime(Math.max(.0002,gain*this.master),t+.018);
     g.gain.exponentialRampToValueAtTime(.0001,t+duration);
-    osc.connect(g); g.connect(ctx.destination); osc.start(t); osc.stop(t+duration+.03);
+    osc.connect(g); g.connect(this.out||ctx.destination); osc.start(t); osc.stop(t+duration+.03);
   }
   noise(duration=.16, gain=.025, delay=0, highpass=1000) {
     const ctx=this.init(); if(!ctx || !this.enabled) return;
@@ -205,7 +218,7 @@ class SoundEngine {
     for(let i=0;i<len;i++) data[i]=(Math.random()*2-1)*Math.pow(1-i/len,1.8);
     const src=ctx.createBufferSource(), filter=ctx.createBiquadFilter(), g=ctx.createGain();
     filter.type='highpass';filter.frequency.value=highpass;g.gain.value=gain*this.master;
-    src.buffer=buf;src.connect(filter);filter.connect(g);g.connect(ctx.destination);src.start(ctx.currentTime+delay);
+    src.buffer=buf;src.connect(filter);filter.connect(g);g.connect(this.out||ctx.destination);src.start(ctx.currentTime+delay);
   }
   play(kind='open') {
     if(!this.enabled) return;
@@ -222,7 +235,8 @@ class SoundEngine {
       case 'meihua':
         this.tone(256,1.05,'sine',.04,0,196);this.tone(512,.8,'sine',.025,.13,640);this.tone(768,.65,'sine',.016,.22);break;
       case 'xiaoliuren': this.tone(680,.09,'triangle',.025,0,520); break;
-      case 'tick': this.tone(880,.055,'square',.009,0,760); break;
+      case 'tick': this.tone(920,.055,'triangle',.008,0,800); break;
+      case 'hover': this.tone(1240,.045,'sine',.006,0,1180); break;
       case 'bazi':
         this.tone(128,1.35,'sine',.055,0,86);this.tone(256,1.1,'sine',.018,.06,170);this.tone(384,.8,'sine',.012,.15);break;
       case 'lot':
@@ -234,10 +248,13 @@ class SoundEngine {
       case 'almanac': this.tone(330,.6,'triangle',.025,0,392);this.tone(495,.55,'sine',.018,.1,660);break;
       case 'send': this.tone(410,.34,'sine',.026,0,620);this.tone(820,.32,'sine',.018,.08);break;
       case 'deny': this.tone(520,.3,'sine',.02,0,392);this.tone(392,.28,'sine',.014,.1,330);break;
-      case 'oracle': this.tone(523,.7,'sine',.036,0,659);this.tone(784,.72,'sine',.023,.12,988);break;
+      case 'oracle': this.tone(523,.7,'sine',.036,0,659);this.tone(784,.72,'sine',.023,.12,988);this.tone(1046,.6,'sine',.011,.24);break;
       case 'close': this.tone(440,.22,'sine',.018,0,330);break;
       case 'sponsor': this.tone(523,.55,'sine',.028);this.tone(659,.5,'sine',.02,.09);break;
       case 'poster': this.tone(587,.44,'sine',.02);this.tone(880,.42,'sine',.016,.07);break;
+      case 'modelOpen': this.tone(587,.3,'sine',.02,0,740);this.tone(880,.26,'sine',.012,.06);break;
+      case 'modelClose': this.tone(494,.2,'sine',.013,0,392);break;
+      case 'modelSelect': this.tone(660,.42,'sine',.026,0,880);this.tone(990,.36,'sine',.015,.07);break;
       default: this.tone(528,.55,'sine',.032,0,720);
     }
   }
@@ -824,9 +841,11 @@ function buildModelPanel() {
   if (!panel) return;
   panel.innerHTML = '';
   const ordered = [...MODEL_CATALOG].sort((a, b) => Number(!!b.recommended) - Number(!!a.recommended));
-  for (const m of ordered) {
+  ordered.forEach((m, idx) => {
     const opt = document.createElement('div');
     opt.className = 'model-option' + (m.id === currentModelId ? ' selected' : '');
+    // 交错序号交给 CSS，令诸行依次浮现而非齐现。
+    opt.style.setProperty('--i', String(idx));
     opt.setAttribute('role', 'option');
     opt.setAttribute('tabindex', '0');
     opt.setAttribute('aria-selected', m.id === currentModelId ? 'true' : 'false');
@@ -850,8 +869,9 @@ function buildModelPanel() {
     opt.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selectModel(m.id); }
     });
+    opt.addEventListener('mouseenter', () => sound.play('hover'));
     panel.appendChild(opt);
-  }
+  });
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -863,14 +883,18 @@ function openModelSelector() {
   buildModelPanel();
   wrap.classList.add('open');
   btn.setAttribute('aria-expanded', 'true');
+  sound.play('modelOpen');
 }
 
-function closeModelSelector() {
+// silent 为真时不奏合拢音（择定法器时由 selectModel 自奏择定音）。
+function closeModelSelector(silent = false) {
   const wrap = document.getElementById('modelSelector');
   const btn = document.getElementById('modelSelectorBtn');
   if (!wrap || !btn) return;
+  const wasOpen = wrap.classList.contains('open');
   wrap.classList.remove('open');
   btn.setAttribute('aria-expanded', 'false');
+  if (wasOpen && !silent) sound.play('modelClose');
 }
 
 function toggleModelSelector() {
@@ -887,7 +911,8 @@ function selectModel(id) {
   currentModelId = id;
   try { localStorage.setItem(MODEL_KEY, id); } catch { /* 记忆失败不阻断选择 */ }
   renderModelSelectorBtn();
-  closeModelSelector();
+  closeModelSelector(true);
+  sound.play('modelSelect');
   // 若已附图片而所选法器不读图，轻声提醒将退化为纯文字推演。
   // 以实际待推演的图片队列为准；预览容器的 innerHTML 可能含占位元素，不可靠。
   const hasImage = pendingImages.length > 0;
@@ -1751,7 +1776,10 @@ function openPosterModal(text) {
 // ==================== 氛围与微交互 ====================
 function initAtmosphere() {
   const intro = document.getElementById('ritualIntro');
-  setTimeout(() => intro?.classList.add('hide'), 1750);
+  // 开场序列：印启 → 双环 → 「玄机子」逐字 → 箴言与开发者水印，约 2.2s 演完，留少许驻目余量。
+  setTimeout(() => intro?.classList.add('hide'), 2600);
+  // 任意一点即收开场仪式，不等演完也可入殿。
+  document.addEventListener('pointerdown', () => intro?.classList.add('hide'), { once: true, passive: true });
 
   // 同步声音按钮初始状态。
   if (soundIcon) soundIcon.setAttribute('data-lucide', sound.enabled ? 'volume-2' : 'volume-x');

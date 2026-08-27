@@ -1643,16 +1643,43 @@ body::after {
 .floating-runes span { position:absolute; font-family:var(--font-serif); color:rgba(236,211,158,.09); font-size:16px; animation:runeFloat 13s ease-in-out infinite; }
 .floating-runes span:nth-child(1){left:8%;top:20%;animation-delay:-2s}.floating-runes span:nth-child(2){left:24%;top:72%;animation-delay:-7s}.floating-runes span:nth-child(3){left:46%;top:10%;animation-delay:-4s}.floating-runes span:nth-child(4){left:72%;top:64%;animation-delay:-9s}.floating-runes span:nth-child(5){left:88%;top:28%;animation-delay:-1s}.floating-runes span:nth-child(6){left:58%;top:84%;animation-delay:-6s}.floating-runes span:nth-child(7){left:34%;top:42%;animation-delay:-11s}.floating-runes span:nth-child(8){left:94%;top:82%;animation-delay:-5s}
 
+/* 开场仪式：印启 → 双环旋绕 → 「玄机子」逐字浮现 → 箴言与开发者水印依次亮起 */
 .ritual-intro { position:fixed; inset:0; z-index:500; background:#050509; display:grid; place-items:center; align-content:center; gap:18px; pointer-events:none; transition:opacity .85s ease, visibility .85s ease; }
 .ritual-intro.hide { opacity:0; visibility:hidden; }
+.ritual-intro-core { position:relative; width:230px; height:230px; display:grid; place-items:center; }
 .ritual-intro-halo { position:absolute; width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(198,161,91,.12),transparent 62%); animation:introHalo 2s ease-out both; }
-.ritual-intro-seal { position:relative; width:76px;height:76px;display:grid;place-items:center;border:1px solid rgba(241,213,153,.58);color:var(--ink-gold-bright);font:700 34px/1 var(--font-serif);transform:rotate(45deg);animation:introSeal 1.6s var(--ritual-ease) both; }
-.ritual-intro-seal::before{content:"玄";transform:rotate(-45deg)}
-.ritual-intro-seal { font-size:0; }
+.ritual-intro-ring { position:absolute; width:150px;height:150px;border-radius:50%;border:1px dashed rgba(236,205,143,.22); opacity:0; animation:introRingIn .9s .3s ease forwards, orbitSlow 16s linear infinite; }
+.ritual-intro-ring-b { width:200px;height:200px;border-color:rgba(236,205,143,.11); animation:introRingIn .9s .5s ease forwards, orbitReverse 24s linear infinite; }
+/* 开场玄核：与首页可视化大图的 .oracle-core 同款——正圆宝石核，玄字端正不倾斜 */
+.ritual-intro-seal { position:relative; overflow:hidden; width:82px;height:82px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 32% 28%, rgba(200,92,62,.42), rgba(122,38,27,.5) 46%, rgba(9,7,12,.96) 80%);
+  border:1px solid rgba(216,168,90,.6);
+  box-shadow:0 0 48px rgba(152,52,36,.2), 0 0 0 4px rgba(214,168,88,.06), inset 0 0 28px rgba(198,161,91,.09);
+  animation:introSeal 1.6s var(--ritual-ease) both; }
+.ritual-intro-seal::before { content:""; position:absolute; inset:5px; border-radius:50%; border:1px solid rgba(238,214,160,.22); pointer-events:none; }
+.ritual-intro-seal span { position:relative; z-index:1; font:700 32px/1 var(--font-serif); color:#f0dca6; letter-spacing:0; text-shadow:0 0 20px rgba(232,198,122,.42); }
+/* 玄印外环八卦字：仿首页罗盘可视化大图，乾兑离震坤艮坎巽环绕缓缓自转 */
+/* 八卦字环与首页大图一致：卦字固定端正不随环旋转（转动由两层虚线环承担） */
+.ritual-intro-trigrams { position:absolute; inset:0; pointer-events:none; }
+.ritual-intro-trigrams span { position:absolute; left:50%; top:50%; font:600 12.5px/1 var(--font-serif); color:#c0a87a; text-shadow:0 0 10px rgba(214,178,102,.28); transform-origin:0 0; opacity:0; animation:trigramIn .55s ease forwards; }
+.ritual-intro-trigrams span:nth-child(1){ transform:rotate(0deg) translateY(-88px) rotate(0deg); animation-delay:.58s; }
+.ritual-intro-trigrams span:nth-child(2){ transform:rotate(45deg) translateY(-88px) rotate(-45deg); animation-delay:.64s; }
+.ritual-intro-trigrams span:nth-child(3){ transform:rotate(90deg) translateY(-88px) rotate(-90deg); animation-delay:.7s; }
+.ritual-intro-trigrams span:nth-child(4){ transform:rotate(135deg) translateY(-88px) rotate(-135deg); animation-delay:.76s; }
+.ritual-intro-trigrams span:nth-child(5){ transform:rotate(180deg) translateY(-88px) rotate(-180deg); animation-delay:.82s; }
+.ritual-intro-trigrams span:nth-child(6){ transform:rotate(225deg) translateY(-88px) rotate(-225deg); animation-delay:.88s; }
+.ritual-intro-trigrams span:nth-child(7){ transform:rotate(270deg) translateY(-88px) rotate(-270deg); animation-delay:.94s; }
+.ritual-intro-trigrams span:nth-child(8){ transform:rotate(315deg) translateY(-88px) rotate(-315deg); animation-delay:1s; }
+.ritual-intro-title { display:flex;gap:16px; }
+.ritual-intro-title span { font:700 26px/1 var(--font-serif);letter-spacing:.1em;color:transparent;background:linear-gradient(100deg,#c29c55,#f0d89d 48%,#a47d3f);background-clip:text;-webkit-background-clip:text;opacity:0;animation:fadeUp .7s ease forwards; }
+.ritual-intro-title span:nth-child(1){animation-delay:.72s}
+.ritual-intro-title span:nth-child(2){animation-delay:.88s}
+.ritual-intro-title span:nth-child(3){animation-delay:1.04s}
 .ritual-intro-lines { display:flex;align-items:center;gap:8px;position:relative; }
-.ritual-intro-lines span { display:block;width:46px;height:1px;background:linear-gradient(90deg,transparent,var(--ink-gold),transparent);transform:scaleX(0);animation:lineOpen 1.2s .35s ease forwards; }
-.ritual-intro-lines span:nth-child(2){width:8px;height:8px;border:1px solid var(--ink-gold);background:transparent;transform:rotate(45deg) scale(0);animation:dotOpen .8s .55s ease forwards}
-.ritual-intro p { color:#b9aa8c;font:500 12px/1.6 var(--font-serif);letter-spacing:.34em;text-indent:.34em;opacity:0;animation:fadeUp .8s .65s ease forwards; }
+.ritual-intro-lines span { display:block;width:46px;height:1px;background:linear-gradient(90deg,transparent,var(--ink-gold),transparent);transform:scaleX(0);animation:lineOpen 1.2s .5s ease forwards; }
+.ritual-intro-lines span:nth-child(2){width:8px;height:8px;border:1px solid var(--ink-gold);background:transparent;transform:rotate(45deg) scale(0);animation:dotOpen .8s .7s ease forwards}
+.ritual-intro p { color:#b9aa8c;font:500 12px/1.6 var(--font-serif);letter-spacing:.34em;text-indent:.34em;opacity:0;animation:fadeUp .8s 1.18s ease forwards; }
+.ritual-intro p.ritual-intro-credit { color:#6f675a;font-size:10px;letter-spacing:.28em;text-indent:.28em;animation-delay:1.42s; }
 
 .app-layout { background:transparent; }
 .sidebar { background:linear-gradient(180deg,rgba(13,12,18,.96),rgba(8,8,12,.985)); border-right:1px solid var(--hairline); box-shadow:24px 0 60px rgba(0,0,0,.24); }
@@ -1785,7 +1812,8 @@ textarea#userInput::placeholder{color:#655f57}
 .send-btn { border-radius:7px;width:40px;height:40px;background:linear-gradient(150deg,#c0563f,#93311f 52%,#6e2117);border:1px solid rgba(232,190,141,.4);box-shadow:0 6px 20px rgba(124,40,31,.32),inset 0 1px rgba(255,255,255,.1); }
 .send-btn:not(:disabled):hover { transform:translateY(-1px) scale(1.04);filter:brightness(1.07);box-shadow:0 10px 26px rgba(150,48,34,.4),inset 0 1px rgba(255,255,255,.12); }
 .send-btn:not(:disabled):active { transform:translateY(1px) scale(.96);box-shadow:0 3px 10px rgba(124,40,31,.3); }
-.composer-legal-text { color:#5d5852;letter-spacing:.08em;font-family:var(--font-serif); }
+.composer-legal-text { color:#5d5852;letter-spacing:.08em;font-family:var(--font-serif);display:flex;flex-direction:column;align-items:center;gap:3px; }
+.composer-credit { color:#6d6250;font-size:9.5px;letter-spacing:.16em;opacity:.9; }
 
 /* 法器（模型）选择器：真实厂商图标 + 模型代号 + 能力徽标，问卜者自主择器。
    与占案同源的黑金 / 朱砂基调，只露厂商图标与代号，不暴露上游网关。 */
@@ -1793,7 +1821,8 @@ textarea#userInput::placeholder{color:#655f57}
 .model-selector-btn { display:flex;align-items:center;gap:9px;padding:7px 12px 7px 9px;background:rgba(14,13,19,.9);border:1px solid rgba(229,200,141,.16);border-radius:6px;cursor:pointer;font-family:var(--font-serif);transition:.28s var(--ritual-ease); }
 .model-selector-btn:hover { border-color:rgba(217,181,111,.4);background:rgba(198,161,91,.05); }
 .model-selector-btn:focus-visible { outline:none;border-color:rgba(217,181,111,.55);box-shadow:0 0 0 2px rgba(201,161,81,.14); }
-.model-selector-logo-wrap { width:22px;height:22px;border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);flex:none; }
+.model-selector-logo-wrap { width:22px;height:22px;border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);flex:none;box-shadow:inset 0 0 0 1px rgba(229,200,141,.2),0 1px 6px rgba(0,0,0,.3);transition:box-shadow .28s var(--ritual-ease); }
+.model-selector-btn:hover .model-selector-logo-wrap { box-shadow:inset 0 0 0 1px rgba(217,181,111,.42),0 2px 10px rgba(0,0,0,.36),0 0 14px rgba(203,166,92,.1); }
 .model-selector-logo { width:100%;height:100%;object-fit:cover;display:block; }
 .model-selector-text { display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;min-width:0; }
 .model-selector-name { font:500 12.5px/1.2 var(--font-serif);color:#e3d8c4;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px; }
@@ -1801,19 +1830,20 @@ textarea#userInput::placeholder{color:#655f57}
 .model-selector-caret { width:14px;height:14px;color:#9a8c6e;transition:transform .28s var(--ritual-ease);flex:none; }
 .model-selector.open .model-selector-caret { transform:rotate(180deg); }
 
-.model-selector-panel { position:absolute;bottom:calc(100% + 10px);left:0;min-width:300px;max-width:min(360px,calc(100vw - 32px));max-height:340px;overflow-y:auto;background:linear-gradient(160deg,rgba(20,18,25,.99),rgba(11,10,15,.99));border:1px solid rgba(224,192,126,.22);border-radius:6px;box-shadow:0 24px 60px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.02);padding:6px;display:none;z-index:120; }
-.model-selector.open .model-selector-panel { display:block;animation:modelPanelIn .24s var(--ritual-ease) both; }
-@keyframes modelPanelIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+.model-selector-panel { position:absolute;bottom:calc(100% + 10px);left:0;min-width:300px;max-width:min(360px,calc(100vw - 32px));max-height:340px;overflow-y:auto;background:linear-gradient(160deg,rgba(20,18,25,.99),rgba(11,10,15,.99));border:1px solid rgba(224,192,126,.22);border-radius:6px;box-shadow:0 24px 60px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.02);padding:6px;z-index:120;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .24s var(--ritual-ease),transform .24s var(--ritual-ease),visibility .24s; }
+.model-selector.open .model-selector-panel { opacity:1;visibility:visible;transform:translateY(0); }
 .model-selector-panel::-webkit-scrollbar { width:6px; }
 .model-selector-panel::-webkit-scrollbar-thumb { background:rgba(212,175,55,.2);border-radius:3px; }
 .model-selector-panel::-webkit-scrollbar-track { background:transparent; }
 
-.model-option { display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:4px;cursor:pointer;transition:.2s;border:1px solid transparent; }
+.model-option { display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:4px;cursor:pointer;transition:background .22s,border-color .22s,transform .22s var(--ritual-ease);border:1px solid transparent;opacity:0;animation:modelOptionIn .34s var(--ritual-ease) forwards;animation-delay:calc(var(--i,0)*38ms); }
+@keyframes modelOptionIn { from{opacity:0;transform:translateY(7px);} to{opacity:1;transform:translateY(0);} }
 .model-option + .model-option { margin-top:2px; }
-.model-option:hover { background:rgba(198,161,91,.06); }
+.model-option:hover { background:linear-gradient(90deg,rgba(198,161,91,.09),rgba(198,161,91,.02));transform:translateX(3px); }
 .model-option:focus-visible { outline:none;background:rgba(198,161,91,.07);border-color:rgba(217,181,111,.3); }
-.model-option.selected { background:rgba(148,46,37,.12);border-color:rgba(180,70,52,.28); }
-.model-option-logo { width:24px;height:24px;border-radius:5px;object-fit:cover;flex:none;margin-top:1px;background:rgba(255,255,255,.04); }
+.model-option.selected { background:rgba(148,46,37,.12);border-color:rgba(180,70,52,.28);box-shadow:inset 0 0 18px rgba(180,70,52,.07); }
+.model-option-logo { width:24px;height:24px;border-radius:5px;object-fit:cover;flex:none;margin-top:1px;background:rgba(255,255,255,.04);border:1px solid rgba(229,200,141,.16);box-shadow:0 2px 10px rgba(0,0,0,.35);transition:transform .25s var(--ritual-ease); }
+.model-option:hover .model-option-logo { transform:scale(1.1) rotate(-2deg); }
 .model-option-main { flex:1;min-width:0; }
 .model-option-topline { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
 .model-option-name { font:600 13px/1.25 var(--font-serif);color:#ead9bd;letter-spacing:.03em; }
@@ -1955,7 +1985,9 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
 @keyframes ringBreathe { 0%,100%{transform:scale(.98);opacity:.55} 50%{transform:scale(1.04);opacity:1} }
 @keyframes haloPulse { 0%,100%{transform:scale(.94);opacity:.25} 50%{transform:scale(1.06);opacity:.8} }
 @keyframes introHalo { from{transform:scale(.45);opacity:0} to{transform:scale(1.25);opacity:1} }
-@keyframes introSeal { 0%{opacity:0;transform:rotate(45deg) scale(.65)} 55%{opacity:1;transform:rotate(45deg) scale(1.08)} 100%{opacity:1;transform:rotate(45deg) scale(1)} }
+@keyframes introRingIn { from{opacity:0} to{opacity:1} }
+@keyframes introSeal { 0%{opacity:0;transform:scale(.65)} 55%{opacity:1;transform:scale(1.08)} 100%{opacity:1;transform:scale(1)} }
+@keyframes trigramIn { from{opacity:0;filter:blur(5px)} to{opacity:1;filter:blur(0)} }
 @keyframes lineOpen { to{transform:scaleX(1)} }
 @keyframes dotOpen { to{transform:rotate(45deg) scale(1)} }
 @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -2354,6 +2386,12 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
 .about-quote {
   color: #cbb58a;
   font: 500 13px/1.8 var(--font-serif);
+}
+.about-credit {
+  margin: 16px 0 2px;
+  color: #8a7a5f;
+  font: 500 11px/1.6 var(--font-serif);
+  letter-spacing: 0.14em;
 }
 
 .dream-tags-container {
