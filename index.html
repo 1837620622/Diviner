@@ -14,7 +14,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&amp;family=Noto+Serif+SC:wght@500;700;900&amp;display=swap" rel="stylesheet"/>
 <script defer="" src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<link href="styles.css?v=20260827_v9" rel="stylesheet">
+<link href="styles.css?v=20260827_v10" rel="stylesheet">
 </head>
 <body class="dark-mystic-theme">
 <!-- 浑天星图背景 -->
@@ -41,8 +41,8 @@
 <span class="brand-desc">观象授时 · 灵台问卜</span>
 </div>
 </div>
-<button aria-label="关闭侧边栏" class="icon-btn mobile-only" id="closeSidebarBtn">
-<i data-lucide="x"></i>
+<button aria-label="收起侧栏" class="icon-btn" id="closeSidebarBtn">
+<i data-lucide="panel-left-close"></i>
 </button>
 </div>
 <div class="sidebar-action">
@@ -100,8 +100,8 @@
 <!-- 顶栏导航 -->
 <header class="chat-header">
 <div class="header-left">
-<button aria-label="打开侧边栏" class="icon-btn sidebar-trigger" id="openSidebarBtn">
-<i data-lucide="menu"></i>
+<button aria-label="展开或收起侧栏" aria-expanded="true" class="icon-btn sidebar-trigger" id="openSidebarBtn">
+<i data-lucide="panel-left"></i>
 </button>
 <div class="current-chat-info">
 <h2 class="current-title" id="chatTitle">灵台问卜</h2>
@@ -131,8 +131,8 @@
 <div class="oracle-halo halo-a"></div><div class="oracle-halo halo-b"></div>
 <div class="oracle-wheel">
 <div class="oracle-wheel-ring ring-a"></div><div class="oracle-wheel-ring ring-b"></div><div class="oracle-wheel-ring ring-c"></div>
-<div class="oracle-trigrams"><span>乾</span><span>坎</span><span>艮</span><span>震</span><span>巽</span><span>离</span><span>坤</span><span>兑</span></div>
-<div class="oracle-core"><span class="oracle-core-small">玄机</span><strong>玄</strong></div>
+<div class="oracle-trigrams"><span>乾</span><span>兑</span><span>离</span><span>震</span><span>坤</span><span>艮</span><span>坎</span><span>巽</span></div>
+<div class="oracle-core"><strong>玄</strong><span class="oracle-core-small">玄机</span></div>
 </div>
 </div><div class="hero-text-content">
 <div class="hero-tag"><span class="tag-line"></span><span>THE ORACLE · 灵台问卜</span><span class="tag-line"></span></div>
@@ -214,7 +214,7 @@
 <i data-lucide="image"></i>
 </button>
 <div class="textarea-wrapper">
-<textarea id="userInput" maxlength="3000" placeholder="写下你真正想问的一件事，或先从上方法门起卦……" rows="1"></textarea>
+<textarea id="userInput" maxlength="3000" placeholder="写下想问的一件事，或先择法门起卦" rows="1"></textarea>
 </div>
 <button class="send-btn" id="sendBtn" title="发送推演">
 <i data-lucide="sparkles"></i>
@@ -593,7 +593,7 @@
 <div class="about-content">
 <div class="about-seal">玄机</div>
 <h3>玄机子 · 灵台问卜</h3>
-<p class="about-ver">版本：v8.2 灵台校勘版</p>
+<p class="about-ver">版本：v8.3 灵台校勘版</p>
 <p class="about-p">融汇东方传统易学、四柱八字、梅花六爻与西方灵犀塔罗，为问卜者提供客观、富于哲思与可行建议的推演指导。</p>
 <div class="about-quote">「知命而不受制于命，顺势而为，自强不息。」</div>
 </div>
@@ -601,6 +601,6 @@
 <div class="modal-footer"><button class="btn btn-primary" data-close="modalAbout">确认</button></div>
 </div>
 </div>
-<script src="script.js?v=20260827_v9"></script>
+<script src="script.js?v=20260827_v10"></script>
 </body>
 </html>

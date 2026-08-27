@@ -1,4 +1,4 @@
-# 玄机子 · Diviner v8.2
+# 玄机子 · Diviner v8.3
 
 东方问卜交互站点 + Cloudflare Pages Functions 多供应商容灾路由。
 
@@ -19,12 +19,11 @@
 
 ### 后端
 
-- 所有真实 API Key 只从环境变量读取，项目源码和示例配置中不包含密钥。
-- 默认文本路由：`智谱 → Groq → Cloudflare Workers AI → Gemini → HF 公共备用 → 自定义上游`。
-- 默认图片路由：`Groq → Gemini → HF 公共备用 → 自定义上游`。
+- 所有真实 API Key 只从 Cloudflare 环境变量读取，前端源码不含密钥和模型代号。
+- 浏览器只请求 `/api/chat`。服务端隐式容灾：Cloudflare Workers AI → Groq → 智谱 GLM-4.7-flash。用户看不到多模型切换。
+- 默认图片同样先走 Workers AI 多模态，再 Groq。
 - Groq 默认模型更新为 `qwen/qwen3.6-27b`，支持图文输入。
-- 智谱默认免费模型更新为 `glm-4.7-flash`。
-- Cloudflare Workers AI 默认使用 `@cf/zai-org/glm-4.7-flash`。
+- 前台不展示、不请求、不回显任何上游模型代号。
 - 修复 Workers AI SSE 与 OpenAI-compatible SSE 格式不同导致的空回复问题；两种流式格式都能解析。
 - 上游 429、超时、异常或空线路会自动尝试下一供应商。
 - 公共 Hugging Face 免 Key 端点可通过环境变量随时替换 URL/模型或关闭，避免地址退役后必须改源码。
@@ -43,27 +42,12 @@
 在 `Workers & Pages → 项目 → Settings → Variables and Secrets` 中至少设置：
 
 ```text
-GROQ_API_KEY=你的新 Groq Key
-ZHIPU_API_KEY=你的新智谱 Key
-ADMIN_PASSWORD=你自己设置的后台密码
-AI_PROVIDER_ORDER=zhipu,groq,cloudflare,gemini,hfpublic,custom
-AI_VISION_PROVIDER_ORDER=groq,gemini,hfpublic,custom
-HF_PUBLIC_ENABLED=true
+GROQ_API_KEY
+ZHIPU_API_KEY
+ADMIN_PASSWORD
 ```
 
-可选：
-
-```text
-GEMINI_API_KEY=你的 Gemini Key
-HF_PUBLIC_BASE_URL=公共端点的新 Base URL
-HF_PUBLIC_MODEL=公共端点模型 ID
-API_BASE_URL=你的自定义 OpenAI-compatible 上游
-API_KEY=你的自定义上游 Key
-MODEL_TEXT=自定义文本模型
-MODEL_VISION=自定义视觉模型
-```
-
-Cloudflare Workers AI：给项目添加 Workers AI Binding，变量名为 `AI`。当前 `wrangler.toml` 也保留 `[ai] binding = "AI"` 供支持该配置的部署方式使用。
+给项目添加 Workers AI Binding，变量名为 `AI`。模型顺序只写在 Pages Function 里，不会下发到浏览器。
 
 ## KV
 

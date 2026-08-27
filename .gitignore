@@ -3,8 +3,8 @@
 .env.*
 .env.local
 .dev.vars
-.dev.vars.*
 .dev.vars.local
+!.dev.vars.example
 *.log
 node_modules/
 .wrangler/

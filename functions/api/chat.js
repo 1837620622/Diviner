@@ -1,6 +1,6 @@
 // 玄机子 · Cloudflare Pages Function
-// v8.1 多供应商容灾：智谱 / Groq / Workers AI / Gemini / HF 公共端点 / 自定义上游
-// 所有密钥只从 Cloudflare Environment Variables / Secrets 读取，源码不包含真实密钥。
+// 服务端隐式路由：Workers AI → Groq → 智谱 GLM-4.7-flash
+// 密钥与模型代号不返回给浏览器。
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -46,83 +46,90 @@ function sanitizeMessages(input) {
   });
 }
 
+function splitList(raw, fallback) {
+  return envText(raw || fallback).split(',').map((v) => v.trim()).filter(Boolean);
+}
+
+function openaiCompat(id, label, base, key, model, extra = {}) {
+  if (!key || !base || !model) return null;
+  return {
+    id, label, base, key, model,
+    vision: !!extra.vision,
+    timeoutMs: extra.timeoutMs || 16000,
+    extraBody: extra.extraBody || null,
+    omitSampling: !!extra.omitSampling,
+    headers: extra.headers || null,
+  };
+}
+
 function providerMap(env) {
   const zhipuKey = envText(env.ZHIPU_API_KEY);
   const groqKey = envText(env.GROQ_API_KEY);
-  const geminiKey = envText(env.GEMINI_API_KEY);
-  const customKey = envText(env.API_KEY || env.OPENAI_API_KEY);
-  const customBase = cleanBase(env.API_BASE_URL || env.OPENAI_BASE_URL);
+
+  const cfTextModels = splitList(env.CF_AI_MODELS, [
+    '@cf/qwen/qwen3.8-27b',
+    '@cf/zai-org/glm-5.3-flash',
+    '@cf/zai-org/glm-4.7-flash',
+  ].join(','));
+  const cfVisionModels = splitList(env.CF_AI_VISION_MODELS, [
+    '@cf/qwen/qwen3.8-27b',
+    '@cf/zai-org/glm-5.3-flash',
+    '@cf/meta/llama-3.2-11b-vision-instruct',
+  ].join(','));
 
   return {
-    zhipu: zhipuKey ? {
-      id: 'zhipu', label: '灵枢一',
-      base: 'https://open.bigmodel.cn/api/paas/v4', key: zhipuKey,
-      model: envText(env.ZHIPU_MODEL) || 'glm-4.7-flash',
-      vision: false, timeoutMs: 16000,
-      extraBody: { thinking: { type: 'disabled' } }
-    } : null,
-
-    groq: groqKey ? {
-      id: 'groq', label: '灵枢二',
-      base: 'https://api.groq.com/openai/v1', key: groqKey,
-      model: envText(env.GROQ_MODEL) || 'qwen/qwen3.6-27b',
-      vision: true, timeoutMs: 13000,
-      extraBody: { reasoning_effort: 'none' }
-    } : null,
-
     cloudflare: env.AI ? {
-      id: 'cloudflare', label: '灵枢三', kind: 'cloudflare-binding',
-      ai: env.AI, model: envText(env.CF_AI_MODEL) || '@cf/zai-org/glm-4.7-flash',
-      vision: false, timeoutMs: 15000
+      id: 'cloudflare', label: '灵台', kind: 'cloudflare-binding',
+      ai: env.AI, models: cfTextModels, visionModels: cfVisionModels,
+      vision: true, timeoutMs: 14000,
     } : null,
-
-    gemini: geminiKey ? {
-      id: 'gemini', label: '灵枢四',
-      base: 'https://generativelanguage.googleapis.com/v1beta/openai', key: geminiKey,
-      model: envText(env.GEMINI_MODEL) || 'gemini-3.7-flash',
-      vision: true, timeoutMs: 17000,
-      // Gemini 3.x OpenAI compatibility rejects legacy sampling parameters in some configurations.
-      omitSampling: true,
-      extraBody: { reasoning_effort: 'low' }
-    } : null,
-
-    hfpublic: envText(env.HF_PUBLIC_ENABLED || 'true').toLowerCase() !== 'false' ? {
-      id: 'hfpublic', label: '浮云备用',
-      base: cleanBase(env.HF_PUBLIC_BASE_URL) || 'https://pnywsahxhac1qjbo.us-east-2.aws.endpoints.huggingface.cloud/v1', key: envText(env.HF_PUBLIC_KEY) || 'none',
-      model: envText(env.HF_PUBLIC_MODEL) || 'Qwen/Qwen3.8-Flash-Next', vision: true, timeoutMs: 10000,
-      extraBody: { reasoning_effort: 'none' }
-    } : null,
-
-    custom: customKey && customBase ? {
-      id: 'custom', label: '自备上游',
-      base: customBase, key: customKey,
-      model: envText(env.MODEL_TEXT || env.DEFAULT_MODEL) || 'gpt-4o-mini',
-      vision: true,
-      visionModel: envText(env.MODEL_VISION),
-      timeoutMs: 16000
-    } : null,
+    groq: openaiCompat('groq', '灵台', 'https://api.groq.com/openai/v1', groqKey,
+      envText(env.GROQ_MODEL) || 'qwen/qwen3.6-27b',
+      { vision: true, timeoutMs: 13000, extraBody: { reasoning_effort: 'none' } }),
+    zhipu: openaiCompat('zhipu', '灵台', 'https://open.bigmodel.cn/api/paas/v4', zhipuKey,
+      envText(env.ZHIPU_MODEL) || 'glm-4.7-flash',
+      { timeoutMs: 16000, extraBody: { thinking: { type: 'disabled' } } }),
   };
 }
 
 function buildProviders(env, isVision) {
   const map = providerMap(env);
-  const normalDefault = 'zhipu,groq,cloudflare,gemini,hfpublic,custom';
-  const visionDefault = 'groq,gemini,hfpublic,custom';
-  const configured = envText(isVision ? env.AI_VISION_PROVIDER_ORDER : env.AI_PROVIDER_ORDER);
-  const order = (configured || (isVision ? visionDefault : normalDefault))
-    .split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
-
+  const order = isVision ? ['cloudflare', 'groq'] : ['cloudflare', 'groq', 'zhipu'];
   const out = [];
-  const seen = new Set();
   for (const id of order) {
-    let p = map[id];
-    if (!p || seen.has(id)) continue;
+    const p = map[id];
+    if (!p) continue;
     if (isVision && !p.vision) continue;
-    if (isVision && p.id === 'custom' && p.visionModel) p = { ...p, model: p.visionModel };
-    seen.add(id);
     out.push(p);
   }
   return out;
+}
+
+function repairGarbledText(text) {
+  let s = String(text || '');
+  if (!s) return '';
+  s = s.replace(/\uFEFF/g, '');
+  s = s.replace(/<(think|thought|reasoning|search)>[\s\S]*?<\/\1>/gi, '');
+  s = s.replace(/<(think|thought|reasoning)[\s\S]*$/i, '');
+  const mojibakeHits = (s.match(/[ÃÂâåæ]/g) || []).length;
+  const cjkHits = (s.match(/[\u4e00-\u9fff]/g) || []).length;
+  if (mojibakeHits >= 2 && cjkHits < 8) {
+    try {
+      const bytes = Uint8Array.from([...s].map((ch) => ch.charCodeAt(0) & 0xff));
+      const decoded = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+      const decodedCjk = (decoded.match(/[\u4e00-\u9fff]/g) || []).length;
+      if (decodedCjk > cjkHits) s = decoded;
+    } catch { /* 保持原文 */ }
+  }
+  s = s.replace(/\uFFFD+/g, '');
+  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  return s;
+}
+
+function isRetryableFail(status, err) {
+  if (status === 429 || status === 402 || status === 408 || status === 503 || status === 529) return true;
+  const msg = String(err?.message || err || '').toLowerCase();
+  return /quota|capacity|rate limit|timeout|aborterror|overloaded|no more/.test(msg);
 }
 
 function lastUserQuestion(messages) {
@@ -184,12 +191,38 @@ async function callOpenAIProvider(p, messages, maxTokens, temperature, signal) {
     ...(p.omitSampling ? {} : { temperature }),
     ...(p.extraBody || {}),
   };
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${p.key}`,
+    ...(p.headers || {}),
+  };
   return fetch(`${cleanBase(p.base)}/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${p.key}` },
+    headers,
     body: JSON.stringify(body),
     signal,
   });
+}
+
+async function callCloudflareModels(p, messages, maxTokens, isVision, timeoutMs) {
+  const models = isVision ? (p.visionModels || p.models) : p.models;
+  const attempts = [];
+  for (const model of models || []) {
+    try {
+      const stream = await withTimeout(
+        p.ai.run(model, { messages, stream: true, max_tokens: maxTokens }),
+        timeoutMs
+      );
+      if (stream) {
+        return { stream, model, attempts };
+      }
+      attempts.push('empty');
+    } catch (err) {
+      attempts.push(err?.name === 'AbortError' ? 'timeout' : 'error');
+      if (!isRetryableFail(0, err)) continue;
+    }
+  }
+  return { stream: null, model: '', attempts };
 }
 
 export async function onRequestPost(context) {
@@ -207,7 +240,7 @@ export async function onRequestPost(context) {
   const isVision = hasImageContent(messages);
   const providers = buildProviders(env, isVision);
   if (!providers.length) {
-    return responseJson({ error: isVision ? '当前未配置可处理图片的线路' : '系统尚未配置可用推演线路' }, 503);
+    return responseJson({ error: '灵台暂未点亮，请稍后再问。' }, 503);
   }
 
   const maxTokens = Number.isFinite(body.max_tokens) ? Math.min(Math.max(body.max_tokens, 384), 4096) : 2400;
@@ -221,38 +254,38 @@ export async function onRequestPost(context) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort('timeout'), p.timeoutMs || 15000);
     try {
-      let resp;
       if (p.kind === 'cloudflare-binding') {
-        const stream = await withTimeout(p.ai.run(p.model, { messages, stream: true, max_tokens: maxTokens }), p.timeoutMs || 15000);
+        const cf = await callCloudflareModels(p, messages, maxTokens, isVision, p.timeoutMs || 18000);
         clearTimeout(timer);
-        if (stream) {
-          activeResponse = new Response(stream, { status: 200 });
-          activeProvider = p;
+        attempts.push(...cf.attempts);
+        if (cf.stream) {
+          activeResponse = new Response(cf.stream, { status: 200 });
+          activeProvider = { ...p, model: cf.model };
           break;
         }
-        attempts.push(`${p.id}:empty`);
         continue;
       }
 
-      resp = await callOpenAIProvider(p, messages, maxTokens, temperature, controller.signal);
+      const resp = await callOpenAIProvider(p, messages, maxTokens, temperature, controller.signal);
       clearTimeout(timer);
       if (resp.ok && resp.body) {
         activeResponse = resp;
         activeProvider = p;
         break;
       }
-      attempts.push(`${p.id}:${resp.status}`);
+      attempts.push(String(resp.status));
       try { await resp.body?.cancel(); } catch {}
+      if (!isRetryableFail(resp.status)) continue;
     } catch (err) {
       clearTimeout(timer);
-      attempts.push(`${p.id}:${err?.name === 'AbortError' ? 'timeout' : 'error'}`);
+      attempts.push(err?.name === 'AbortError' ? 'timeout' : 'error');
     }
   }
 
   if (!activeResponse?.body || !activeProvider) {
-    const fallback = '此刻推演线路繁忙，未能取得完整卦辞。请稍候片刻再问一次；若上传了图片，可先压缩后重试。';
+    const fallback = '此刻推演稍滞，未能取得完整卦辞。请稍候再问一次；若上传了图片，可先压缩后重试。';
     const logPromise = saveRecord(env, request, {
-      question: lastUserQuestion(messages), answer: fallback, route: 'fallback', routeLabel: '线路失败', model: '', vision: isVision,
+      question: lastUserQuestion(messages), answer: fallback, route: 'fallback', routeLabel: '灵台', model: '', vision: isVision,
     }).catch(() => {});
     if (typeof context.waitUntil === 'function') context.waitUntil(logPromise);
     const sse = `data: ${JSON.stringify({ choices: [{ delta: { content: fallback } }] })}\n\ndata: [DONE]\n\n`;
@@ -261,8 +294,6 @@ export async function onRequestPost(context) {
       headers: {
         'Content-Type': 'text/event-stream; charset=utf-8',
         'Cache-Control': 'no-cache, no-transform',
-        'X-Diviner-Route': 'fallback',
-        'X-Diviner-Attempts': attempts.join(',').slice(0, 220),
       },
     });
   }
@@ -281,9 +312,10 @@ export async function onRequestPost(context) {
     let doneSent = false;
 
     const emitDelta = async (delta) => {
-      if (!delta) return;
-      answer += delta;
-      await writer.write(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: delta } }] })}\n\n`));
+      const cleaned = repairGarbledText(delta);
+      if (!cleaned) return;
+      answer += cleaned;
+      await writer.write(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: cleaned } }] })}\n\n`));
     };
 
     try {
@@ -344,8 +376,8 @@ export async function onRequestPost(context) {
     } finally {
       try { await writer.close(); } catch {}
       const logPromise = saveRecord(env, request, {
-        question, answer, route: activeProvider.id, routeLabel: activeProvider.label,
-        model: activeProvider.model, vision: isVision,
+        question, answer, route: 'oracle', routeLabel: '灵台',
+        model: '', vision: isVision,
       }).catch(() => {});
       if (typeof context.waitUntil === 'function') context.waitUntil(logPromise);
       else await logPromise;
@@ -359,8 +391,6 @@ export async function onRequestPost(context) {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       'X-Content-Type-Options': 'nosniff',
-      'X-Diviner-Route': activeProvider.id,
-      'X-Diviner-Engine': activeProvider.id,
       'Vary': 'Accept-Encoding',
     },
   });

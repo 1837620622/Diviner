@@ -76,7 +76,7 @@
 let adminPassword='';
 let isLoggedIn=false;
 let lastPayload=null;
-const providerNames={zhipu:'智谱 · GLM',groq:'Groq · Qwen',cloudflare:'Cloudflare',gemini:'Gemini',hfpublic:'公共备用',custom:'自备上游'};
+const providerNames={cloudflare:'灵台甲',groq:'灵台乙',zhipu:'灵台丙'};
 const $=id=>document.getElementById(id);
 function icons(){if(window.lucide) window.lucide.createIcons()}
 function esc(v){const d=document.createElement('div');d.textContent=String(v??'');return d.innerHTML}
@@ -107,12 +107,12 @@ async function loadRecords(date=null,all=false){
 function renderRecords(data){
   const rows=data?.records||[];$('totalRecords').textContent=data?.stats?.total??rows.length;$('todayRecords').textContent=data?.stats?.today??0;$('uniqueIPs').textContent=data?.stats?.uniqueIPs??0;
   if(data?.dateRange){const el=$('dateSelector');if(data.dateRange.min)el.min=data.dateRange.min;if(data.dateRange.max)el.max=data.dateRange.max}
-  const q=$('searchInput').value.trim().toLowerCase();const filtered=!q?rows:rows.filter(r=>[r.ip,r.location,r.question,r.answer,r.routeLabel,r.model].some(v=>String(v||'').toLowerCase().includes(q)));
+  const q=$('searchInput').value.trim().toLowerCase();const filtered=!q?rows:rows.filter(r=>[r.ip,r.location,r.question,r.answer].some(v=>String(v||'').toLowerCase().includes(q)));
   if(!filtered.length){$('recordsList').innerHTML='<div class="empty">'+(rows.length?'没有符合筛选条件的档案':'这一日尚无问卜记录')+'</div>';return}
   const groups={};for(const r of filtered){const ip=r.ip||'未知访客';(groups[ip]??=[]).push(r)}
   const ips=Object.keys(groups).sort((a,b)=>new Date(groups[b][0]?.timestamp||0)-new Date(groups[a][0]?.timestamp||0));let html='',idx=0,answerIdx=0;
   for(const ip of ips){const arr=groups[ip].sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0));const first=arr[0]||{};html+=`<section class="ip-group" id="group-${idx}"><div class="ip-head" data-group="${idx}" tabindex="0" role="button"><div class="ip-main"><span class="ip mono">${esc(ip)}</span><span class="loc">${esc(first.location||'地区未识别')}</span><span class="cnt">${arr.length} 次 · ${esc(new Date(first.timestamp||Date.now()).toLocaleString('zh-CN'))}</span></div><span class="chev">⌄</span></div><div class="ip-body">`;
-    for(const rec of arr){const ans=String(rec.answer||'');const long=ans.length>260;const ai=answerIdx++;html+=`<article class="record"><div class="record-meta"><span class="tag">${esc(rec.routeLabel||rec.model||rec.route||'推演')}</span><span class="time">${esc(new Date(rec.timestamp||Date.now()).toLocaleString('zh-CN'))}${rec.vision?' · 图象':''}</span></div><div class="conv"><div class="turn user"><div class="role">所问</div><div class="text">${esc(rec.question||'')}</div></div><div class="turn"><div class="role">玄机子</div><div id="answer-${ai}" class="text ${long?'collapsed-txt':''}">${format(ans)}</div>${long?`<button class="expand" data-answer="${ai}">展开全文</button>`:''}</div></div></article>`}
+    for(const rec of arr){const ans=String(rec.answer||'');const long=ans.length>260;const ai=answerIdx++;html+=`<article class="record"><div class="record-meta"><span class="tag">灵台</span><span class="time">${esc(new Date(rec.timestamp||Date.now()).toLocaleString('zh-CN'))}${rec.vision?' · 图象':''}</span></div><div class="conv"><div class="turn user"><div class="role">所问</div><div class="text">${esc(rec.question||'')}</div></div><div class="turn"><div class="role">玄机子</div><div id="answer-${ai}" class="text ${long?'collapsed-txt':''}">${format(ans)}</div>${long?`<button class="expand" data-answer="${ai}">展开全文</button>`:''}</div></div></article>`}
     html+='</div></section>';idx++}
   $('recordsList').innerHTML=html;
   document.querySelectorAll('.ip-head').forEach(h=>{const fn=()=>h.closest('.ip-group')?.classList.toggle('collapsed');h.addEventListener('click',fn);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}})});

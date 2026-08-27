@@ -1,23 +1,33 @@
-// 玄机子 · 东方数理与灵犀占断 (XuanJiZi v8.2)
+// 玄机子 · 东方数理与灵犀占断 (XuanJiZi v8.3)
 // 纯净典雅设计，无任何低质表情符号，支持多线路无缝容灾、3D 塔罗、六爻、梅花、八字、小六壬、摇签、黄历、木鱼与海报生成
 
 const API_ENDPOINT = '/api/chat';
 const STORAGE_KEY = 'xuanjizi_sessions_v7';
-const SYSTEM_PROMPT = `你是【玄机子】，一位融汇东方数理传统（周易六爻、梅花易数、四柱八字、小六壬）与西方灵犀哲学（塔罗圣三角）的命理占断大师。
-你的职责是以客观、睿智、温和且富含哲理的语言为问卜者排忧解难。
+const SIDEBAR_KEY = 'xuanjizi_sidebar';
+const SYSTEM_PROMPT = `你是【玄机子】。以东方术数（周易六爻、梅花易数、四柱八字、小六壬、黄历、灵签）与塔罗圣三角为镜，帮问卜者把一件心事看清楚，再把选择还给他自己。
 
-回答结构要求：
-1. 【象数解析】清晰陈述卦象/牌面/数理的内在含义；
-2. 【吉凶趋避】客观剖析利弊，指出机遇与隐患；
-3. 【可行建议】给出3点在现实生活中切实可行的具体行动方案；
-4. 【玄机箴言】以一句富有诗意与东方智慧的箴言收尾。
+口吻：沉静、具体、克制，像懂易理的先生，不是神棍，也不是客服。
 
-严格禁止：
-- 严禁输出任何思考标签（如 <think>...</think> 或 <reasoning>...</reasoning>）；
-- 严禁使用 Emoji 绘文字表情符号；
-- 严禁生硬宣称“我是人工智能无法算命”，以玄机子的叙事口吻，用数理传统与现实分析给出深度解读；
-- 不把占断包装成确定事实，不用绝对化灾祸、疾病、投资收益等断言；
-- 涉及精确历法、真太阳时、干支换算而缺少可靠计算依据时，要明确说明不确定处，不得编造。`;
+每次回答只使用下面四个小标题，顺序固定，不要改名，不要加其他大标题：
+【象数解析】
+【吉凶趋避】
+【可行建议】
+【玄机箴言】
+
+写法：
+- 【象数解析】只解读用户已经给出的牌、爻、卦名、宫位或生辰资料；没有给出的象数不要补造一套。
+- 【吉凶趋避】用倾向语气（较顺、有滞、宜缓、可试），指出机遇与隐患。
+- 【可行建议】必须 3 条，且是今天就能做的具体事，不要空话。
+- 【玄机箴言】一句，不超过 28 字。
+
+严禁：
+- 输出 <think>、<reasoning> 或任何思考标签；
+- 使用 Emoji；
+- 使用 Markdown 的 # 标题或 --- 分割线；
+- 自称人工智能，或说“仅为娱乐”“无法算命”；收尾用“供你参详，抉择仍在自身”；
+- 断言死亡、重病、破产、必成、必赚、必散；
+- 在没有可靠历法计算时编造精确四柱、真太阳时、值神或宜忌清单。若依据不足，直接写明不确定处。
+- 医疗、法律、投资只谈心态与步骤，并点明需问专业人士。`;
 
 // 22 张大阿卡纳塔罗牌数据 (罗马数字与纯净文本)
 const TAROT_DECK = [
@@ -150,12 +160,31 @@ const soundIcon = document.getElementById('soundIcon');
 
 // 初始化会话与事件
 function initApp() {
+  restoreSidebar();
   loadSessions();
   bindEvents();
   renderHistoryList();
   renderAlmanacData();
   initAtmosphere();
+  const mq = window.matchMedia('(max-width: 768px)');
+  mq.addEventListener('change', (e) => {
+    if (e.matches) {
+      document.body.classList.remove('sidebar-collapsed');
+      closeMobileNav();
+    } else if (localStorage.getItem(SIDEBAR_KEY) === 'collapsed') {
+      document.body.classList.add('sidebar-collapsed');
+      closeMobileNav();
+    }
+    syncSidebarTrigger();
+  });
   if (window.lucide) window.lucide.createIcons();
+}
+
+function restoreSidebar() {
+  if (!isMobileNav() && localStorage.getItem(SIDEBAR_KEY) === 'collapsed') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+  syncSidebarTrigger();
 }
 
 function loadSessions() {
@@ -309,11 +338,30 @@ function renderMessageNode(role, rawContent, images = [], isNew = false) {
   if (isNew) scrollToBottom();
 }
 
+function repairGarbledText(text) {
+  let s = String(text || '');
+  if (!s) return '';
+  s = s.replace(/\uFEFF/g, '');
+  s = s.replace(/<(think|thought|reasoning|search)>[\s\S]*?<\/\1>/gi, '');
+  s = s.replace(/<(think|thought|reasoning)[\s\S]*$/i, '');
+  const mojibakeHits = (s.match(/[ÃÂâåæ]/g) || []).length;
+  const cjkHits = (s.match(/[\u4e00-\u9fff]/g) || []).length;
+  if (mojibakeHits >= 2 && cjkHits < 8) {
+    try {
+      const bytes = Uint8Array.from(Array.from(s, (ch) => ch.charCodeAt(0) & 0xff));
+      const decoded = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+      if ((decoded.match(/[\u4e00-\u9fff]/g) || []).length > cjkHits) s = decoded;
+    } catch { /* 保持原文 */ }
+  }
+  s = s.replace(/\uFFFD+/g, '');
+  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  return s;
+}
+
 function formatDivinationContent(text) {
   if (!text) return '';
-  // 1. 彻底过滤任何思考、推理、搜索内部标签
-  let cleaned = String(text).replace(/<(think|thought|reasoning|search)>[\s\S]*?<\/\1>/gi, '').trim();
-  // 所有来自用户/模型的内容先转义，再由本函数生成白名单 HTML，阻断脚本注入。
+  // 1. 清洗乱码、思考标签后再转义，阻断脚本注入。
+  let cleaned = repairGarbledText(text).trim();
   cleaned = escapeHtml(cleaned);
 
   // 2. 格式化玄机箴言（支持多行引用 > **...** 以及各种前缀格式）
@@ -600,9 +648,9 @@ function bindEvents() {
   }
 
   // 侧边栏抽屉开关
-  document.getElementById('openSidebarBtn').addEventListener('click', openSidebar);
-  document.getElementById('closeSidebarBtn').addEventListener('click', closeSidebar);
-  sidebarOverlay.addEventListener('click', closeSidebar);
+  document.getElementById('openSidebarBtn').addEventListener('click', toggleSidebar);
+  document.getElementById('closeSidebarBtn').addEventListener('click', toggleSidebar);
+  sidebarOverlay.addEventListener('click', closeMobileNav);
 
   // 点击遮罩空白区域关闭模态框
   document.querySelectorAll('.modal-backdrop').forEach(mb => {
@@ -693,13 +741,54 @@ function bindEvents() {
   initDreamLogic();
 }
 
-function openSidebar() {
-  sidebar.classList.add('open');
-  sidebarOverlay.classList.add('show');
+function isMobileNav() {
+  return window.matchMedia('(max-width: 768px)').matches;
 }
-function closeSidebar() {
+
+function syncSidebarTrigger() {
+  const btn = document.getElementById('openSidebarBtn');
+  if (!btn) return;
+  const expanded = isMobileNav() ? sidebar.classList.contains('open') : !document.body.classList.contains('sidebar-collapsed');
+  btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  btn.innerHTML = `<i data-lucide="${expanded ? 'panel-left-close' : 'panel-left'}"></i>`;
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openSidebar() {
+  if (isMobileNav()) {
+    sidebar.classList.add('open');
+    sidebarOverlay.classList.add('show');
+  } else {
+    document.body.classList.remove('sidebar-collapsed');
+    localStorage.setItem(SIDEBAR_KEY, 'open');
+  }
+  syncSidebarTrigger();
+}
+
+function closeMobileNav() {
   sidebar.classList.remove('open');
   sidebarOverlay.classList.remove('show');
+  syncSidebarTrigger();
+}
+
+function closeSidebar() {
+  if (isMobileNav()) closeMobileNav();
+}
+
+function collapseDesktopSidebar() {
+  document.body.classList.add('sidebar-collapsed');
+  localStorage.setItem(SIDEBAR_KEY, 'collapsed');
+  syncSidebarTrigger();
+}
+
+function toggleSidebar() {
+  if (isMobileNav()) {
+    if (sidebar.classList.contains('open')) closeMobileNav();
+    else openSidebar();
+    return;
+  }
+  if (document.body.classList.contains('sidebar-collapsed')) openSidebar();
+  else collapseDesktopSidebar();
 }
 
 function autoGrowTextarea() {
@@ -881,7 +970,11 @@ function initTarotLogic() {
   submitBtn.addEventListener('click', () => {
     if (drawnTarotCards.length !== 3 || revealed.size !== 3) return;
     const q = document.getElementById('tarotQuestion').value.trim() || '求问当前困惑与走向';
-    const prompt = `【灵犀塔罗·圣三角牌阵问卜】\n所问心念：${q}\n牌阵排定：\n1. 过去因缘：${drawnTarotCards[0].name}（${drawnTarotCards[0].isReversed ? '逆位' : '正位'}）\n2. 当下境遇：${drawnTarotCards[1].name}（${drawnTarotCards[1].isReversed ? '逆位' : '正位'}）\n3. 未来走向：${drawnTarotCards[2].name}（${drawnTarotCards[2].isReversed ? '逆位' : '正位'}）\n请玄机子结合三牌之象意，为我详析起因、现状瓶颈与未来破局指引。`;
+    const cardLine = (card) => {
+      const meaning = card.isReversed ? card.reversed : card.upright;
+      return `${card.name}（${card.isReversed ? '逆位' : '正位'}）：${meaning}`;
+    };
+    const prompt = `【灵犀塔罗·圣三角牌阵问卜】\n所问心念：${q}\n牌阵排定：\n1. 过去因缘：${cardLine(drawnTarotCards[0])}\n2. 当下境遇：${cardLine(drawnTarotCards[1])}\n3. 未来走向：${cardLine(drawnTarotCards[2])}\n请严格依据以上正逆位含义解读，不要另抽一套牌。`;
     document.getElementById('modalTarot').classList.remove('show');
     handleSend(prompt);
   });
@@ -964,7 +1057,9 @@ function initIchingLogic() {
 
   submitBtn.addEventListener('click', () => {
     const matter = document.getElementById('ichingMatter').value.trim() || '问近期大事吉凶与转机';
-    const prompt = `【周易六爻纳甲占断】\n问卜事由：${matter}\n六爻数理（自初爻至上爻）：${ichingLines.join('、')}\n请玄机子为我排出本卦、变卦，并依动爻纳甲、六亲世应，给出吉凶剖析与具体趋避方策。`;
+    const yaoMap = { 6: '老阴·动', 7: '少阳·静', 8: '少阴·静', 9: '老阳·动' };
+    const yaoText = ichingLines.map((n, i) => `第${i + 1}爻 ${n}（${yaoMap[n] || n}）`).join('，');
+    const prompt = `【周易六爻纳甲占断】\n问卜事由：${matter}\n六爻自初爻至上爻：${yaoText}\n请依 6 老阴、7 少阳、8 少阴、9 老阳排出本卦与变卦，再论动爻、六亲世应与趋避。不要另摇一套爻。`;
     document.getElementById('modalIching').classList.remove('show');
     resetIchingBoard();
     handleSend(prompt);

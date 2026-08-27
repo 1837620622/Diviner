@@ -2273,3 +2273,190 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
   .tarot-front .card-name { font-size: 10px; }
   .lot-cylinder { width: 64px; height: 132px; }
 }
+
+/* ==========================================================================
+   v8.3 · 侧栏收合、聊天滚动、玄字轮盘、手机文字
+   ========================================================================== */
+.sidebar-trigger { display: grid !important; }
+.mobile-only { display: none !important; }
+
+.sidebar {
+  overflow: hidden;
+}
+body.sidebar-collapsed .sidebar {
+  width: 0 !important;
+  flex: 0 0 0 !important;
+  border-right-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+body.sidebar-collapsed .sidebar-overlay { display: none !important; }
+
+.chat-container {
+  display: block !important;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.chat-inner,
+.welcome-card,
+.msg-row {
+  flex-shrink: 0;
+}
+
+.header-left {
+  min-width: 0;
+  flex: 1;
+}
+.current-chat-info {
+  min-width: 0;
+  flex: 1;
+}
+.current-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+}
+.status-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.door-titles span {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  line-height: 1.35;
+}
+.tool-item span {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  font-size: 10px;
+}
+
+.hero-oracle .oracle-wheel {
+  position: relative;
+  display: block;
+}
+.hero-oracle .oracle-trigrams {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hero-oracle .oracle-trigrams span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  display: grid;
+  place-items: center;
+  transform-origin: center center;
+  font: 600 13px/1 var(--font-serif);
+  color: #bca571;
+  transform: rotate(var(--a, 0deg)) translateY(var(--r, -92px)) rotate(calc(-1 * var(--a, 0deg)));
+}
+.hero-oracle .oracle-trigrams span:nth-child(1){ --a: 0deg; }
+.hero-oracle .oracle-trigrams span:nth-child(2){ --a: 45deg; }
+.hero-oracle .oracle-trigrams span:nth-child(3){ --a: 90deg; }
+.hero-oracle .oracle-trigrams span:nth-child(4){ --a: 135deg; }
+.hero-oracle .oracle-trigrams span:nth-child(5){ --a: 180deg; }
+.hero-oracle .oracle-trigrams span:nth-child(6){ --a: 225deg; }
+.hero-oracle .oracle-trigrams span:nth-child(7){ --a: 270deg; }
+.hero-oracle .oracle-trigrams span:nth-child(8){ --a: 315deg; }
+.hero-oracle .oracle-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  z-index: 2;
+}
+.hero-oracle .oracle-core-small {
+  position: static;
+  transform: none;
+  letter-spacing: 0.18em;
+  font-size: 9px;
+}
+.hero-oracle .ring-a {
+  animation: none;
+}
+.hero-oracle .ring-a::before,
+.hero-oracle .ring-a::after {
+  display: none;
+}
+
+.chat-header {
+  height: auto;
+  min-height: var(--header-h);
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .hero-oracle .oracle-trigrams span { --r: -74px; font-size: 12px; }
+}
+@media (max-width: 768px) {
+  .mobile-only { display: grid !important; }
+  .sidebar-trigger { display: grid !important; }
+  body.sidebar-collapsed .sidebar {
+    width: var(--sidebar-w) !important;
+    flex: none !important;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .sidebar {
+    position: fixed;
+    transform: translateX(-100%);
+    width: var(--sidebar-w) !important;
+    flex: none !important;
+    opacity: 1;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .current-title {
+    max-width: none;
+    letter-spacing: 0.03em;
+    font-size: 14px;
+  }
+  .hero-oracle {
+    width: 168px !important;
+    height: 168px !important;
+  }
+  .hero-oracle .oracle-wheel {
+    width: 148px !important;
+    height: 148px !important;
+  }
+  .hero-oracle .oracle-core {
+    width: 58px;
+    height: 58px;
+  }
+  .hero-oracle .oracle-trigrams { display: block !important; }
+  .hero-oracle .oracle-trigrams span { --r: -62px; font-size: 11px; }
+  .hero-oracle .oracle-core-small { display: block !important; font-size: 8px; }
+  .composer-legal-text {
+    white-space: normal;
+    line-height: 1.5;
+    padding: 0 8px;
+  }
+}
+@media (max-width: 390px) {
+  .hero-oracle { width: 140px !important; height: 140px !important; }
+  .hero-oracle .oracle-wheel { width: 124px !important; height: 124px !important; }
+  .hero-oracle .oracle-trigrams { display: block !important; }
+  .hero-oracle .oracle-trigrams span { --r: -52px; font-size: 10px; }
+}
