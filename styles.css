@@ -1559,3 +1559,717 @@ textarea#userInput::placeholder {
     display: none !important;
   }
 }
+
+/* ==========================================================================
+   v8.0 · 灵台仪式视觉层
+   方向：黑金静谧 + 东方天象仪 + 强仪式动效。保留原功能结构，覆盖表现层。
+   ========================================================================== */
+
+:root {
+  --night-0: #05050a;
+  --night-1: #0b0a12;
+  --night-2: #11101a;
+  --night-3: #181521;
+  --ink-gold: #c6a15b;
+  --ink-gold-bright: #f1d599;
+  --ink-gold-dim: rgba(198,161,91,.38);
+  --ember: #9b3127;
+  --ember-bright: #c64b39;
+  --ivory: #f5efe2;
+  --ivory-dim: #b9b0a3;
+  --hairline: rgba(241,213,153,.16);
+  --hairline-strong: rgba(241,213,153,.3);
+  --ritual-ease: cubic-bezier(.16,1,.3,1);
+}
+
+body.dark-mystic-theme {
+  background:
+    radial-gradient(circle at 50% -15%, rgba(128,92,40,.16), transparent 34%),
+    radial-gradient(circle at 82% 74%, rgba(94,32,36,.12), transparent 28%),
+    linear-gradient(145deg, #05050a 0%, #0b0910 48%, #09080d 100%);
+  color: var(--ivory);
+}
+
+body::after {
+  content:"";
+  position:fixed; inset:0; z-index:9999; pointer-events:none;
+  box-shadow: inset 0 0 150px rgba(0,0,0,.72);
+  mix-blend-mode:multiply;
+}
+
+.astrolabe-bg { opacity:.22; filter:saturate(.7); animation: backgroundBreath 12s ease-in-out infinite; }
+
+.mystic-sky { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.sky-vignette { position:absolute; inset:0; background: radial-gradient(circle at 50% 42%, transparent 0 32%, rgba(0,0,0,.18) 62%, rgba(0,0,0,.64) 100%); }
+.sky-nebula { position:absolute; width:52vw; height:52vw; border-radius:50%; filter:blur(90px); opacity:.16; animation:nebulaDrift 20s ease-in-out infinite alternate; }
+.sky-nebula-a { left:14%; top:-30%; background:rgba(184,137,65,.45); }
+.sky-nebula-b { right:-20%; bottom:-30%; background:rgba(111,39,43,.42); animation-delay:-9s; }
+.constellation { position:absolute; width:360px; height:360px; border:1px solid rgba(221,193,132,.08); border-radius:50%; opacity:.7; }
+.constellation::before,.constellation::after { content:""; position:absolute; inset:16%; border:1px dashed rgba(221,193,132,.09); border-radius:50%; }
+.constellation::after { inset:35%; border-style:solid; }
+.constellation-a { top:8%; right:8%; animation:orbitSlow 46s linear infinite; }
+.constellation-b { width:260px;height:260px;left:27%;bottom:-9%;animation:orbitReverse 60s linear infinite; }
+
+.floating-runes span { position:absolute; font-family:var(--font-serif); color:rgba(236,211,158,.09); font-size:16px; animation:runeFloat 13s ease-in-out infinite; }
+.floating-runes span:nth-child(1){left:8%;top:20%;animation-delay:-2s}.floating-runes span:nth-child(2){left:24%;top:72%;animation-delay:-7s}.floating-runes span:nth-child(3){left:46%;top:10%;animation-delay:-4s}.floating-runes span:nth-child(4){left:72%;top:64%;animation-delay:-9s}.floating-runes span:nth-child(5){left:88%;top:28%;animation-delay:-1s}.floating-runes span:nth-child(6){left:58%;top:84%;animation-delay:-6s}.floating-runes span:nth-child(7){left:34%;top:42%;animation-delay:-11s}.floating-runes span:nth-child(8){left:94%;top:82%;animation-delay:-5s}
+
+.ritual-intro { position:fixed; inset:0; z-index:500; background:#050509; display:grid; place-items:center; align-content:center; gap:18px; pointer-events:none; transition:opacity .85s ease, visibility .85s ease; }
+.ritual-intro.hide { opacity:0; visibility:hidden; }
+.ritual-intro-halo { position:absolute; width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(198,161,91,.12),transparent 62%); animation:introHalo 2s ease-out both; }
+.ritual-intro-seal { position:relative; width:76px;height:76px;display:grid;place-items:center;border:1px solid rgba(241,213,153,.58);color:var(--ink-gold-bright);font:700 34px/1 var(--font-serif);transform:rotate(45deg);animation:introSeal 1.6s var(--ritual-ease) both; }
+.ritual-intro-seal::before{content:"玄";transform:rotate(-45deg)}
+.ritual-intro-seal { font-size:0; }
+.ritual-intro-lines { display:flex;align-items:center;gap:8px;position:relative; }
+.ritual-intro-lines span { display:block;width:46px;height:1px;background:linear-gradient(90deg,transparent,var(--ink-gold),transparent);transform:scaleX(0);animation:lineOpen 1.2s .35s ease forwards; }
+.ritual-intro-lines span:nth-child(2){width:8px;height:8px;border:1px solid var(--ink-gold);background:transparent;transform:rotate(45deg) scale(0);animation:dotOpen .8s .55s ease forwards}
+.ritual-intro p { color:#b9aa8c;font:500 12px/1.6 var(--font-serif);letter-spacing:.34em;text-indent:.34em;opacity:0;animation:fadeUp .8s .65s ease forwards; }
+
+.app-layout { background:transparent; }
+.sidebar { background:linear-gradient(180deg,rgba(13,12,18,.96),rgba(8,8,12,.985)); border-right:1px solid var(--hairline); box-shadow:24px 0 60px rgba(0,0,0,.24); }
+.sidebar::after { content:""; position:absolute; right:-1px; top:15%; bottom:15%; width:1px; background:linear-gradient(transparent,rgba(218,182,111,.5),transparent); opacity:.35; }
+.sidebar-header { padding:19px 18px 14px; }
+.brand-seal { border-radius:2px; transform:rotate(45deg); background:transparent; border:1px solid rgba(199,67,48,.82); box-shadow:inset 0 0 14px rgba(157,47,35,.14),0 0 24px rgba(157,47,35,.11); }
+.brand-seal::first-letter { transform:rotate(-45deg); }
+.brand-seal { color:#e7b7a9; }
+.brand-title { font-size:17px; letter-spacing:.18em; font-family:var(--font-serif); font-weight:700; }
+.brand-desc { color:#8f8168; letter-spacing:.15em; }
+.btn-new-chat { min-height:42px; background:linear-gradient(135deg,rgba(148,43,33,.94),rgba(91,27,24,.94)); border-color:rgba(231,190,144,.18); box-shadow:0 8px 30px rgba(92,24,21,.19); border-radius:4px; letter-spacing:.12em; }
+.btn-new-chat:hover { background:linear-gradient(135deg,#a73e30,#72241e); box-shadow:0 0 0 1px rgba(227,187,116,.15),0 14px 34px rgba(105,34,28,.24); }
+.section-label { letter-spacing:.16em; color:#756d62; text-transform:uppercase; }
+.tools-grid { grid-template-columns:repeat(3,1fr); gap:7px; }
+.tool-item { min-height:66px; background:rgba(255,255,255,.018); border-color:rgba(230,204,153,.08); border-radius:5px; transition:transform .35s var(--ritual-ease), border-color .35s, background .35s, box-shadow .35s; }
+.tool-item:hover { transform:translateY(-3px); background:rgba(213,175,93,.055); border-color:rgba(226,192,124,.32); box-shadow:0 12px 28px rgba(0,0,0,.2),inset 0 0 20px rgba(198,161,91,.025); }
+.tool-seal { border-radius:50%; background:transparent; border-color:rgba(208,174,104,.24); box-shadow:inset 0 0 12px rgba(198,161,91,.06); }
+.history-item { border-left:1px solid transparent; border-radius:2px; }
+.history-item.active { background:linear-gradient(90deg,rgba(194,153,79,.09),transparent);border:0;border-left:1px solid var(--ink-gold); }
+.sidebar-footer { background:rgba(6,6,10,.72);border-top:1px solid rgba(239,211,158,.09); }
+.footer-btn { border-radius:3px; }
+
+.main-content { background:transparent; }
+.chat-header { background:linear-gradient(180deg,rgba(7,7,11,.86),rgba(7,7,11,.62)); backdrop-filter:blur(18px) saturate(1.15); border-bottom:1px solid rgba(229,201,144,.09); }
+.current-title { font-family:var(--font-serif);letter-spacing:.16em;font-weight:600; }
+.status-badge { background:transparent;border:0;color:#8e846f; }
+.status-dot { width:5px;height:5px;background:#a98a4e;box-shadow:0 0 10px rgba(210,177,107,.55); }
+.pill-btn,.icon-btn { border-color:rgba(234,207,154,.1);background:rgba(255,255,255,.018); }
+.pill-btn:hover,.icon-btn:hover { border-color:rgba(234,207,154,.26);background:rgba(198,161,91,.045); }
+
+.chat-container { scrollbar-color:rgba(190,156,91,.25) transparent; }
+.chat-inner { max-width:1030px; }
+.welcome-card { padding:34px 28px 28px; max-width:980px; margin:0 auto; animation:welcomeReveal 1.1s .1s var(--ritual-ease) both; }
+.hero-ritual-box { min-height:270px; display:grid;grid-template-columns:310px 1fr;align-items:center;gap:34px;margin:4px 0 25px;position:relative; }
+.hero-ritual-box::before { content:""; position:absolute; left:305px; top:12%; bottom:12%; width:1px; background:linear-gradient(transparent,rgba(222,190,124,.28),transparent); }
+.hero-oracle { position:relative;width:280px;height:280px;margin:auto;display:grid;place-items:center; }
+.oracle-halo { position:absolute;border-radius:50%;border:1px solid rgba(225,194,131,.08); }
+.halo-a { inset:5%; animation:haloPulse 4.6s ease-in-out infinite; }
+.halo-b { inset:14%; animation:haloPulse 4.6s 1.2s ease-in-out infinite reverse; }
+.oracle-wheel { position:relative;width:220px;height:220px;border-radius:50%;display:grid;place-items:center; }
+.oracle-wheel-ring { position:absolute;border-radius:50%; }
+.ring-a { inset:0;border:1px solid rgba(226,193,124,.35);box-shadow:0 0 60px rgba(184,136,55,.08),inset 0 0 40px rgba(184,136,55,.03);animation:orbitSlow 36s linear infinite; }
+.ring-a::before,.ring-a::after{content:"";position:absolute;left:50%;top:-4px;width:8px;height:8px;background:#b69351;border:1px solid #e0c58b;transform:translateX(-50%) rotate(45deg);box-shadow:0 0 16px rgba(210,172,94,.35)}
+.ring-a::after{top:auto;bottom:-4px}
+.ring-b { inset:21px;border:1px dashed rgba(226,193,124,.25);animation:orbitReverse 24s linear infinite; }
+.ring-c { inset:48px;border:1px solid rgba(167,55,44,.42);animation:ringBreathe 4s ease-in-out infinite; }
+.oracle-trigrams span { position:absolute;left:50%;top:50%;font:600 13px/1 var(--font-serif);color:#bca571;transform-origin:0 0; }
+.oracle-trigrams span:nth-child(1){transform:rotate(0deg) translateY(-103px) rotate(0deg)}
+.oracle-trigrams span:nth-child(2){transform:rotate(45deg) translateY(-103px) rotate(-45deg)}
+.oracle-trigrams span:nth-child(3){transform:rotate(90deg) translateY(-103px) rotate(-90deg)}
+.oracle-trigrams span:nth-child(4){transform:rotate(135deg) translateY(-103px) rotate(-135deg)}
+.oracle-trigrams span:nth-child(5){transform:rotate(180deg) translateY(-103px) rotate(-180deg)}
+.oracle-trigrams span:nth-child(6){transform:rotate(225deg) translateY(-103px) rotate(-225deg)}
+.oracle-trigrams span:nth-child(7){transform:rotate(270deg) translateY(-103px) rotate(-270deg)}
+.oracle-trigrams span:nth-child(8){transform:rotate(315deg) translateY(-103px) rotate(-315deg)}
+.oracle-core { width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,rgba(153,48,38,.18),rgba(9,8,13,.9) 70%);border:1px solid rgba(195,65,49,.45);box-shadow:0 0 50px rgba(133,38,31,.13),inset 0 0 24px rgba(198,161,91,.04); }
+.oracle-core strong { font:600 27px/1 var(--font-serif);color:#e5c480;letter-spacing:0; }
+.oracle-core-small { position:absolute;font:500 8px/1 var(--font-serif);letter-spacing:.3em;color:#8b7959;transform:translateY(27px); }
+.hero-text-content { max-width:540px;padding-left:12px; }
+.hero-tag { display:flex;align-items:center;gap:10px;color:#8f8065;font:500 10px/1 var(--font-title);letter-spacing:.22em;text-transform:uppercase;margin-bottom:15px; }
+.tag-line { width:36px;height:1px;background:linear-gradient(90deg,transparent,#9c7d45); }
+.tag-line:last-child{background:linear-gradient(90deg,#9c7d45,transparent)}
+.hero-title { margin:0 0 15px;display:flex;flex-direction:column;font-family:var(--font-serif);line-height:1.1;letter-spacing:.06em; }
+.hero-title span { font-size:30px;font-weight:500;color:#f1eadc; }
+.hero-title em { margin-top:7px;font-size:42px;font-weight:700;color:transparent;background:linear-gradient(100deg,#c29c55,#f0d89d 48%,#a47d3f);background-clip:text;-webkit-background-clip:text;font-style:normal;text-shadow:0 0 32px rgba(202,166,92,.07); }
+.hero-desc { max-width:510px;font:400 13px/1.9 var(--font-serif);color:#8f887e;letter-spacing:.045em; }
+.ritual-steps { display:flex;align-items:center;gap:9px;margin-top:21px;color:#8d7e65;font:500 10px/1 var(--font-serif);letter-spacing:.08em; }
+.ritual-steps span { display:flex;align-items:center;gap:6px; }
+.ritual-steps b { width:22px;height:22px;display:grid;place-items:center;border:1px solid rgba(204,166,91,.28);border-radius:50%;color:#c8a968;font-weight:500; }
+.ritual-steps i { width:34px;height:1px;background:linear-gradient(90deg,rgba(198,161,91,.12),rgba(198,161,91,.34),rgba(198,161,91,.12)); }
+.divider-text { color:#736c62;font-family:var(--font-serif);letter-spacing:.2em;font-size:10px;margin:12px 0 14px; }
+.divider-text::before,.divider-text::after { background:linear-gradient(90deg,transparent,rgba(219,189,126,.18)); }
+.divider-text::after{background:linear-gradient(90deg,rgba(219,189,126,.18),transparent)}
+
+.doors-grid { grid-template-columns:repeat(3,1fr);gap:10px;perspective:900px; }
+.door-card { position:relative;overflow:hidden;min-height:92px;padding:16px 14px;border-radius:5px;background:linear-gradient(145deg,rgba(255,255,255,.027),rgba(255,255,255,.012));border:1px solid rgba(229,200,141,.11);transition:transform .45s var(--ritual-ease),border-color .35s,background .35s,box-shadow .45s;transform-style:preserve-3d;outline:none; }
+.door-card::before { content:"";position:absolute;inset:-1px;background:radial-gradient(180px circle at var(--mx,50%) var(--my,50%),rgba(226,187,111,.12),transparent 54%);opacity:0;transition:opacity .3s;pointer-events:none; }
+.door-card::after { content:attr(data-ritual-index);position:absolute;right:10px;top:8px;font:400 9px/1 var(--font-title);color:rgba(201,168,100,.24);letter-spacing:.12em; }
+.door-card:hover,.door-card:focus-visible { transform:translateY(-6px) rotateX(1.5deg);border-color:rgba(225,189,116,.32);background:linear-gradient(145deg,rgba(211,174,99,.07),rgba(255,255,255,.012));box-shadow:0 22px 48px rgba(0,0,0,.32),inset 0 0 30px rgba(203,167,92,.025); }
+.door-card:hover::before,.door-card:focus-visible::before{opacity:1}
+.door-seal { position:relative;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle,rgba(197,158,84,.10),rgba(197,158,84,.02));border:1px solid rgba(214,178,105,.26);color:#d5b26c;font:600 16px/1 var(--font-serif);box-shadow:inset 0 0 16px rgba(208,169,90,.05); }
+.door-seal.red { color:#d98b75;border-color:rgba(181,69,52,.36);background:rgba(141,42,34,.08); }
+.door-seal.gold { color:#efd28d;box-shadow:0 0 18px rgba(209,171,91,.06),inset 0 0 16px rgba(208,169,90,.08); }
+.door-titles strong { font:600 14px/1.3 var(--font-serif);letter-spacing:.08em;color:#eee6d7; }
+.door-titles span { margin-top:5px;font:400 10.5px/1.4 var(--font-serif);color:#786f64;letter-spacing:.03em; }
+.welcome-footer-note { margin-top:18px;border:0;background:transparent;color:#625d56;font:400 10px/1.7 var(--font-serif);letter-spacing:.05em; }
+
+/* 底部提问区：像占案，不像聊天产品 */
+.composer-container { background:linear-gradient(180deg,transparent,rgba(5,5,9,.93) 28%);padding-top:18px; }
+.quick-topics-bar { opacity:.82; }
+.topic-chip { border-radius:2px;background:rgba(255,255,255,.018);border-color:rgba(229,200,141,.1);font-family:var(--font-serif);color:#8e8579;transition:.28s var(--ritual-ease); }
+.topic-chip:hover { transform:translateY(-2px);border-color:rgba(215,179,106,.28);color:#d6c7ac;background:rgba(198,161,91,.04); }
+.topic-chip.highlight { background:rgba(148,46,37,.1);border-color:rgba(180,70,52,.25);color:#d5b0a5; }
+.composer-input-card { border-radius:6px;background:rgba(14,13,19,.92);border:1px solid rgba(229,200,141,.14);box-shadow:0 20px 60px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.02);transition:border-color .35s,box-shadow .35s; }
+.composer-input-card:focus-within { border-color:rgba(217,181,111,.38);box-shadow:0 20px 60px rgba(0,0,0,.38),0 0 0 1px rgba(204,164,88,.05),0 0 38px rgba(201,161,81,.04); }
+textarea#userInput { font-family:var(--font-serif);color:#ede4d5;letter-spacing:.025em; }
+textarea#userInput::placeholder{color:#655f57}
+.upload-btn { color:#8f8065; }
+.send-btn { border-radius:50%;width:38px;height:38px;background:radial-gradient(circle at 35% 30%,#b75342,#7c281f 70%);box-shadow:0 5px 22px rgba(124,40,31,.25); }
+.send-btn:not(:disabled):hover { transform:rotate(8deg) scale(1.06);box-shadow:0 8px 28px rgba(143,46,35,.35); }
+.composer-legal-text { color:#5d5852;letter-spacing:.08em;font-family:var(--font-serif); }
+
+/* 消息：取消“AI 气泡感”，改为签批式阅读 */
+.msg-row { animation:messageRise .65s var(--ritual-ease) both; }
+.msg-row.assistant { padding:10px 0 22px; }
+.msg-avatar { border-radius:50%;font-family:var(--font-serif); }
+.ai-avatar { background:transparent;border:1px solid rgba(208,166,83,.32);color:#d7b873;box-shadow:inset 0 0 16px rgba(209,170,92,.06); }
+.user-avatar { background:rgba(143,45,35,.13);border:1px solid rgba(172,65,49,.22);color:#c28a7d; }
+.msg-meta { font-family:var(--font-serif);letter-spacing:.12em;color:#786f63; }
+.msg-row.assistant .msg-bubble { background:linear-gradient(145deg,rgba(255,255,255,.022),rgba(255,255,255,.008));border:1px solid rgba(225,194,130,.10);border-left:2px solid rgba(188,147,72,.48);border-radius:3px;padding:20px 22px;box-shadow:0 16px 40px rgba(0,0,0,.16);font-family:var(--font-serif);line-height:1.92;color:#dcd4c8; }
+.msg-row.user .msg-bubble { background:rgba(134,42,33,.12);border:1px solid rgba(166,61,45,.18);border-radius:3px;font-family:var(--font-serif);color:#e6dbcb; }
+.msg-bubble .section-title { color:#e0bf79;border-color:#9a3a2d;font-family:var(--font-serif);letter-spacing:.09em; }
+.msg-actions { border-top:1px solid rgba(218,186,121,.08); }
+.msg-action-btn { border-radius:2px;color:#756e64; }
+.msg-action-btn:hover { color:#c7aa72;background:rgba(198,161,91,.035); }
+.typing-cursor { width:8px;height:14px;background:#b99049;box-shadow:0 0 12px rgba(211,175,99,.4); }
+
+/* 模态场景 */
+.modal-backdrop { background:rgba(2,2,5,.78);backdrop-filter:blur(16px) saturate(.8);perspective:1200px; }
+.modal-backdrop.show .ritual-window { animation:ritualWindowIn .62s var(--ritual-ease) both; }
+.ritual-window { position:relative;border-radius:6px;background:linear-gradient(145deg,rgba(20,18,25,.985),rgba(10,10,14,.99));border:1px solid rgba(224,192,126,.2);box-shadow:0 36px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.015),inset 0 0 70px rgba(196,159,84,.015);overflow:hidden; }
+.ritual-window::before { content:"";position:absolute;left:10%;right:10%;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(238,207,143,.55),transparent); }
+.ritual-window::after { content:"";position:absolute;width:180px;height:180px;right:-90px;top:-90px;border:1px solid rgba(209,174,104,.08);border-radius:50%;box-shadow:0 0 0 24px rgba(209,174,104,.018),0 0 0 50px rgba(209,174,104,.01);pointer-events:none; }
+.modal-header { border-bottom:1px solid rgba(224,192,126,.1);padding:16px 18px; }
+.modal-title { display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:9px;font-family:var(--font-serif);letter-spacing:.08em; }
+.modal-title>i { grid-row:1/3;color:#b89554; }
+.modal-kicker { grid-column:2;font:400 9.5px/1.5 var(--font-serif);letter-spacing:.08em;color:#685f52;margin-top:2px; }
+.modal-close-btn { border-radius:50%; }
+.modal-body { padding:20px; }
+.modal-footer { background:rgba(5,5,8,.35);border-top:1px solid rgba(224,192,126,.08); }
+.btn { border-radius:3px;font-family:var(--font-serif);letter-spacing:.06em;transition:.3s var(--ritual-ease); }
+.btn-primary { background:linear-gradient(135deg,#943328,#70241e);border-color:rgba(232,190,141,.14);box-shadow:0 8px 26px rgba(121,39,31,.18); }
+.btn-gold { background:linear-gradient(135deg,#d0aa60,#a17c3b);color:#161108;border-color:rgba(247,224,179,.3);box-shadow:0 8px 24px rgba(170,127,55,.12); }
+.btn-gold:hover:not(:disabled){background:linear-gradient(135deg,#e5c783,#b9924c);box-shadow:0 12px 32px rgba(191,148,73,.18)}
+.input-modern { border-radius:3px;background:rgba(255,255,255,.022);border-color:rgba(227,195,132,.12);font-family:var(--font-serif);color:#e9dfcf; }
+.input-modern:focus { border-color:rgba(221,183,107,.42);box-shadow:0 0 0 2px rgba(195,151,68,.04),0 0 24px rgba(195,151,68,.03); }
+.form-item label { color:#8e826e;font-family:var(--font-serif);letter-spacing:.08em; }
+
+/* Tarotara-inspired ritual principle: shuffle -> draw -> user reveal, rendered in original visual language */
+.tarot-deck-stage { height:132px;position:relative;display:grid;place-items:center;margin:8px 0 12px;overflow:hidden;border-radius:5px;background:radial-gradient(ellipse at center,rgba(199,160,81,.055),transparent 62%);border:1px solid rgba(222,190,125,.06); }
+.deck-glow { position:absolute;width:200px;height:70px;border-radius:50%;background:rgba(195,151,69,.09);filter:blur(28px);animation:deckGlow 3.5s ease-in-out infinite; }
+.deck-stack { position:relative;width:72px;height:108px;transform-style:preserve-3d; }
+.deck-card-mini { position:absolute;inset:0;border-radius:5px;border:1px solid rgba(231,202,142,.36);background:linear-gradient(145deg,#221c2b,#0b0a10);box-shadow:0 9px 22px rgba(0,0,0,.32);transform:translateX(var(--x,0)) rotate(var(--r,0deg));transition:transform 1s var(--ritual-ease); }
+.deck-card-mini::before { content:"";position:absolute;inset:8px;border:1px solid rgba(202,164,88,.28);background:radial-gradient(circle,rgba(182,142,65,.14),transparent 45%); }
+.deck-card-mini::after { content:"✦";position:absolute;inset:0;display:grid;place-items:center;color:rgba(224,191,124,.52);font-size:16px; }
+.tarot-deck-stage.shuffling .deck-card-mini:nth-child(odd) { animation:shuffleLeft .72s ease-in-out infinite alternate; }
+.tarot-deck-stage.shuffling .deck-card-mini:nth-child(even) { animation:shuffleRight .72s .08s ease-in-out infinite alternate; }
+.deck-instruction { position:absolute;bottom:7px;color:#766a58;font:400 9.5px/1 var(--font-serif);letter-spacing:.14em; }
+.tarot-board { border-radius:5px;background:linear-gradient(180deg,rgba(6,6,10,.8),rgba(15,13,19,.76));border:1px solid rgba(224,191,124,.09); }
+.tarot-card-slot { perspective:1000px; }
+.tarot-card { transition:transform .4s var(--ritual-ease),filter .4s;cursor:pointer; }
+.tarot-card.dealt { animation:cardDeal .72s var(--delay,0s) var(--ritual-ease) both; }
+.tarot-card.ready-to-flip { filter:drop-shadow(0 0 11px rgba(205,169,93,.16));animation:cardInvite 2s ease-in-out infinite; }
+.tarot-card.ready-to-flip:hover { transform:translateY(-5px) rotateZ(.6deg); }
+.tarot-inner { transition:transform .8s cubic-bezier(.2,.75,.15,1); }
+.tarot-back { background:radial-gradient(circle at 50% 42%,rgba(171,126,55,.17),transparent 38%),linear-gradient(145deg,#201a29,#0b0910);border-color:rgba(223,190,123,.4); }
+.tarot-back span { font-family:var(--font-serif);letter-spacing:.22em;color:#857354; }
+.card-back-geom { animation:orbitSlow 22s linear infinite; }
+.tarot-front { background:radial-gradient(circle at 50% 24%,rgba(204,166,88,.11),transparent 33%),linear-gradient(160deg,#1d1923,#0a090e);border-color:rgba(225,192,126,.4); }
+.tarot-card.flipped .tarot-front { box-shadow:0 0 38px rgba(205,164,84,.08); }
+.tarot-result-desc { border-radius:3px;background:rgba(198,161,91,.035);border-color:rgba(217,182,109,.13);font-family:var(--font-serif); }
+
+/* 六爻：铜钱更像铜器，卦线逐爻显现 */
+.coins-stage { position:relative;overflow:hidden;background:radial-gradient(circle at center,rgba(189,145,65,.07),transparent 55%),#09090d;border-color:rgba(223,190,125,.09); }
+.coins-stage::after { content:"";position:absolute;left:10%;right:10%;bottom:8px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,166,97,.16),transparent); }
+.coin { filter:drop-shadow(0 8px 11px rgba(0,0,0,.35)); }
+.coin.flipping { animation:coinRitual .9s cubic-bezier(.2,.75,.15,1); }
+.coin-face { border-color:#a47c38;box-shadow:inset 0 0 0 3px rgba(51,34,8,.15); }
+.hexagram-lines>div { animation:hexLineReveal .5s var(--ritual-ease) both; }
+
+/* 梅花 / 小六壬 */
+.meihua-result-panel.showing .m-card { animation:guaCardIn .65s var(--delay,0s) var(--ritual-ease) both; }
+.xlr-palm-grid { position:relative; }
+.xlr-cell { border-radius:3px;background:rgba(255,255,255,.018);border-color:rgba(224,191,124,.09); }
+.xlr-cell.active { background:radial-gradient(circle,rgba(206,168,91,.16),rgba(206,168,91,.035));border-color:rgba(228,194,127,.42);box-shadow:0 0 24px rgba(193,153,75,.08);transform:scale(1.035); }
+
+/* 八字输入改成资料卷宗感 */
+#modalBazi .form-grid-2 { padding:14px;border:1px solid rgba(224,191,124,.08);background:rgba(255,255,255,.012);border-radius:4px; }
+.bazi-table-wrap { animation:inkReveal .72s var(--ritual-ease) both; }
+
+/* 灵签 */
+.lot-cylinder-wrap { min-height:170px;display:grid;place-items:center;position:relative; }
+.lot-cylinder-wrap::before { content:"";position:absolute;width:170px;height:80px;border-radius:50%;background:rgba(180,134,61,.06);filter:blur(25px);bottom:6px; }
+.lot-cylinder.ritual-shake { animation:lotShake 1.35s cubic-bezier(.2,.7,.2,1); }
+.lot-poem-card { animation:scrollUnfurl .8s var(--ritual-ease) both; }
+
+/* 梦境 */
+.dream-orb { width:92px;height:92px;margin:0 auto 18px;position:relative;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(186,164,128,.12);background:radial-gradient(circle,rgba(140,126,160,.09),transparent 65%); }
+.dream-orb span { font:500 24px/1 var(--font-serif);color:#b4a7bd;z-index:2; }
+.dream-orb i { position:absolute;border-radius:50%;border:1px solid rgba(171,154,190,.12);animation:dreamOrbit 9s linear infinite; }
+.dream-orb i:nth-child(1){inset:8px}.dream-orb i:nth-child(2){inset:18px;animation-direction:reverse;animation-duration:7s}.dream-orb i:nth-child(3){width:4px;height:4px;background:#b9a7c4;border:0;box-shadow:0 0 12px #9b87ad;animation:dreamSatellite 5s linear infinite}
+.dream-tags-container .d-chip { border-radius:999px;background:rgba(133,115,154,.035);border-color:rgba(185,160,196,.11);transition:.25s; }
+.dream-tags-container .d-chip:hover { background:rgba(150,127,168,.09);border-color:rgba(196,172,207,.22);transform:translateY(-1px); }
+
+/* 木鱼 */
+.muyu-wood { filter:drop-shadow(0 14px 22px rgba(0,0,0,.3)); }
+.muyu-wood.hit { animation:muyuHit .22s ease; }
+.muyu-arena::before { content:"";position:absolute;width:160px;height:70px;border-radius:50%;background:rgba(191,147,74,.055);filter:blur(24px);transform:translateY(62px); }
+
+/* 载入推演 */
+.loading-overlay { background:rgba(3,3,6,.82);backdrop-filter:blur(18px); }
+.loading-box { min-width:280px;background:transparent;border:0;box-shadow:none; }
+.loading-box h3 { font:600 17px/1.5 var(--font-serif);letter-spacing:.16em;color:#e4d5b8; }
+.loading-box p { font:400 10.5px/1.6 var(--font-serif);letter-spacing:.1em;color:#756b5d; }
+.astrolabe-spinner { width:82px;height:82px;margin-bottom:18px; }
+.spinner-ring { border-width:1px; }
+.ring-1 { border-top-color:#b34435;border-right-color:rgba(179,68,53,.16);animation-duration:2.2s; }
+.ring-2 { border-bottom-color:#c6a15b;border-left-color:rgba(198,161,91,.15);animation-duration:3.1s; }
+.spinner-core { width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(203,166,92,.24);font-family:var(--font-serif); }
+
+/* 可访问性与键盘 */
+button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outline:1px solid rgba(236,205,143,.7);outline-offset:3px; }
+
+@keyframes backgroundBreath { 0%,100%{opacity:.18} 50%{opacity:.28} }
+@keyframes nebulaDrift { from{transform:translate3d(-2%,0,0) scale(.95)} to{transform:translate3d(3%,4%,0) scale(1.08)} }
+@keyframes runeFloat { 0%,100%{transform:translateY(0);opacity:.045} 50%{transform:translateY(-18px);opacity:.12} }
+@keyframes orbitSlow { to{transform:rotate(360deg)} }
+@keyframes orbitReverse { to{transform:rotate(-360deg)} }
+@keyframes ringBreathe { 0%,100%{transform:scale(.98);opacity:.55} 50%{transform:scale(1.04);opacity:1} }
+@keyframes haloPulse { 0%,100%{transform:scale(.94);opacity:.25} 50%{transform:scale(1.06);opacity:.8} }
+@keyframes introHalo { from{transform:scale(.45);opacity:0} to{transform:scale(1.25);opacity:1} }
+@keyframes introSeal { 0%{opacity:0;transform:rotate(45deg) scale(.65)} 55%{opacity:1;transform:rotate(45deg) scale(1.08)} 100%{opacity:1;transform:rotate(45deg) scale(1)} }
+@keyframes lineOpen { to{transform:scaleX(1)} }
+@keyframes dotOpen { to{transform:rotate(45deg) scale(1)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes welcomeReveal { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes messageRise { from{opacity:0;transform:translateY(9px)} to{opacity:1;transform:translateY(0)} }
+@keyframes ritualWindowIn { from{opacity:0;transform:translateY(18px) scale(.975) rotateX(2deg)} to{opacity:1;transform:none} }
+@keyframes deckGlow { 0%,100%{transform:scale(.8);opacity:.45} 50%{transform:scale(1.15);opacity:.9} }
+@keyframes shuffleLeft { from{transform:translateX(-28px) rotate(-13deg) translateY(0)} to{transform:translateX(18px) rotate(10deg) translateY(-3px)} }
+@keyframes shuffleRight { from{transform:translateX(27px) rotate(13deg) translateY(-2px)} to{transform:translateX(-18px) rotate(-9deg) translateY(2px)} }
+@keyframes cardDeal { from{opacity:0;transform:translateY(-48px) scale(.7) rotate(8deg)} to{opacity:1;transform:none} }
+@keyframes cardInvite { 0%,100%{filter:drop-shadow(0 0 6px rgba(205,169,93,.08))} 50%{filter:drop-shadow(0 0 18px rgba(205,169,93,.22))} }
+@keyframes coinRitual { 0%{transform:translateY(0) rotateX(0) rotateZ(0)} 45%{transform:translateY(-46px) rotateX(900deg) rotateZ(30deg) scale(1.08)} 100%{transform:translateY(0) rotateX(1800deg) rotateZ(0)} }
+@keyframes hexLineReveal { from{opacity:0;transform:translateX(-18px) scaleX(.6);transform-origin:left} to{opacity:1;transform:none} }
+@keyframes guaCardIn { from{opacity:0;transform:translateY(12px) rotateY(7deg)} to{opacity:1;transform:none} }
+@keyframes inkReveal { from{opacity:0;filter:blur(5px);transform:translateY(8px)} to{opacity:1;filter:blur(0);transform:none} }
+@keyframes lotShake { 0%,100%{transform:rotate(0)} 10%{transform:rotate(-6deg) translateX(-4px)} 20%{transform:rotate(8deg) translateX(5px)} 32%{transform:rotate(-9deg) translateX(-4px)} 46%{transform:rotate(7deg) translateX(3px)} 62%{transform:rotate(-5deg)} 78%{transform:rotate(3deg)} }
+@keyframes scrollUnfurl { from{opacity:0;transform:scaleY(.45) translateY(-18px);transform-origin:top;filter:blur(3px)} to{opacity:1;transform:none;filter:none} }
+@keyframes dreamOrbit { to{transform:rotate(360deg)} }
+@keyframes dreamSatellite { from{transform:rotate(0deg) translateX(39px) rotate(0deg)} to{transform:rotate(360deg) translateX(39px) rotate(-360deg)} }
+@keyframes muyuHit { 0%{transform:scale(1)} 40%{transform:scale(.9) rotate(-2deg)} 100%{transform:scale(1)} }
+
+@media (max-width: 900px) {
+  .hero-ritual-box { grid-template-columns:230px 1fr;min-height:230px;gap:22px; }
+  .hero-oracle{width:220px;height:220px}.oracle-wheel{width:180px;height:180px}
+  .oracle-trigrams span:nth-child(1){transform:rotate(0deg) translateY(-83px) rotate(0deg)}
+  .oracle-trigrams span:nth-child(2){transform:rotate(45deg) translateY(-83px) rotate(-45deg)}
+  .oracle-trigrams span:nth-child(3){transform:rotate(90deg) translateY(-83px) rotate(-90deg)}
+  .oracle-trigrams span:nth-child(4){transform:rotate(135deg) translateY(-83px) rotate(-135deg)}
+  .oracle-trigrams span:nth-child(5){transform:rotate(180deg) translateY(-83px) rotate(-180deg)}
+  .oracle-trigrams span:nth-child(6){transform:rotate(225deg) translateY(-83px) rotate(-225deg)}
+  .oracle-trigrams span:nth-child(7){transform:rotate(270deg) translateY(-83px) rotate(-270deg)}
+  .oracle-trigrams span:nth-child(8){transform:rotate(315deg) translateY(-83px) rotate(-315deg)}
+  .hero-ritual-box::before{left:228px}.hero-title em{font-size:34px}.hero-title span{font-size:25px}
+}
+
+@media (max-width: 768px) {
+  .chat-header { height:54px; }
+  .welcome-card { padding:18px 12px 20px; }
+  .hero-ritual-box { display:flex;flex-direction:column;min-height:auto;gap:8px;margin-top:0;text-align:center; }
+  .hero-ritual-box::before{display:none}
+  .hero-oracle { width:174px;height:174px;margin-top:-6px; }
+  .oracle-wheel { width:146px;height:146px; }
+  .ring-b{inset:16px}.ring-c{inset:34px}.oracle-core{width:56px;height:56px}.oracle-core strong{font-size:22px}.oracle-core-small{display:none}
+  .oracle-trigrams span{font-size:10px}
+  .oracle-trigrams span:nth-child(1){transform:rotate(0deg) translateY(-68px) rotate(0deg)}
+  .oracle-trigrams span:nth-child(2){transform:rotate(45deg) translateY(-68px) rotate(-45deg)}
+  .oracle-trigrams span:nth-child(3){transform:rotate(90deg) translateY(-68px) rotate(-90deg)}
+  .oracle-trigrams span:nth-child(4){transform:rotate(135deg) translateY(-68px) rotate(-135deg)}
+  .oracle-trigrams span:nth-child(5){transform:rotate(180deg) translateY(-68px) rotate(-180deg)}
+  .oracle-trigrams span:nth-child(6){transform:rotate(225deg) translateY(-68px) rotate(-225deg)}
+  .oracle-trigrams span:nth-child(7){transform:rotate(270deg) translateY(-68px) rotate(-270deg)}
+  .oracle-trigrams span:nth-child(8){transform:rotate(315deg) translateY(-68px) rotate(-315deg)}
+  .hero-text-content { padding:0; }
+  .hero-tag { justify-content:center;margin-bottom:9px;font-size:8.5px; }
+  .tag-line{width:24px}
+  .hero-title span{font-size:19px}.hero-title em{font-size:27px;margin-top:4px}
+  .hero-desc { font-size:10.8px;line-height:1.75;margin:0 auto;max-width:92%; }
+  .ritual-steps { justify-content:center;margin-top:12px;gap:6px;font-size:9px; }
+  .ritual-steps b{width:19px;height:19px}.ritual-steps i{width:18px}
+  .doors-grid { grid-template-columns:repeat(2,1fr);gap:7px; }
+  .door-card { min-height:72px;padding:11px 9px; }
+  .door-seal{width:31px;height:31px;font-size:13px}.door-titles strong{font-size:11.5px}.door-titles span{font-size:9px}
+  .quick-topics-bar { padding-bottom:6px; }
+  .composer-container { padding-top:8px; }
+  .composer-input-card { border-radius:5px; }
+  .modal-body { padding:15px; }
+  .ritual-window { border-radius:4px; }
+  .tarot-deck-stage { height:110px; }
+  .tarot-board { gap:5px;padding:10px 5px; }
+  .tarot-card { width:76px;height:116px; }
+  .slot-label { font-size:9px; }
+}
+
+@media (max-width: 390px) {
+  .hero-oracle{width:150px;height:150px}.oracle-wheel{width:128px;height:128px}
+  .oracle-trigrams{display:none}.hero-title em{font-size:24px}
+  .doors-grid{gap:5px}.door-card{padding:9px 7px}.door-seal{width:28px;height:28px}
+  .ritual-steps i{width:10px}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after { animation-duration:.001ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.001ms !important; }
+  .ritual-intro{display:none}
+}
+
+/* ===== v8.1 correctness + finishing layer ===== */
+.brand-seal{transform:none!important;position:relative;overflow:hidden}
+.brand-seal::after{content:"";position:absolute;inset:5px;border:1px solid rgba(232,179,163,.14);transform:rotate(45deg);pointer-events:none}
+.brand-seal::first-letter{transform:none}
+.muyu-arena{position:relative;isolation:isolate}
+.muyu-arena>*{position:relative;z-index:1}
+.bazi-review-card{display:flex;gap:14px;align-items:center;padding:15px 16px;border:1px solid rgba(209,170,92,.16);background:linear-gradient(135deg,rgba(190,145,65,.055),rgba(255,255,255,.012));border-radius:4px;box-shadow:inset 0 1px rgba(255,255,255,.02)}
+.bazi-review-seal{width:46px;height:46px;flex:0 0 auto;display:grid;place-items:center;border:1px solid rgba(185,63,44,.58);color:#d28b78;font:700 19px/1 var(--font-serif);background:rgba(142,39,31,.08);box-shadow:inset 0 0 18px rgba(139,42,31,.08)}
+.bazi-review-card h4{margin:0 0 6px;font:600 13px/1.6 var(--font-serif);letter-spacing:.06em;color:#e2d4bb}
+.bazi-review-card p{margin:0;font:400 11.5px/1.75 var(--font-serif);color:#8e8375}
+.almanac-sheet{display:grid;grid-template-columns:115px 1fr;gap:16px;align-items:stretch;border:1px solid rgba(204,168,96,.12);background:linear-gradient(135deg,rgba(176,132,57,.045),rgba(255,255,255,.012));padding:15px;border-radius:4px;animation:inkReveal .65s var(--ritual-ease) both}
+.almanac-date-mark{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:112px;border-right:1px solid rgba(206,168,91,.12);color:#cbb58a}
+.almanac-date-mark small{font-size:10px;letter-spacing:.18em;color:#6f675d}
+.almanac-date-mark strong{font:600 23px/1.6 var(--font-serif);letter-spacing:.05em;color:#dfc99f}
+.almanac-date-mark span{font-size:11px;color:#8c8172}
+.almanac-pending{display:flex;flex-direction:column;justify-content:center;text-align:left}
+.almanac-pending b{font:600 14px/1.7 var(--font-serif);letter-spacing:.08em;color:#d0b47d}
+.almanac-pending p{margin:5px 0 0;font:400 11.5px/1.85 var(--font-serif);color:#81786d}
+.tarot-card:focus-visible{outline:1px solid rgba(236,205,143,.8);outline-offset:6px}
+.modal-backdrop.show .modal-kicker{animation:kickerIn .72s .18s var(--ritual-ease) both}
+@keyframes kickerIn{from{opacity:0;transform:translateY(5px);letter-spacing:.02em}to{opacity:1;transform:none;letter-spacing:.08em}}
+@media(max-width:560px){.almanac-sheet{grid-template-columns:1fr}.almanac-date-mark{border-right:0;border-bottom:1px solid rgba(206,168,91,.1);padding-bottom:10px;min-height:auto}.bazi-review-card{align-items:flex-start}}
+
+/* ==========================================================================
+   v8.2 · 补全缺失样式 + 桌面/法器可见性修复
+   ========================================================================== */
+.w-100 { width: 100%; }
+.text-center { text-align: center; }
+.mobile-only { display: none !important; }
+.sidebar-trigger { display: none !important; }
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 45;
+}
+.sidebar-overlay.show { display: block; }
+
+.footer-btn {
+  white-space: nowrap;
+  padding: 7px 6px;
+}
+.footer-btn span {
+  white-space: nowrap;
+}
+.send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.attach-preview {
+  padding: 0 2px 8px;
+}
+.thumbs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.thumb-item {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+}
+.thumb-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgba(224, 191, 124, 0.22);
+  display: block;
+}
+.thumb-del-btn {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #9d2f23;
+  color: #f6ece4;
+  font-size: 12px;
+  line-height: 18px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.thumbs-in-msg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.thumbs-in-msg img {
+  width: 92px;
+  height: 92px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgba(224, 191, 124, 0.18);
+}
+
+.tab-pills {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tab-pill {
+  flex: 1;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid rgba(224, 191, 124, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  color: #8e826e;
+  border-radius: 3px;
+  font-family: var(--font-serif);
+  letter-spacing: 0.06em;
+}
+.tab-pill.active {
+  border-color: rgba(221, 183, 107, 0.42);
+  color: #e2d4bb;
+  background: rgba(198, 161, 91, 0.08);
+}
+.info-banner {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(224, 191, 124, 0.1);
+  background: rgba(198, 161, 91, 0.04);
+  color: #8e8375;
+  font: 400 12px/1.7 var(--font-serif);
+}
+.meihua-section { margin-top: 4px; }
+.meihua-cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 0 10px;
+}
+.m-card {
+  padding: 12px 10px;
+  border: 1px solid rgba(224, 191, 124, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  text-align: center;
+  min-height: 92px;
+}
+.m-card h4 {
+  margin: 0 0 8px;
+  font: 500 11px/1 var(--font-serif);
+  letter-spacing: 0.14em;
+  color: #8e826e;
+}
+.m-val {
+  font: 600 13px/1.5 var(--font-serif);
+  color: #e8dcc6;
+}
+.m-sub {
+  margin-top: 6px;
+  font: 400 11px/1.5 var(--font-serif);
+  color: #8a7f70;
+}
+.meihua-tiyong {
+  padding: 10px 12px;
+  border: 1px solid rgba(224, 191, 124, 0.1);
+  background: rgba(198, 161, 91, 0.035);
+  color: #cbb58a;
+  font: 400 12.5px/1.7 var(--font-serif);
+}
+
+.toss-controls {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 12px;
+}
+.toss-controls .btn { width: 100%; }
+.hexagram-lines { margin-top: 6px; }
+.iching-result-box,
+.xlr-result-panel,
+.tarot-result-desc {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(217, 182, 109, 0.16);
+  background: rgba(198, 161, 91, 0.04);
+  color: #d8ccb8;
+  font: 400 13px/1.75 var(--font-serif);
+  text-align: left;
+}
+.tarot-actions-row { margin: 8px 0 4px; }
+.deck-instruction {
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tarot-front {
+  color: #efe6d3;
+}
+.tarot-front .card-name {
+  color: #f3ead8;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 0 4px;
+}
+.tarot-front .card-pos {
+  color: #d28b78;
+  margin-top: 4px;
+}
+.deck-card-mini::after {
+  content: "玄";
+  font-family: var(--font-serif);
+  font-size: 14px;
+}
+
+.lot-cylinder {
+  width: 74px;
+  height: 150px;
+  margin: 0 auto;
+  position: relative;
+  border-radius: 9px 9px 14px 14px;
+  background: linear-gradient(90deg, #4d2a12, #8a4d24 18%, #c07a3b 50%, #8a4d24 82%, #3f220e);
+  box-shadow: inset 0 0 0 2px rgba(62, 32, 10, 0.35), 0 16px 28px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.lot-stick {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  width: 5px;
+  height: 78%;
+  transform: translateX(-50%);
+  background: linear-gradient(#efe0c2, #c9a36a);
+  border-radius: 2px;
+  box-shadow:
+    -11px 6px 0 #d7be8e,
+    11px 6px 0 #d7be8e,
+    -18px 16px 0 #c4a56f,
+    18px 16px 0 #c4a56f,
+    0 0 0 0 transparent;
+}
+.lot-hint {
+  margin: 10px 0 14px;
+  color: #8e8375;
+  font: 400 12.5px/1.6 var(--font-serif);
+  letter-spacing: 0.08em;
+}
+
+.poster-preview-box {
+  max-height: 62vh;
+  overflow: auto;
+}
+#posterCanvas {
+  width: min(100%, 360px);
+  height: auto;
+  border: 1px solid rgba(224, 192, 126, 0.2);
+  background: #120e1d;
+}
+
+.about-content { text-align: center; }
+.about-seal {
+  width: 58px;
+  height: 58px;
+  margin: 6px auto 12px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(185, 63, 44, 0.58);
+  color: #d28b78;
+  font: 700 16px/1 var(--font-serif);
+  letter-spacing: 0.12em;
+  background: rgba(142, 39, 31, 0.08);
+}
+.about-content h3 {
+  margin: 0 0 6px;
+  font: 600 16px/1.5 var(--font-serif);
+  color: #e7dbc3;
+  letter-spacing: 0.12em;
+}
+.about-ver {
+  margin: 0 0 12px;
+  color: #8a7f70;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.about-p {
+  margin: 0 auto 14px;
+  max-width: 36em;
+  color: #b9ae9e;
+  font: 400 13px/1.85 var(--font-serif);
+}
+.about-quote {
+  color: #cbb58a;
+  font: 500 13px/1.8 var(--font-serif);
+}
+
+.dream-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.d-chip {
+  cursor: pointer;
+  padding: 6px 12px;
+  border: 1px solid rgba(185, 160, 196, 0.14);
+  background: rgba(133, 115, 154, 0.035);
+  color: #c6b7c8;
+  font: 400 12px/1.4 var(--font-serif);
+  border-radius: 999px;
+}
+.d-chip:hover {
+  background: rgba(150, 127, 168, 0.09);
+  border-color: rgba(196, 172, 207, 0.22);
+}
+
+@keyframes floatGongDe {
+  from { opacity: 1; transform: translate(-50%, -50%); }
+  to { opacity: 0; transform: translate(-50%, -110%); }
+}
+
+@media (max-width: 768px) {
+  .mobile-only { display: grid !important; }
+  .sidebar-trigger { display: grid !important; }
+  .history-item-del { opacity: 0.75; }
+  .meihua-cards-row { grid-template-columns: 1fr; }
+  .footer-btn { font-size: 11px; }
+  .current-title {
+    max-width: 46vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .tarot-front .card-name { font-size: 10px; }
+  .lot-cylinder { width: 64px; height: 132px; }
+}

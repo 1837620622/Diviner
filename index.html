@@ -1,637 +1,606 @@
 <!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>玄机子 · 东方数理与灵犀占断</title>
-  <meta name="description" content="玄机子 - 融汇东方周易数理与西方灵犀哲学的AI占断系统。周易六爻、梅花易数、四柱八字、小六壬速断、灵犀塔罗、观象灵签。" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%239d2f23'/><text x='50' y='68' text-anchor='middle' font-size='58' fill='%23fbf8f0' font-family='serif' font-weight='bold'>玄</text></svg>">
-  <meta name="theme-color" content="#100d18" />
-  <meta name="color-scheme" content="dark" />
-
-  <!-- 衬线字体与高阶字形 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet">
-  
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-  <link rel="stylesheet" href="styles.css?v=20260827_refined" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>玄机子 · 灵台问卜</title>
+<meta content="玄机子 - 东方数理与灵犀占断。周易六爻、梅花易数、四柱八字、小六壬、塔罗、灵签与梦象解析。" name="description"/>
+<link href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;rect width='100' height='100' rx='22' fill='%239d2f23'/&gt;&lt;text x='50' y='68' text-anchor='middle' font-size='58' fill='%23fbf8f0' font-family='serif' font-weight='bold'&gt;玄&lt;/text&gt;&lt;/svg&gt;" rel="icon"/>
+<meta content="#100d18" name="theme-color"/>
+<meta content="dark" name="color-scheme"/>
+<!-- 衬线字体与高阶字形 -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&amp;family=Noto+Serif+SC:wght@500;700;900&amp;display=swap" rel="stylesheet"/>
+<script defer="" src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<link href="styles.css?v=20260827_v9" rel="stylesheet">
 </head>
 <body class="dark-mystic-theme">
-  <!-- 浑天星图背景 -->
-  <div class="astrolabe-bg" aria-hidden="true"></div>
-
-  <div id="app" class="app-layout">
-    <!-- 侧边栏遮罩 -->
-    <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
-
-    <!-- 左侧侧边栏 -->
-    <aside id="sidebar" class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand">
-          <div class="brand-seal">玄</div>
-          <div class="brand-text">
-            <h1 class="brand-title">玄机子</h1>
-            <span class="brand-desc">观象授时 · 灵台问卜</span>
-          </div>
-        </div>
-        <button id="closeSidebarBtn" class="icon-btn mobile-only" aria-label="关闭侧边栏">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-
-      <div class="sidebar-action">
-        <button id="newChatBtn" class="btn btn-new-chat">
-          <i data-lucide="plus"></i>
-          <span>新起一卦</span>
-        </button>
-      </div>
-
-      <div class="sidebar-scroll">
-        <!-- 命理法器导航 (纯矢量印章) -->
-        <div class="sidebar-section">
-          <div class="section-label">
-            <i data-lucide="sparkles"></i>
-            <span>命理法器</span>
-          </div>
-          <div class="tools-grid">
-            <button class="tool-item" data-tool="tarot"><div class="tool-seal">灵</div><span>灵犀塔罗</span></button>
-            <button class="tool-item" data-tool="iching"><div class="tool-seal">易</div><span>周易六爻</span></button>
-            <button class="tool-item" data-tool="meihua"><div class="tool-seal">梅</div><span>梅花易数</span></button>
-            <button class="tool-item" data-tool="xiaoliuren"><div class="tool-seal">诀</div><span>小六壬</span></button>
-            <button class="tool-item" data-tool="bazi"><div class="tool-seal">命</div><span>四柱八字</span></button>
-            <button class="tool-item" data-tool="lot"><div class="tool-seal">签</div><span>观象灵签</span></button>
-            <button class="tool-item" data-tool="almanac"><div class="tool-seal">历</div><span>择吉黄历</span></button>
-            <button class="tool-item" data-tool="dream"><div class="tool-seal">梦</div><span>周公解梦</span></button>
-            <button class="tool-item" data-tool="muyu"><div class="tool-seal">木</div><span>功德木鱼</span></button>
-          </div>
-        </div>
-
-        <!-- 历史问卜档案 -->
-        <div class="sidebar-section">
-          <div class="section-label">
-            <i data-lucide="history"></i>
-            <span>近问档案</span>
-            <button id="clearAllHistoryBtn" class="clear-history-btn" title="清空全部">清空</button>
-          </div>
-          <div id="historyList" class="history-list"></div>
-        </div>
-      </div>
-
-      <div class="sidebar-footer">
-        <button id="sidebarSponsorBtn" class="footer-btn sponsor-btn" title="随喜赞助">
-          <i data-lucide="heart-handshake"></i>
-          <span>随喜赞助</span>
-        </button>
-        <button id="soundToggleBtn" class="footer-btn" title="空灵禅音">
-          <i data-lucide="volume-2" id="soundIcon"></i>
-          <span>禅音</span>
-        </button>
-        <button id="aboutBtn" class="footer-btn" title="关于玄机子">
-          <i data-lucide="info"></i>
-          <span>关于</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- 右侧主视窗 -->
-    <main class="main-content">
-      <!-- 顶栏导航 -->
-      <header class="chat-header">
-        <div class="header-left">
-          <button id="openSidebarBtn" class="icon-btn sidebar-trigger" aria-label="打开侧边栏">
-            <i data-lucide="menu"></i>
-          </button>
-          <div class="current-chat-info">
-            <h2 id="chatTitle" class="current-title">灵台问卜</h2>
-            <span class="status-badge" id="statusBadge"><span class="status-dot"></span><span id="statusBadgeText">灵台清明 · 气场通达</span></span>
-          </div>
-        </div>
-        <div class="header-right">
-          <button id="headerSponsorBtn" class="pill-btn sponsor-pill" title="随喜赞助">
-            <i data-lucide="heart-handshake"></i>
-            <span>随喜</span>
-          </button>
-          <button id="headerShareBtn" class="pill-btn" title="生成符笺海报">
-            <i data-lucide="share-2"></i>
-            <span class="hide-mobile">符笺</span>
-          </button>
-          <button id="headerNewChatBtn" class="icon-btn" title="新建推演">
-            <i data-lucide="plus-circle"></i>
-          </button>
-        </div>
-      </header>
-
-      <!-- 消息流视窗 -->
-      <div id="chatContainer" class="chat-container">
-        <div class="chat-inner" id="chatInner">
-          <!-- 初始欢迎画卷 -->
-          <div class="welcome-card" id="welcomeCard">
-            <div class="hero-ritual-box">
-              <div class="bagua-astrolabe" aria-hidden="true">
-                <div class="bagua-ring-outer">
-                  <span>乾</span><span>坎</span><span>艮</span><span>震</span>
-                  <span>巽</span><span>离</span><span>坤</span><span>兑</span>
-                </div>
-                <div class="bagua-ring-mid"></div>
-                <div class="bagua-center-seal">玄</div>
-              </div>
-              <div class="hero-text-content">
-                <div class="hero-tag"><i data-lucide="compass"></i><span>易理幽微 · 神明默会</span></div>
-                <h2 class="hero-title">向玄机子问一件真正关切的事</h2>
-                <p class="hero-desc">把推算还给数理，把选择还给人。先立心念、后取象数、再给可行趋避。</p>
-              </div>
-            </div>
-
-            <!-- 六大经典门类门扉 (移动端自适应2列紧凑布局) -->
-            <div class="divider-text"><span>择一法门 · 灵台起卦</span></div>
-            <div class="doors-grid">
-              <div class="door-card" data-tool="tarot">
-                <span class="door-seal gold">灵</span>
-                <div class="door-titles">
-                  <strong>灵犀塔罗</strong>
-                  <span>圣三角 · 观心抉择</span>
-                </div>
-              </div>
-
-              <div class="door-card" data-tool="iching">
-                <span class="door-seal red">易</span>
-                <div class="door-titles">
-                  <strong>周易六爻</strong>
-                  <span>三币摇卦 · 详断吉凶</span>
-                </div>
-              </div>
-
-              <div class="door-card" data-prompt="请问玄机子：报数 3 与 8，求问近期事业转换与贵人机缘如何？">
-                <span class="door-seal">梅</span>
-                <div class="door-titles">
-                  <strong>梅花易数</strong>
-                  <span>报数取象 · 时机动变</span>
-                </div>
-              </div>
-
-              <div class="door-card" data-tool="bazi">
-                <span class="door-seal">命</span>
-                <div class="door-titles">
-                  <strong>四柱八字</strong>
-                  <span>生辰排盘 · 五行格局</span>
-                </div>
-              </div>
-
-              <div class="door-card" data-tool="xiaoliuren">
-                <span class="door-seal">诀</span>
-                <div class="door-titles">
-                  <strong>小六壬</strong>
-                  <span>掐指落宫 · 近事速断</span>
-                </div>
-              </div>
-
-              <div class="door-card" data-tool="lot">
-                <span class="door-seal">签</span>
-                <div class="door-titles">
-                  <strong>观象灵签</strong>
-                  <span>虔心求签 · 每日一示</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="welcome-footer-note">
-              <i data-lucide="info"></i> 占卜旨在明理自省；重大决策请以现实专业意见为准。
-            </div>
-          </div>
-          <!-- 动态消息列表在此注入 -->
-        </div>
-      </div>
-
-      <!-- 底部输入操作栏 -->
-      <div class="composer-container">
-        <!-- 快捷问卜话题 Chips -->
-        <div class="quick-topics-bar">
-          <button class="topic-chip" data-prompt="求问近期的事业发展与贵人相助时机，当如何抉择？"><i data-lucide="briefcase"></i><span>事业贵人</span></button>
-          <button class="topic-chip" data-prompt="求测当前的情感缘分与阻碍，对方心意如何？"><i data-lucide="heart"></i><span>姻缘情感</span></button>
-          <button class="topic-chip" data-prompt="报数 3 与 8，求问下半年财运走势与投资趋避。"><i data-lucide="circle-dollar-sign"></i><span>财运吉凶</span></button>
-          <button class="topic-chip" data-prompt="求问近期重大抉择：当进当退，时机与隐患何在？"><i data-lucide="help-circle"></i><span>抉择转机</span></button>
-          <button class="topic-chip highlight" data-tool="tarot"><i data-lucide="layers"></i><span>塔罗三牌</span></button>
-          <button class="topic-chip" data-tool="iching"><i data-lucide="coins"></i><span>六爻纳甲</span></button>
-          <button class="topic-chip" data-tool="muyu"><i data-lucide="bell"></i><span>功德木鱼</span></button>
-        </div>
-
-        <!-- 图片预览 -->
-        <div id="attachPreview" class="attach-preview" style="display:none;">
-          <div id="thumbsList" class="thumbs-list"></div>
-        </div>
-
-        <!-- 输入卡片 (移动端完美防截断与自动换行) -->
-        <div class="composer-input-card">
-          <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" />
-          <button id="uploadBtn" class="upload-btn" title="上传相格/户型/卦象图">
-            <i data-lucide="image"></i>
-          </button>
-          <div class="textarea-wrapper">
-            <textarea id="userInput" rows="1" placeholder="请详述生辰八字、困惑，或点击上方快捷法器起卦……" maxlength="3000"></textarea>
-          </div>
-          <button id="sendBtn" class="send-btn" title="发送推演">
-            <i data-lucide="sparkles"></i>
-          </button>
-        </div>
-        <div class="composer-legal-text">
-          <span>玄机子基于传统数理与现代逻辑推演 · 事在人为，行则将至</span>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- 全局加载蒙层 -->
-  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
-    <div class="loading-box">
-      <div class="astrolabe-spinner">
-        <div class="spinner-ring ring-1"></div>
-        <div class="spinner-ring ring-2"></div>
-        <div class="spinner-core">玄</div>
-      </div>
-      <h3>玄机子观象推演中</h3>
-      <p>正在排定盘面与气象生克……</p>
-    </div>
-  </div>
-
-  <!-- ==================== 1. 随喜赞助模态框 ==================== -->
-  <div id="modalSponsor" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="heart-handshake"></i><span>随喜结缘 · 功德赞助</span></div>
-        <button class="modal-close-btn" data-close="modalSponsor"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body text-center">
-        <div class="sponsor-hero">
-          <div class="sponsor-seal">善</div>
-          <h3>愿随喜功德 · 护持灵台长明</h3>
-          <p class="sponsor-desc">若玄机子为君解惑启智、点明方向，可随喜结缘以资算力与系统维护。</p>
-        </div>
-
-        <div class="sponsor-amounts">
-          <button class="amount-btn active" data-amount="6.66">
-            <strong>¥6.66</strong>
-            <span>顺遂吉祥</span>
-          </button>
-          <button class="amount-btn" data-amount="8.88">
-            <strong>¥8.88</strong>
-            <span>财运亨通</span>
-          </button>
-          <button class="amount-btn" data-amount="18.88">
-            <strong>¥18.88</strong>
-            <span>福慧双增</span>
-          </button>
-          <button class="amount-btn" data-amount="66.66">
-            <strong>¥66.66</strong>
-            <span>大展宏图</span>
-          </button>
-        </div>
-
-        <div class="sponsor-qr-box">
-          <img src="zan.jpg" alt="微信赞赏码" class="sponsor-qr-img" />
-          <div class="qr-text-info">
-            <span>微信 / 支付宝 扫码赞赏</span>
-            <small>长按识别二维码 · 随喜结缘</small>
-          </div>
-        </div>
-
-        <div class="sponsor-quote">
+<!-- 浑天星图背景 -->
+<div aria-hidden="true" class="astrolabe-bg"></div><div aria-hidden="true" class="ritual-intro" id="ritualIntro">
+<div class="ritual-intro-halo"></div>
+<div class="ritual-intro-seal">玄</div>
+<div class="ritual-intro-lines"><span></span><span></span><span></span></div>
+<p>灵台既明 · 方可问卜</p>
+</div><div aria-hidden="true" class="mystic-sky">
+<div class="sky-vignette"></div><div class="sky-nebula sky-nebula-a"></div><div class="sky-nebula sky-nebula-b"></div>
+<div class="constellation constellation-a"></div><div class="constellation constellation-b"></div>
+<div class="floating-runes"><span>乾</span><span>坤</span><span>坎</span><span>离</span><span>震</span><span>巽</span><span>艮</span><span>兑</span></div>
+</div>
+<div class="app-layout" id="app">
+<!-- 侧边栏遮罩 -->
+<div aria-hidden="true" class="sidebar-overlay" id="sidebarOverlay"></div>
+<!-- 左侧侧边栏 -->
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-header">
+<div class="brand">
+<div class="brand-seal">玄</div>
+<div class="brand-text">
+<h1 class="brand-title">玄机子</h1>
+<span class="brand-desc">观象授时 · 灵台问卜</span>
+</div>
+</div>
+<button aria-label="关闭侧边栏" class="icon-btn mobile-only" id="closeSidebarBtn">
+<i data-lucide="x"></i>
+</button>
+</div>
+<div class="sidebar-action">
+<button class="btn btn-new-chat" id="newChatBtn">
+<i data-lucide="plus"></i>
+<span>新起一卦</span>
+</button>
+</div>
+<div class="sidebar-scroll">
+<!-- 命理法器导航 (纯矢量印章) -->
+<div class="sidebar-section">
+<div class="section-label">
+<i data-lucide="sparkles"></i>
+<span>命理法器</span>
+</div>
+<div class="tools-grid">
+<button class="tool-item" data-tool="tarot"><div class="tool-seal">灵</div><span>灵犀塔罗</span></button>
+<button class="tool-item" data-tool="iching"><div class="tool-seal">易</div><span>周易六爻</span></button>
+<button class="tool-item" data-tool="meihua"><div class="tool-seal">梅</div><span>梅花易数</span></button>
+<button class="tool-item" data-tool="xiaoliuren"><div class="tool-seal">诀</div><span>小六壬</span></button>
+<button class="tool-item" data-tool="bazi"><div class="tool-seal">命</div><span>四柱八字</span></button>
+<button class="tool-item" data-tool="lot"><div class="tool-seal">签</div><span>观象灵签</span></button>
+<button class="tool-item" data-tool="almanac"><div class="tool-seal">历</div><span>择吉黄历</span></button>
+<button class="tool-item" data-tool="dream"><div class="tool-seal">梦</div><span>周公解梦</span></button>
+<button class="tool-item" data-tool="muyu"><div class="tool-seal">木</div><span>功德木鱼</span></button>
+</div>
+</div>
+<!-- 历史问卜档案 -->
+<div class="sidebar-section">
+<div class="section-label">
+<i data-lucide="history"></i>
+<span>近问档案</span>
+<button class="clear-history-btn" id="clearAllHistoryBtn" title="清空全部">清空</button>
+</div>
+<div class="history-list" id="historyList"></div>
+</div>
+</div>
+<div class="sidebar-footer">
+<button class="footer-btn sponsor-btn" id="sidebarSponsorBtn" title="随喜赞助">
+<i data-lucide="heart-handshake"></i>
+<span>随喜</span>
+</button>
+<button class="footer-btn" id="soundToggleBtn" title="空灵禅音">
+<i data-lucide="volume-2" id="soundIcon"></i>
+<span>禅音</span>
+</button>
+<button class="footer-btn" id="aboutBtn" title="关于玄机子">
+<i data-lucide="info"></i>
+<span>关于</span>
+</button>
+</div>
+</aside>
+<!-- 右侧主视窗 -->
+<main class="main-content">
+<!-- 顶栏导航 -->
+<header class="chat-header">
+<div class="header-left">
+<button aria-label="打开侧边栏" class="icon-btn sidebar-trigger" id="openSidebarBtn">
+<i data-lucide="menu"></i>
+</button>
+<div class="current-chat-info">
+<h2 class="current-title" id="chatTitle">灵台问卜</h2>
+<span class="status-badge" id="statusBadge"><span class="status-dot"></span><span id="statusBadgeText">灵台清明 · 气场通达</span></span>
+</div>
+</div>
+<div class="header-right">
+<button class="pill-btn sponsor-pill" id="headerSponsorBtn" title="随喜赞助">
+<i data-lucide="heart-handshake"></i>
+<span>随喜</span>
+</button>
+<button class="pill-btn" id="headerShareBtn" title="生成符笺海报">
+<i data-lucide="share-2"></i>
+<span class="hide-mobile">符笺</span>
+</button>
+<button class="icon-btn" id="headerNewChatBtn" title="新建推演">
+<i data-lucide="plus-circle"></i>
+</button>
+</div>
+</header>
+<!-- 消息流视窗 -->
+<div class="chat-container" id="chatContainer">
+<div class="chat-inner" id="chatInner">
+<!-- 初始欢迎画卷 -->
+<div class="welcome-card" id="welcomeCard">
+<div class="hero-ritual-box"><div aria-hidden="true" class="hero-oracle">
+<div class="oracle-halo halo-a"></div><div class="oracle-halo halo-b"></div>
+<div class="oracle-wheel">
+<div class="oracle-wheel-ring ring-a"></div><div class="oracle-wheel-ring ring-b"></div><div class="oracle-wheel-ring ring-c"></div>
+<div class="oracle-trigrams"><span>乾</span><span>坎</span><span>艮</span><span>震</span><span>巽</span><span>离</span><span>坤</span><span>兑</span></div>
+<div class="oracle-core"><span class="oracle-core-small">玄机</span><strong>玄</strong></div>
+</div>
+</div><div class="hero-text-content">
+<div class="hero-tag"><span class="tag-line"></span><span>THE ORACLE · 灵台问卜</span><span class="tag-line"></span></div>
+<h2 class="hero-title"><span>一念既起</span><em>万象有应</em></h2>
+<p class="hero-desc">先定心念，再择法门。让卦象、牌阵与时序缓缓显形，而不是匆忙得到一个答案。</p>
+<div aria-label="问卜流程" class="ritual-steps"><span><b>壹</b>定念</span><i></i><span><b>贰</b>取象</span><i></i><span><b>叁</b>明断</span></div>
+</div></div>
+<!-- 六大经典门类门扉 (移动端自适应2列紧凑布局) -->
+<div class="divider-text"><span>择一法门 · 入境取象</span></div>
+<div class="doors-grid">
+<div aria-label="开启灵犀塔罗 圣三角 · 观心抉择" class="door-card" data-ritual-index="1" data-tool="tarot" role="button" tabindex="0">
+<span class="door-seal gold">灵</span>
+<div class="door-titles">
+<strong>灵犀塔罗</strong>
+<span>圣三角 · 观心抉择</span>
+</div>
+</div>
+<div aria-label="开启易 周易六爻 三币摇卦 · 详断吉凶" class="door-card" data-ritual-index="2" data-tool="iching" role="button" tabindex="0">
+<span class="door-seal red">易</span>
+<div class="door-titles">
+<strong>周易六爻</strong>
+<span>三币摇卦 · 详断吉凶</span>
+</div>
+</div>
+<div aria-label="开启梅 梅花易数 报数取象 · 时机动变" class="door-card" data-ritual-index="3" data-tool="meihua" role="button" tabindex="0">
+<span class="door-seal">梅</span>
+<div class="door-titles">
+<strong>梅花易数</strong>
+<span>报数取象 · 时机动变</span>
+</div>
+</div>
+<div aria-label="开启命 四柱八字 生辰排盘 · 五行格局" class="door-card" data-ritual-index="4" data-tool="bazi" role="button" tabindex="0">
+<span class="door-seal">命</span>
+<div class="door-titles">
+<strong>四柱八字</strong>
+<span>生辰排盘 · 五行格局</span>
+</div>
+</div>
+<div aria-label="开启诀 小六壬 掐指落宫 · 近事速断" class="door-card" data-ritual-index="5" data-tool="xiaoliuren" role="button" tabindex="0">
+<span class="door-seal">诀</span>
+<div class="door-titles">
+<strong>小六壬</strong>
+<span>掐指落宫 · 近事速断</span>
+</div>
+</div>
+<div aria-label="开启签 观象灵签 虔心求签 · 每日一示" class="door-card" data-ritual-index="6" data-tool="lot" role="button" tabindex="0">
+<span class="door-seal">签</span>
+<div class="door-titles">
+<strong>观象灵签</strong>
+<span>虔心求签 · 每日一示</span>
+</div>
+</div>
+</div>
+<div class="welcome-footer-note">占断用于整理思路与自省，不替代医疗、法律、投资等专业判断。</div>
+</div>
+<!-- 动态消息列表在此注入 -->
+</div>
+</div>
+<!-- 底部输入操作栏 -->
+<div class="composer-container">
+<!-- 快捷问卜话题 Chips -->
+<div class="quick-topics-bar">
+<button class="topic-chip" data-prompt="求问近期的事业发展与贵人相助时机，当如何抉择？"><i data-lucide="briefcase"></i><span>事业贵人</span></button>
+<button class="topic-chip" data-prompt="求测当前的情感缘分与阻碍，对方心意如何？"><i data-lucide="heart"></i><span>姻缘情感</span></button>
+<button class="topic-chip" data-prompt="报数 3 与 8，求问下半年财运走势与投资趋避。"><i data-lucide="circle-dollar-sign"></i><span>财运吉凶</span></button>
+<button class="topic-chip" data-prompt="求问近期重大抉择：当进当退，时机与隐患何在？"><i data-lucide="help-circle"></i><span>抉择转机</span></button>
+<button class="topic-chip highlight" data-tool="tarot"><i data-lucide="layers"></i><span>塔罗三牌</span></button>
+<button class="topic-chip" data-tool="iching"><i data-lucide="coins"></i><span>六爻纳甲</span></button>
+<button class="topic-chip" data-tool="muyu"><i data-lucide="bell"></i><span>功德木鱼</span></button>
+</div>
+<!-- 图片预览 -->
+<div class="attach-preview" id="attachPreview" style="display:none;">
+<div class="thumbs-list" id="thumbsList"></div>
+</div>
+<!-- 输入卡片 (移动端完美防截断与自动换行) -->
+<div class="composer-input-card">
+<input accept="image/*" id="fileInput" multiple="" style="display:none;" type="file"/>
+<button class="upload-btn" id="uploadBtn" title="上传相格/户型/卦象图">
+<i data-lucide="image"></i>
+</button>
+<div class="textarea-wrapper">
+<textarea id="userInput" maxlength="3000" placeholder="写下你真正想问的一件事，或先从上方法门起卦……" rows="1"></textarea>
+</div>
+<button class="send-btn" id="sendBtn" title="发送推演">
+<i data-lucide="sparkles"></i>
+</button>
+</div>
+<div class="composer-legal-text">
+<span>先问自己，再问天地 · 卦是镜，不是命令</span>
+</div>
+</div>
+</main>
+</div>
+<!-- 全局加载蒙层 -->
+<div aria-hidden="true" class="loading-overlay" id="loadingOverlay">
+<div class="loading-box">
+<div class="astrolabe-spinner">
+<div class="spinner-ring ring-1"></div>
+<div class="spinner-ring ring-2"></div>
+<div class="spinner-core">玄</div>
+</div>
+<h3>玄机子观象推演中</h3>
+<p>正在排定盘面与气象生克……</p>
+</div>
+</div>
+<!-- ==================== 1. 随喜赞助模态框 ==================== -->
+<div class="modal-backdrop" data-sound="sponsor" id="modalSponsor">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="heart-handshake"></i><span>随喜结缘 · 功德赞助</span></div>
+<button class="modal-close-btn" data-close="modalSponsor"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body text-center">
+<div class="sponsor-hero">
+<div class="sponsor-seal">善</div>
+<h3>愿随喜功德 · 护持灵台长明</h3>
+<p class="sponsor-desc">若玄机子为君解惑启智、点明方向，可随喜结缘以资算力与系统维护。</p>
+</div>
+<div class="sponsor-amounts">
+<button class="amount-btn active" data-amount="6.66">
+<strong>¥6.66</strong>
+<span>顺遂吉祥</span>
+</button>
+<button class="amount-btn" data-amount="8.88">
+<strong>¥8.88</strong>
+<span>财运亨通</span>
+</button>
+<button class="amount-btn" data-amount="18.88">
+<strong>¥18.88</strong>
+<span>福慧双增</span>
+</button>
+<button class="amount-btn" data-amount="66.66">
+<strong>¥66.66</strong>
+<span>大展宏图</span>
+</button>
+</div>
+<div class="sponsor-qr-box">
+<img alt="微信赞赏码" class="sponsor-qr-img" src="zan.jpg"/>
+<div class="qr-text-info">
+<span>微信 / 支付宝 扫码赞赏</span>
+<small>长按识别二维码 · 随喜结缘</small>
+</div>
+</div>
+<div class="sponsor-quote">
           「种善因，得善果；施与受，皆是圆满。」
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary w-100" data-close="modalSponsor">感念善缘 · 功德圆满</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== 2. 灵犀塔罗模态框 (3D 交互卡牌) ==================== -->
-  <div id="modalTarot" class="modal-backdrop">
-    <div class="modal-window modal-lg">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="layers"></i><span>灵犀塔罗 · 圣三角牌阵</span></div>
-        <button class="modal-close-btn" data-close="modalTarot"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-item">
-          <label>心念困惑（默念心中所求之事）</label>
-          <input type="text" id="tarotQuestion" placeholder="例：当前这段合作的发展走势与阻碍如何？" class="input-modern" />
-        </div>
-        <!-- 3D 卡牌舞台 -->
-        <div class="tarot-board">
-          <div class="tarot-card-slot" id="slotPast">
-            <div class="slot-label">【过去】起因因缘</div>
-            <div class="tarot-card" id="tarotCard1">
-              <div class="tarot-inner">
-                <div class="tarot-back">
-                  <div class="card-back-geom"></div>
-                  <span>翻牌</span>
-                </div>
-                <div class="tarot-front" id="tarotFront1">
-                  <div class="card-num-badge">0</div>
-                  <span class="card-name">-</span>
-                  <span class="card-pos">-</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="tarot-card-slot" id="slotPresent">
-            <div class="slot-label">【现在】当下境遇</div>
-            <div class="tarot-card" id="tarotCard2">
-              <div class="tarot-inner">
-                <div class="tarot-back">
-                  <div class="card-back-geom"></div>
-                  <span>翻牌</span>
-                </div>
-                <div class="tarot-front" id="tarotFront2">
-                  <div class="card-num-badge">I</div>
-                  <span class="card-name">-</span>
-                  <span class="card-pos">-</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="tarot-card-slot" id="slotFuture">
-            <div class="slot-label">【未来】走向趋避</div>
-            <div class="tarot-card" id="tarotCard3">
-              <div class="tarot-inner">
-                <div class="tarot-back">
-                  <div class="card-back-geom"></div>
-                  <span>翻牌</span>
-                </div>
-                <div class="tarot-front" id="tarotFront3">
-                  <div class="card-num-badge">II</div>
-                  <span class="card-name">-</span>
-                  <span class="card-pos">-</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="tarot-actions-row">
-          <button id="drawTarotBtn" class="btn btn-gold w-100"><i data-lucide="sparkles"></i> 虔心洗牌并抽取三牌</button>
-        </div>
-        <div id="tarotResultDesc" class="tarot-result-desc" style="display:none;"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalTarot">关闭</button>
-        <button id="submitTarotBtn" class="btn btn-primary" disabled>呈递牌阵请玄机子详析</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 3. 周易六爻模态框 -->
-  <div id="modalIching" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="coins"></i><span>周易六爻纳甲</span></div>
-        <button class="modal-close-btn" data-close="modalIching"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-item"><label>问卜心意与事由</label><input type="text" id="ichingMatter" placeholder="例：问下半年换工作的吉凶与时机" class="input-modern" /></div>
-        <div class="iching-board">
-          <div class="coins-stage">
-            <div class="coin" id="coin1"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
-            <div class="coin" id="coin2"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
-            <div class="coin" id="coin3"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
-          </div>
-          <div class="toss-controls">
-            <button id="tossCoinBtn" class="btn btn-gold"><i data-lucide="refresh-cw"></i> 摇掷铜钱 (<span id="tossStep">第 1 爻 / 共 6 爻</span>)</button>
-          </div>
-          <div id="hexagramLines" class="hexagram-lines"></div>
-          <div id="ichingResult" class="iching-result-box" style="display:none;"></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalIching">关闭</button>
-        <button id="submitIchingBtn" class="btn btn-primary" disabled>呈递卦象详批</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 4. 梅花易数 -->
-  <div id="modalMeihua" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="flower-2"></i><span>梅花易数起卦</span></div>
-        <button class="modal-close-btn" data-close="modalMeihua"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="tab-pills">
-          <button class="tab-pill active" data-meihuatab="time">当下时辰起卦</button>
-          <button class="tab-pill" data-meihuatab="num">报数起卦</button>
-        </div>
-        <div id="meihuaTimeSection" class="meihua-section">
-          <div class="info-banner">以当前年、月、日、时辰数理，演化上卦、下卦与动爻。</div>
-          <button id="meihuaNowBtn" class="btn btn-primary w-100">以当前时辰起卦</button>
-        </div>
-        <div id="meihuaNumSection" class="meihua-section" style="display:none;">
-          <div class="form-row">
-            <div class="form-item"><label>上卦基数 (1-999)</label><input type="number" id="meihuaNum1" placeholder="例：3" class="input-modern" /></div>
-            <div class="form-item"><label>下卦基数 (1-999)</label><input type="number" id="meihuaNum2" placeholder="例：8" class="input-modern" /></div>
-          </div>
-          <button id="meihuaNumCalcBtn" class="btn btn-primary w-100">数理成卦</button>
-        </div>
-        <div id="meihuaResultPanel" class="meihua-result-panel" style="display:none;">
-          <div class="meihua-cards-row">
-            <div class="m-card" id="mCardBen"><h4>本卦</h4><div class="m-val" id="mBenName">-</div><div class="m-sub" id="mBenDesc">-</div></div>
-            <div class="m-card" id="mCardHu"><h4>互卦</h4><div class="m-val" id="mHuName">-</div><div class="m-sub" id="mHuDesc">-</div></div>
-            <div class="m-card" id="mCardBian"><h4>变卦</h4><div class="m-val" id="mBianName">-</div><div class="m-sub" id="mBianDesc">-</div></div>
-          </div>
-          <div class="meihua-tiyong" id="meihuaTiyong"></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalMeihua">取消</button>
-        <button id="submitMeihuaBtn" class="btn btn-primary" disabled>呈递梅花卦详批</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 5. 小六壬 -->
-  <div id="modalXiaoliuren" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="hand"></i><span>小六壬掌中诀速断</span></div>
-        <button class="modal-close-btn" data-close="modalXiaoliuren"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-item"><label>所测急事或出行</label><input type="text" id="xlrQuestion" placeholder="例：今日出门找失物 / 面试是否顺利" class="input-modern" /></div>
-        <div class="xlr-palm-grid">
-          <div class="xlr-cell" data-idx="1"><strong>大安</strong><span>身不动 · 吉</span></div>
-          <div class="xlr-cell" data-idx="2"><strong>留连</strong><span>事难成 · 阻</span></div>
-          <div class="xlr-cell" data-idx="3"><strong>速喜</strong><span>人即至 · 喜</span></div>
-          <div class="xlr-cell" data-idx="4"><strong>赤口</strong><span>口舌侵 · 凶</span></div>
-          <div class="xlr-cell" data-idx="5"><strong>小吉</strong><span>人来助 · 吉</span></div>
-          <div class="xlr-cell" data-idx="6"><strong>空亡</strong><span>音信稀 · 滞</span></div>
-        </div>
-        <button id="xlrRollBtn" class="btn btn-gold w-100" style="margin-top:12px;"><i data-lucide="hand"></i> 掐指轮转推演</button>
-        <div id="xlrResultPanel" class="xlr-result-panel" style="display:none;"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalXiaoliuren">关闭</button>
-        <button id="submitXlrBtn" class="btn btn-primary" disabled>请玄机子详断</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 6. 四柱八字 -->
-  <div id="modalBazi" class="modal-backdrop">
-    <div class="modal-window modal-lg">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="calendar"></i><span>四柱八字真太阳时排盘</span></div>
-        <button class="modal-close-btn" data-close="modalBazi"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid-2">
-          <div class="form-item"><label>出生年</label><input type="number" id="bzYear" value="1995" min="1920" max="2035" class="input-modern" /></div>
-          <div class="form-item"><label>出生月</label><input type="number" id="bzMonth" value="8" min="1" max="12" class="input-modern" /></div>
-          <div class="form-item"><label>出生日</label><input type="number" id="bzDay" value="18" min="1" max="31" class="input-modern" /></div>
-          <div class="form-item"><label>出生时辰</label>
-            <select id="bzHour" class="input-modern">
-              <option value="0">子时 (23:00-01:00)</option><option value="2">丑时 (01:00-03:00)</option><option value="4">寅时 (03:00-05:00)</option><option value="6">卯时 (05:00-07:00)</option>
-              <option value="8">辰时 (07:00-09:00)</option><option value="10" selected>巳时 (09:00-11:00)</option><option value="12">午时 (11:00-13:00)</option><option value="14">未时 (13:00-15:00)</option>
-              <option value="16">申时 (15:00-17:00)</option><option value="18">酉时 (17:00-19:00)</option><option value="20">戌时 (19:00-21:00)</option><option value="22">亥时 (21:00-23:00)</option>
-            </select>
-          </div>
-          <div class="form-item"><label>性别</label><select id="bzGender" class="input-modern"><option value="乾造">乾造（男）</option><option value="坤造">坤造（女）</option></select></div>
-          <div class="form-item"><label>出生城市（校正真太阳时）</label><input type="text" id="bzCity" value="北京" class="input-modern" /></div>
-        </div>
-        <button id="calcBaziBtn" class="btn btn-gold w-100" style="margin-top:12px;"><i data-lucide="compass"></i> 精密排盘</button>
-        <div id="baziResultTable" class="bazi-table-wrap" style="display:none;"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalBazi">取消</button>
-        <button id="submitBaziBtn" class="btn btn-primary" disabled>呈递八字详批</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 7. 观象灵签 -->
-  <div id="modalLot" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="scroll"></i><span>观象灵签 · 每日一签</span></div>
-        <button class="modal-close-btn" data-close="modalLot"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body text-center">
-        <div class="lot-cylinder-wrap"><div class="lot-cylinder" id="lotCylinder"><div class="lot-stick" id="lotStick"></div></div></div>
-        <p class="lot-hint">屏息凝神，默念所求之事</p>
-        <button id="shakeLotBtn" class="btn btn-gold"><i data-lucide="refresh-cw"></i> 虔心摇签</button>
-        <div id="lotPoemCard" class="lot-poem-card" style="display:none;"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalLot">关闭</button>
-        <button id="submitLotBtn" class="btn btn-primary" disabled>请玄机子解签</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 8. 今日黄历 -->
-  <div id="modalAlmanac" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="compass"></i><span>择吉万年历 · 今日黄历</span></div>
-        <button class="modal-close-btn" data-close="modalAlmanac"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body"><div class="almanac-box" id="almanacContent"></div></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalAlmanac">关闭</button>
-        <button id="queryAlmanacDayBtn" class="btn btn-primary">以此日干支向玄机子问事</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 9. 周公解梦 -->
-  <div id="modalDream" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="moon"></i><span>周公解梦 · 原型意象</span></div>
-        <button class="modal-close-btn" data-close="modalDream"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-item">
-          <label>梦境关键意象速选</label>
-          <div class="dream-tags-container">
-            <span class="d-chip" data-dream="江河湖海">江海波涛</span>
-            <span class="d-chip" data-dream="登高坠落">登高坠落</span>
-            <span class="d-chip" data-dream="故人相见">故人重逢</span>
-            <span class="d-chip" data-dream="得财失物">得财失物</span>
-            <span class="d-chip" data-dream="龙蛇灵兽">龙蛇异兽</span>
-            <span class="d-chip" data-dream="飞翔涉险">乘风飞翔</span>
-          </div>
-        </div>
-        <div class="form-item"><label>梦境详情描述</label><textarea id="dreamDetail" rows="3" placeholder="详细描述梦中的场景、情绪感受与醒来时的心境……" class="input-modern"></textarea></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalDream">关闭</button>
-        <button id="submitDreamBtn" class="btn btn-primary">请玄机子解梦</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 10. 功德木鱼 -->
-  <div id="modalMuyu" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="bell"></i><span>功德电子木鱼</span></div>
-        <button class="modal-close-btn" data-close="modalMuyu"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body text-center">
-        <div class="muyu-arena" id="muyuArena">
-          <div class="muyu-wood" id="muyuWood">
-            <svg viewBox="0 0 100 100" class="muyu-svg">
-              <ellipse cx="50" cy="55" rx="38" ry="32" fill="#8B4513" />
-              <ellipse cx="50" cy="52" rx="34" ry="28" fill="#A0522D" />
-              <path d="M 28 50 Q 50 62 72 50" stroke="#5C2E0B" stroke-width="4" fill="none" stroke-linecap="round" />
-              <circle cx="50" cy="40" r="6" fill="#5C2E0B" />
-            </svg>
-          </div>
-          <div class="muyu-counter">功德数：<span id="muyuCount">0</span></div>
-        </div>
-        <p class="muyu-hint">轻触木鱼，息心澄虑，福慧双增</p>
-      </div>
-      <div class="modal-footer"><button class="btn btn-secondary" data-close="modalMuyu">静心收功</button></div>
-    </div>
-  </div>
-
-  <!-- 11. 符笺海报 -->
-  <div id="modalPoster" class="modal-backdrop">
-    <div class="modal-window modal-lg">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="share-2"></i><span>运势符笺海报</span></div>
-        <button class="modal-close-btn" data-close="modalPoster"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body text-center">
-        <div class="poster-preview-box"><canvas id="posterCanvas" width="750" height="1100"></canvas></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-close="modalPoster">关闭</button>
-        <button id="downloadPosterBtn" class="btn btn-gold"><i data-lucide="download"></i> 保存海报到本地</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 12. 关于 -->
-  <div id="modalAbout" class="modal-backdrop">
-    <div class="modal-window">
-      <div class="modal-header">
-        <div class="modal-title"><i data-lucide="info"></i><span>关于玄机子</span></div>
-        <button class="modal-close-btn" data-close="modalAbout"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="about-content">
-          <div class="about-seal">玄机</div>
-          <h3>玄机子 · 灵台问卜</h3>
-          <p class="about-ver">版本：v7.0 灵犀典藏版</p>
-          <p class="about-p">融汇东方传统易学、四柱八字、梅花六爻与西方灵犀塔罗，为问卜者提供客观、富于哲思与可行建议的推演指导。</p>
-          <div class="about-quote">「知命而不受制于命，顺势而为，自强不息。」</div>
-        </div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary" data-close="modalAbout">确认</button></div>
-    </div>
-  </div>
-
-  <script src="script.js?v=20260827_refined"></script>
+</div>
+<div class="modal-footer">
+<button class="btn btn-primary w-100" data-close="modalSponsor">感念善缘 · 功德圆满</button>
+</div>
+</div>
+</div>
+<!-- ==================== 2. 灵犀塔罗模态框 (3D 交互卡牌) ==================== -->
+<div class="modal-backdrop" data-sound="tarot" id="modalTarot">
+<div class="modal-window modal-lg ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="layers"></i><span>灵犀塔罗 · 圣三角牌阵</span><small class="modal-kicker">洗牌 · 抽取 · 亲手翻开三张牌</small></div>
+<button class="modal-close-btn" data-close="modalTarot"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body">
+<div class="form-item">
+<label>心念困惑（默念心中所求之事）</label>
+<input class="input-modern" id="tarotQuestion" placeholder="例：当前这段合作的发展走势与阻碍如何？" type="text"/>
+</div>
+<!-- 3D 卡牌舞台 -->
+<div aria-hidden="true" class="tarot-deck-stage" id="tarotDeckStage"><div class="deck-glow"></div><div class="deck-stack" id="tarotDeckStack"></div><div class="deck-instruction" id="tarotDeckHint">静心一息，然后洗牌</div></div><div class="tarot-board">
+<div class="tarot-card-slot" id="slotPast">
+<div class="slot-label">【过去】起因因缘</div>
+<div aria-label="翻开过去牌" class="tarot-card" id="tarotCard1" role="button" tabindex="0">
+<div class="tarot-inner">
+<div class="tarot-back">
+<div class="card-back-geom"></div>
+<span>翻牌</span>
+</div>
+<div class="tarot-front" id="tarotFront1">
+<div class="card-num-badge">0</div>
+<span class="card-name">-</span>
+<span class="card-pos">-</span>
+</div>
+</div>
+</div>
+</div>
+<div class="tarot-card-slot" id="slotPresent">
+<div class="slot-label">【现在】当下境遇</div>
+<div aria-label="翻开现在牌" class="tarot-card" id="tarotCard2" role="button" tabindex="0">
+<div class="tarot-inner">
+<div class="tarot-back">
+<div class="card-back-geom"></div>
+<span>翻牌</span>
+</div>
+<div class="tarot-front" id="tarotFront2">
+<div class="card-num-badge">I</div>
+<span class="card-name">-</span>
+<span class="card-pos">-</span>
+</div>
+</div>
+</div>
+</div>
+<div class="tarot-card-slot" id="slotFuture">
+<div class="slot-label">【未来】走向趋避</div>
+<div aria-label="翻开未来牌" class="tarot-card" id="tarotCard3" role="button" tabindex="0">
+<div class="tarot-inner">
+<div class="tarot-back">
+<div class="card-back-geom"></div>
+<span>翻牌</span>
+</div>
+<div class="tarot-front" id="tarotFront3">
+<div class="card-num-badge">II</div>
+<span class="card-name">-</span>
+<span class="card-pos">-</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="tarot-actions-row">
+<button class="btn btn-gold w-100" id="drawTarotBtn"><i data-lucide="sparkles"></i> 虔心洗牌并抽取三牌</button>
+</div>
+<div class="tarot-result-desc" id="tarotResultDesc" style="display:none;"></div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalTarot">关闭</button>
+<button class="btn btn-primary" disabled="" id="submitTarotBtn">呈递牌阵请玄机子详析</button>
+</div>
+</div>
+</div>
+<!-- 3. 周易六爻模态框 -->
+<div class="modal-backdrop" data-sound="iching" id="modalIching">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="coins"></i><span>周易六爻纳甲</span><small class="modal-kicker">三钱六掷 · 自初爻而上</small></div>
+<button class="modal-close-btn" data-close="modalIching"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body">
+<div class="form-item"><label>问卜心意与事由</label><input class="input-modern" id="ichingMatter" placeholder="例：问下半年换工作的吉凶与时机" type="text"/></div>
+<div class="iching-board">
+<div class="coins-stage">
+<div class="coin" id="coin1"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
+<div class="coin" id="coin2"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
+<div class="coin" id="coin3"><div class="coin-face front">乾隆</div><div class="coin-face back">通宝</div></div>
+</div>
+<div class="toss-controls">
+<button class="btn btn-gold" id="tossCoinBtn"><i data-lucide="refresh-cw"></i> 摇掷铜钱 (<span id="tossStep">第 1 爻 / 共 6 爻</span>)</button>
+</div>
+<div class="hexagram-lines" id="hexagramLines"></div>
+<div class="iching-result-box" id="ichingResult" style="display:none;"></div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalIching">关闭</button>
+<button class="btn btn-primary" disabled="" id="submitIchingBtn">呈递卦象详批</button>
+</div>
+</div>
+</div>
+<!-- 4. 梅花易数 -->
+<div class="modal-backdrop" data-sound="meihua" id="modalMeihua">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="flower-2"></i><span>梅花易数起卦</span><small class="modal-kicker">观时取数 · 体用生克</small></div>
+<button class="modal-close-btn" data-close="modalMeihua"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body">
+<div class="tab-pills">
+<button class="tab-pill active" data-meihuatab="time">当下时辰起卦</button>
+<button class="tab-pill" data-meihuatab="num">报数起卦</button>
+</div>
+<div class="meihua-section" id="meihuaTimeSection">
+<div class="info-banner">以当前年、月、日、时辰数理，演化上卦、下卦与动爻。</div>
+<button class="btn btn-primary w-100" id="meihuaNowBtn">以当前时辰起卦</button>
+</div>
+<div class="meihua-section" id="meihuaNumSection" style="display:none;">
+<div class="form-row">
+<div class="form-item"><label>上卦基数 (1-999)</label><input class="input-modern" id="meihuaNum1" placeholder="例：3" type="number"/></div>
+<div class="form-item"><label>下卦基数 (1-999)</label><input class="input-modern" id="meihuaNum2" placeholder="例：8" type="number"/></div>
+</div>
+<button class="btn btn-primary w-100" id="meihuaNumCalcBtn">数理成卦</button>
+</div>
+<div class="meihua-result-panel" id="meihuaResultPanel" style="display:none;">
+<div class="meihua-cards-row">
+<div class="m-card" id="mCardBen"><h4>本卦</h4><div class="m-val" id="mBenName">-</div><div class="m-sub" id="mBenDesc">-</div></div>
+<div class="m-card" id="mCardHu"><h4>互卦</h4><div class="m-val" id="mHuName">-</div><div class="m-sub" id="mHuDesc">-</div></div>
+<div class="m-card" id="mCardBian"><h4>变卦</h4><div class="m-val" id="mBianName">-</div><div class="m-sub" id="mBianDesc">-</div></div>
+</div>
+<div class="meihua-tiyong" id="meihuaTiyong"></div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalMeihua">取消</button>
+<button class="btn btn-primary" disabled="" id="submitMeihuaBtn">呈递梅花卦详批</button>
+</div>
+</div>
+</div>
+<!-- 5. 小六壬 -->
+<div class="modal-backdrop" data-sound="xiaoliuren" id="modalXiaoliuren">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="hand"></i><span>小六壬掌中诀速断</span><small class="modal-kicker">掌中六神 · 近事速断</small></div>
+<button class="modal-close-btn" data-close="modalXiaoliuren"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body">
+<div class="form-item"><label>所测急事或出行</label><input class="input-modern" id="xlrQuestion" placeholder="例：今日出门找失物 / 面试是否顺利" type="text"/></div>
+<div class="xlr-palm-grid">
+<div class="xlr-cell" data-idx="1"><strong>大安</strong><span>身不动 · 吉</span></div>
+<div class="xlr-cell" data-idx="2"><strong>留连</strong><span>事难成 · 阻</span></div>
+<div class="xlr-cell" data-idx="3"><strong>速喜</strong><span>人即至 · 喜</span></div>
+<div class="xlr-cell" data-idx="4"><strong>赤口</strong><span>口舌侵 · 凶</span></div>
+<div class="xlr-cell" data-idx="5"><strong>小吉</strong><span>人来助 · 吉</span></div>
+<div class="xlr-cell" data-idx="6"><strong>空亡</strong><span>音信稀 · 滞</span></div>
+</div>
+<button class="btn btn-gold w-100" id="xlrRollBtn" style="margin-top:12px;"><i data-lucide="hand"></i> 掐指轮转推演</button>
+<div class="xlr-result-panel" id="xlrResultPanel" style="display:none;"></div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalXiaoliuren">关闭</button>
+<button class="btn btn-primary" disabled="" id="submitXlrBtn">请玄机子详断</button>
+</div>
+</div>
+</div>
+<!-- 6. 四柱八字 -->
+<div class="modal-backdrop" data-sound="bazi" id="modalBazi">
+<div class="modal-window modal-lg ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="calendar"></i><span>四柱八字 · 生辰校核</span><small class="modal-kicker">录入生辰 · 再由推演校核四柱</small></div>
+<button class="modal-close-btn" data-close="modalBazi"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body">
+<div class="form-grid-2">
+<div class="form-item"><label>出生年</label><input class="input-modern" id="bzYear" max="2035" min="1920" placeholder="例：1995" type="number"/></div>
+<div class="form-item"><label>出生月</label><input class="input-modern" id="bzMonth" max="12" min="1" placeholder="1–12" type="number"/></div>
+<div class="form-item"><label>出生日</label><input class="input-modern" id="bzDay" max="31" min="1" placeholder="1–31" type="number"/></div>
+<div class="form-item"><label>出生时辰</label>
+<select class="input-modern" id="bzHour">
+<option value="0">子时 (23:00-01:00)</option><option value="2">丑时 (01:00-03:00)</option><option value="4">寅时 (03:00-05:00)</option><option value="6">卯时 (05:00-07:00)</option>
+<option value="8">辰时 (07:00-09:00)</option><option selected="" value="10">巳时 (09:00-11:00)</option><option value="12">午时 (11:00-13:00)</option><option value="14">未时 (13:00-15:00)</option>
+<option value="16">申时 (15:00-17:00)</option><option value="18">酉时 (17:00-19:00)</option><option value="20">戌时 (19:00-21:00)</option><option value="22">亥时 (21:00-23:00)</option>
+</select>
+</div>
+<div class="form-item"><label>性别</label><select class="input-modern" id="bzGender"><option value="乾造">乾造（男）</option><option value="坤造">坤造（女）</option></select></div>
+<div class="form-item"><label>出生城市（校正真太阳时）</label><input class="input-modern" id="bzCity" placeholder="例：成都（用于时差校核）" type="text"/></div>
+</div>
+<button class="btn btn-gold w-100" id="calcBaziBtn" style="margin-top:12px;"><i data-lucide="compass"></i> 精密排盘</button>
+<div class="bazi-table-wrap" id="baziResultTable" style="display:none;"></div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalBazi">取消</button>
+<button class="btn btn-primary" disabled="" id="submitBaziBtn">呈递八字详批</button>
+</div>
+</div>
+</div>
+<!-- 7. 观象灵签 -->
+<div class="modal-backdrop" data-sound="lot" id="modalLot">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="scroll"></i><span>观象灵签 · 每日一签</span><small class="modal-kicker">静念一事 · 摇签见示</small></div>
+<button class="modal-close-btn" data-close="modalLot"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body text-center">
+<div class="lot-cylinder-wrap"><div class="lot-cylinder" id="lotCylinder"><div class="lot-stick" id="lotStick"></div></div></div>
+<p class="lot-hint">屏息凝神，默念所求之事</p>
+<button class="btn btn-gold" id="shakeLotBtn"><i data-lucide="refresh-cw"></i> 虔心摇签</button>
+<div class="lot-poem-card" id="lotPoemCard" style="display:none;"></div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalLot">关闭</button>
+<button class="btn btn-primary" disabled="" id="submitLotBtn">请玄机子解签</button>
+</div>
+</div>
+</div>
+<!-- 8. 今日黄历 -->
+<div class="modal-backdrop" data-sound="almanac" id="modalAlmanac">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="compass"></i><span>择吉万年历 · 今日黄历</span></div>
+<button class="modal-close-btn" data-close="modalAlmanac"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body"><div class="almanac-box" id="almanacContent"></div></div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalAlmanac">关闭</button>
+<button class="btn btn-primary" id="queryAlmanacDayBtn">以此日干支向玄机子问事</button>
+</div>
+</div>
+</div>
+<!-- 9. 周公解梦 -->
+<div class="modal-backdrop" data-sound="dream" id="modalDream">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="moon"></i><span>周公解梦 · 原型意象</span><small class="modal-kicker">从意象、情绪与现实处境解读</small></div>
+<button class="modal-close-btn" data-close="modalDream"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body"><div aria-hidden="true" class="dream-orb"><i></i><i></i><i></i><span>梦</span></div>
+<div class="form-item">
+<label>梦境关键意象速选</label>
+<div class="dream-tags-container">
+<span class="d-chip" data-dream="江河湖海">江海波涛</span>
+<span class="d-chip" data-dream="登高坠落">登高坠落</span>
+<span class="d-chip" data-dream="故人相见">故人重逢</span>
+<span class="d-chip" data-dream="得财失物">得财失物</span>
+<span class="d-chip" data-dream="龙蛇灵兽">龙蛇异兽</span>
+<span class="d-chip" data-dream="飞翔涉险">乘风飞翔</span>
+</div>
+</div>
+<div class="form-item"><label>梦境详情描述</label><textarea class="input-modern" id="dreamDetail" placeholder="详细描述梦中的场景、情绪感受与醒来时的心境……" rows="3"></textarea></div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalDream">关闭</button>
+<button class="btn btn-primary" id="submitDreamBtn">请玄机子解梦</button>
+</div>
+</div>
+</div>
+<!-- 10. 功德木鱼 -->
+<div class="modal-backdrop" data-sound="muyu" id="modalMuyu">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="bell"></i><span>功德电子木鱼</span><small class="modal-kicker">一敲一息 · 收束心念</small></div>
+<button class="modal-close-btn" data-close="modalMuyu"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body text-center">
+<div class="muyu-arena" id="muyuArena">
+<div class="muyu-wood" id="muyuWood">
+<svg class="muyu-svg" viewBox="0 0 100 100">
+<ellipse cx="50" cy="55" fill="#8B4513" rx="38" ry="32"></ellipse>
+<ellipse cx="50" cy="52" fill="#A0522D" rx="34" ry="28"></ellipse>
+<path d="M 28 50 Q 50 62 72 50" fill="none" stroke="#5C2E0B" stroke-linecap="round" stroke-width="4"></path>
+<circle cx="50" cy="40" fill="#5C2E0B" r="6"></circle>
+</svg>
+</div>
+<div class="muyu-counter">功德数：<span id="muyuCount">0</span></div>
+</div>
+<p class="muyu-hint">轻触木鱼，息心澄虑，福慧双增</p>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" data-close="modalMuyu">静心收功</button></div>
+</div>
+</div>
+<!-- 11. 符笺海报 -->
+<div class="modal-backdrop" data-sound="poster" id="modalPoster">
+<div class="modal-window modal-lg ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="share-2"></i><span>运势符笺海报</span></div>
+<button class="modal-close-btn" data-close="modalPoster"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body text-center">
+<div class="poster-preview-box"><canvas height="1100" id="posterCanvas" width="750"></canvas></div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-close="modalPoster">关闭</button>
+<button class="btn btn-gold" id="downloadPosterBtn"><i data-lucide="download"></i> 保存海报到本地</button>
+</div>
+</div>
+</div>
+<!-- 12. 关于 -->
+<div class="modal-backdrop" data-sound="about" id="modalAbout">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="info"></i><span>关于玄机子</span></div>
+<button class="modal-close-btn" data-close="modalAbout"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body">
+<div class="about-content">
+<div class="about-seal">玄机</div>
+<h3>玄机子 · 灵台问卜</h3>
+<p class="about-ver">版本：v8.2 灵台校勘版</p>
+<p class="about-p">融汇东方传统易学、四柱八字、梅花六爻与西方灵犀塔罗，为问卜者提供客观、富于哲思与可行建议的推演指导。</p>
+<div class="about-quote">「知命而不受制于命，顺势而为，自强不息。」</div>
+</div>
+</div>
+<div class="modal-footer"><button class="btn btn-primary" data-close="modalAbout">确认</button></div>
+</div>
+</div>
+<script src="script.js?v=20260827_v9"></script>
 </body>
 </html>

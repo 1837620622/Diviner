@@ -1,260 +1,126 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>玄机子 · 后台</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    :root{--paper:#f7f3ed;--paper2:#ece6d9;--ink:#1a1a18;--ink2:#3a3936;--muted:#6b6a67;--line:#d9d0bf;--line2:#c9bda8;--ver:#c73e1d;--brass:#b89b5c;--accent:#1a2a4a}
-    html,body{height:100%}
-    body{font-family:"Noto Serif SC",serif;background:var(--paper);color:var(--ink)}
-    i[data-lucide]{width:18px;height:18px}
-    .paper-bg{position:fixed;inset:0;z-index:-1;background: radial-gradient(900px 500px at 20% -10%, rgba(184,155,92,.10), transparent 60%), linear-gradient(180deg, var(--paper), var(--paper2))}
-    /* login */
-    .login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px}
-    .login-card{width:100%;max-width:380px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(26,26,24,.08)}
-    .login-card h1{display:flex;gap:10px;align-items:center;justify-content:center;font-size:18px;letter-spacing:.12em}
-    .seal{width:36px;height:36px;border-radius:8px;background:var(--ver);color:#fff;display:grid;place-items:center;font-weight:700}
-    .login-card input{width:100%;margin-top:16px;padding:12px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper);font:inherit}
-    .login-card input:focus{outline:none;border-color:var(--brass);background:#fff}
-    .btn{width:100%;margin-top:12px;padding:12px;border:none;background:var(--ver);color:#fff;border-radius:12px;cursor:pointer}
-    .btn:active{transform:scale(.98)}
-    .err{color:var(--ver);font-size:13px;text-align:center;margin-top:10px;display:none}
-    /* admin */
-    .admin{max-width:1160px;margin:0 auto;padding:18px;display:none}
-    .admin-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px rgba(26,26,24,.06)}
-    .admin-head h1{display:flex;gap:8px;align-items:center;font-size:16px;letter-spacing:.08em}
-    .stats{display:flex;gap:10px;flex-wrap:wrap}
-    .stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 14px;text-align:center;min-width:88px}
-    .stat .n{font-weight:700;color:var(--accent)}
-    .stat .l{font-size:11px;color:var(--muted)}
-    .logout{padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer}
-    .records{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 8px 30px rgba(26,26,24,.06)}
-    .records-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:12px}
-    .records-head h2{display:flex;gap:8px;align-items:center;font-size:14px}
-    .ctrls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .date{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:inherit}
-    .ghost{padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
-    .ghost.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-    .ip-group{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;background:#fff}
-    .ip-head{padding:10px 12px;background:var(--paper);display:flex;gap:10px;align-items:center;justify-content:space-between;cursor:pointer}
-    .ip-head .ip{font-family:"JetBrains Mono",monospace;font-size:12px;background:#fff;border:1px solid var(--line);padding:4px 8px;border-radius:8px}
-    .ip-head .loc{font-size:12px;color:var(--accent)}
-    .ip-head .cnt{font-size:12px;color:var(--muted)}
-    .ip-body{padding:12px;display:flex;flex-direction:column;gap:10px}
-    .ip-group.collapsed .ip-body{display:none}
-    .record{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--paper)}
-    .record-meta{display:flex;gap:8px;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:8px}
-    .tag{font-size:11px;background:#fff;border:1px solid var(--line);padding:3px 8px;border-radius:999px}
-    .time{font-size:11px;color:var(--muted)}
-    .bubble{padding:10px 12px;border-radius:12px;max-width:88%;font-size:13px;line-height:1.7}
-    .bubble.user{background:var(--accent);color:#fff;align-self:flex-end}
-    .bubble.assistant{background:#fff;border:1px solid var(--line);align-self:flex-start}
-    .bubble .role{font-size:11px;opacity:.7;margin-bottom:4px}
-    .conv{display:flex;flex-direction:column;gap:8px}
-    .collapsed-txt{max-height:100px;overflow:hidden;position:relative}
-    .collapsed-txt::after{content:'';position:absolute;left:0;right:0;bottom:0;height:40px;background:linear-gradient(transparent, var(--paper))}
-    .expand{margin-top:6px;padding:6px 10px;border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;font-size:12px}
-    .section-title{font-weight:700;border-left:3px solid var(--ver);padding-left:8px;margin:8px 0 6px}
-    .loading{display:grid;place-items:center;padding:30px;color:var(--muted)}
-    .spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--ver);border-radius:50%;animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:640px){.records{padding:10px}.ip-head{flex-direction:column;align-items:flex-start}}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#09080c" />
+<meta name="robots" content="noindex,nofollow,noarchive" />
+<title>玄机子 · 观象台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#08070b;color:#d9d1c3}body{font-family:"Noto Serif SC",serif;background:radial-gradient(800px 460px at 18% -5%,rgba(133,89,37,.12),transparent 60%),radial-gradient(700px 520px at 100% 35%,rgba(92,31,28,.1),transparent 62%),#08070b}.grain{position:fixed;inset:0;pointer-events:none;opacity:.24;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.10'/%3E%3C/svg%3E");mix-blend-mode:soft-light}.shell{width:min(1240px,calc(100% - 32px));margin:auto;padding:26px 0 44px}.muted{color:#756d63}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.seal{width:42px;height:42px;display:grid;place-items:center;border:1px solid #a74535;color:#d78c78;font-weight:700;font-size:18px;position:relative}.seal:after{content:"";position:absolute;inset:6px;border:1px solid rgba(215,140,120,.16);transform:rotate(45deg)}button,input{font:inherit}button{color:inherit}
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}.login-card{width:min(430px,100%);padding:30px 28px 26px;border:1px solid rgba(207,170,98,.13);background:linear-gradient(150deg,rgba(22,19,24,.95),rgba(10,9,13,.96));box-shadow:0 30px 90px rgba(0,0,0,.45);position:relative;overflow:hidden}.login-card:before{content:"";position:absolute;width:220px;height:220px;border:1px solid rgba(195,159,91,.06);border-radius:50%;right:-105px;top:-115px;box-shadow:0 0 0 30px rgba(195,159,91,.018),0 0 0 62px rgba(195,159,91,.012)}.login-brand{display:flex;align-items:center;gap:14px;margin-bottom:25px}.login-brand h1{margin:0;font-size:18px;letter-spacing:.12em;color:#e7dbc3}.login-brand p{margin:5px 0 0;font-size:11px;letter-spacing:.09em;color:#675f56}.field-label{display:block;margin:0 0 8px;font-size:11px;letter-spacing:.12em;color:#857869}.login-card input,.search-input,.date{width:100%;border:1px solid rgba(208,173,103,.13);border-radius:3px;background:rgba(255,255,255,.025);color:#ddd2bf;padding:12px 13px;outline:none;transition:.2s}.login-card input:focus,.search-input:focus,.date:focus{border-color:rgba(210,174,102,.38);box-shadow:0 0 0 3px rgba(175,135,63,.045)}.primary{width:100%;margin-top:12px;border:1px solid rgba(186,137,66,.45);background:linear-gradient(180deg,#876232,#684721);color:#f1e2c4;padding:12px;cursor:pointer;letter-spacing:.12em;transition:.2s}.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}.err{display:none;margin:11px 0 0;color:#c97665;text-align:center;font-size:12px}.login-note{margin:14px 0 0;text-align:center;font-size:10px;line-height:1.7;color:#59534d}
+.admin{display:none}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 0 18px;border-bottom:1px solid rgba(209,172,99,.10)}.brand{display:flex;align-items:center;gap:13px}.brand h1{font-size:17px;margin:0;color:#e1d4bc;letter-spacing:.12em}.brand small{display:block;margin-top:4px;color:#6d645a;letter-spacing:.09em}.top-actions{display:flex;gap:8px;align-items:center}.ghost{border:1px solid rgba(201,166,96,.13);background:rgba(255,255,255,.018);padding:8px 10px;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#9d9283}.ghost:hover{border-color:rgba(201,166,96,.32);color:#d4c7b2}.ghost svg{width:14px;height:14px}
+.hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;margin:18px 0}.panel{border:1px solid rgba(206,168,94,.10);background:linear-gradient(145deg,rgba(19,17,21,.92),rgba(11,10,14,.94));box-shadow:0 15px 50px rgba(0,0,0,.18)}.overview{padding:20px}.eyebrow{font:600 10px/1 Cinzel,serif;letter-spacing:.28em;color:#8e7447;margin-bottom:10px}.overview h2{margin:0 0 7px;font-size:22px;font-weight:500;color:#e1d7c5;letter-spacing:.05em}.overview p{margin:0;font-size:11px;line-height:1.8;color:#746c62}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}.stat{min-height:78px;padding:13px;border:1px solid rgba(202,165,91,.08);background:rgba(255,255,255,.012)}.stat .n{font:600 23px/1.2 Cinzel,"Noto Serif SC",serif;color:#c8a260}.stat .l{margin-top:5px;font-size:10px;color:#6e665d;letter-spacing:.08em}.health{padding:20px}.health h3{margin:0 0 14px;font-size:13px;color:#cfc2ac;letter-spacing:.08em}.provider-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.provider{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border:1px solid rgba(204,169,97,.08);background:rgba(255,255,255,.012);font-size:10.5px;color:#857c70}.provider .dot{width:6px;height:6px;border-radius:50%;background:#473f39;box-shadow:0 0 0 3px rgba(255,255,255,.015)}.provider.on .dot{background:#78926c;box-shadow:0 0 10px rgba(120,146,108,.35)}.health-time{font-size:9px;color:#55504b;margin-top:12px}
+.records-panel{padding:18px}.records-head{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;padding-bottom:15px;border-bottom:1px solid rgba(204,168,95,.09)}.records-title h2{margin:0;font-size:14px;letter-spacing:.09em;color:#d2c5ae}.records-title p{margin:5px 0 0;font-size:10px;color:#625b53}.filters{display:flex;gap:7px;align-items:center}.filters .date{width:145px;padding:8px 9px;font-size:10.5px}.search-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0}.search-input{font-size:11px;padding:9px 11px}.mode{display:flex;align-items:center;padding:0 11px;border:1px solid rgba(201,166,96,.08);font-size:10px;color:#6e655a;background:rgba(255,255,255,.01)}
+#recordsList{min-height:150px}.ip-group{border:1px solid rgba(201,164,92,.08);margin-bottom:9px;background:rgba(255,255,255,.008)}.ip-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;background:rgba(255,255,255,.012)}.ip-head:hover{background:rgba(255,255,255,.02)}.ip-main{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ip{font-size:10px;color:#ad9c83}.loc{font-size:10px;color:#766b5e}.cnt{font-size:9px;color:#514c46}.chev{transition:.2s;color:#625a50}.ip-group.collapsed .chev{transform:rotate(-90deg)}.ip-body{padding:10px;display:grid;gap:8px}.ip-group.collapsed .ip-body{display:none}.record{padding:12px;border:1px solid rgba(202,164,91,.07);background:#0c0b0f}.record-meta{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.tag{font-size:9px;letter-spacing:.06em;padding:3px 7px;border:1px solid rgba(194,150,73,.18);color:#a98958;background:rgba(174,128,49,.04)}.time{font-size:9px;color:#514c46}.conv{display:grid;gap:8px}.turn{position:relative;padding-left:14px}.turn:before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:1px;background:rgba(198,158,82,.10)}.turn.user:before{background:rgba(151,59,46,.35)}.role{font-size:9px;letter-spacing:.12em;color:#665f58;margin-bottom:4px}.text{font-size:11px;line-height:1.85;color:#a89e91;overflow-wrap:anywhere}.turn.user .text{color:#cfc2b0}.collapsed-txt{max-height:96px;overflow:hidden;mask-image:linear-gradient(#000 66%,transparent)}.expand{margin-top:7px;padding:4px 8px;border:1px solid rgba(202,164,91,.1);background:transparent;color:#756b5e;font-size:9px;cursor:pointer}.section-title{margin:9px 0 4px;color:#c5a56d;font-weight:600}.loading,.empty{padding:38px;text-align:center;color:#5e5750;font-size:11px}.spinner{width:25px;height:25px;margin:0 auto 10px;border:1px solid rgba(197,157,81,.15);border-top-color:#aa8043;border-radius:50%;animation:spin 1.1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}mark{background:rgba(155,64,48,.14);color:#d1a698;padding:0 2px}
+@media(max-width:780px){.shell{width:min(100% - 20px,1240px);padding-top:15px}.hero-grid{grid-template-columns:1fr}.records-head{grid-template-columns:1fr}.filters{flex-wrap:wrap}.filters .date{flex:1}.stats{grid-template-columns:repeat(3,1fr)}.provider-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.topbar{align-items:flex-start}.brand small{display:none}.hero-grid{margin-top:12px}.overview,.health,.records-panel{padding:14px}.stats{gap:5px}.stat{padding:10px;min-height:66px}.stat .n{font-size:19px}.provider-grid{grid-template-columns:1fr}.filters{display:grid;grid-template-columns:1fr 1fr}.filters .date{grid-column:1/-1;width:100%}.search-row{grid-template-columns:1fr}.mode{min-height:33px}.ip-head{align-items:flex-start}.record{padding:10px}}
+</style>
 </head>
 <body>
-  <div class="paper-bg" aria-hidden="true"></div>
-
-  <div class="login-wrap" id="loginContainer">
-    <div class="login-card">
-      <h1><span class="seal">观</span> 玄机子 · 后台</h1>
-      <input id="passwordInput" type="password" placeholder="管理密码" autocomplete="off" />
-      <button class="btn" id="loginBtn">进入</button>
-      <p class="err" id="errorMsg">密码错误或未授权</p>
-      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">密码由 Cloudflare 环境变量校验，不在前端硬编码比对</p>
-    </div>
+<div class="grain" aria-hidden="true"></div>
+<section class="login-wrap" id="loginContainer">
+  <div class="login-card">
+    <div class="login-brand"><span class="seal">观</span><div><h1>玄机子 · 观象台</h1><p>问卜记录与灵枢状态</p></div></div>
+    <label class="field-label" for="passwordInput">掌门口令</label>
+    <input id="passwordInput" type="password" placeholder="输入 ADMIN_PASSWORD" autocomplete="current-password" />
+    <button class="primary" id="loginBtn">启封观象台</button>
+    <p class="err" id="errorMsg">未授权</p>
+    <p class="login-note">口令只用于本次后台请求校验，不写进项目源码。关闭当前浏览器标签后建议退出后台。</p>
   </div>
+</section>
 
-  <div class="admin" id="adminContainer">
-    <div class="admin-head">
-      <h1><i data-lucide="scroll"></i> 玄机子 · 对话管理</h1>
+<main class="shell admin" id="adminContainer">
+  <header class="topbar">
+    <div class="brand"><span class="seal">玄</span><div><h1>观象台</h1><small>玄机子 · 运行与问卜档案</small></div></div>
+    <div class="top-actions"><button class="ghost" id="refreshBtn"><i data-lucide="refresh-cw"></i>刷新</button><button class="ghost" id="logoutBtn"><i data-lucide="log-out"></i>退出</button></div>
+  </header>
+
+  <section class="hero-grid">
+    <div class="panel overview">
+      <div class="eyebrow">OBSERVATORY</div>
+      <h2>今日灵台概览</h2>
+      <p>这里只呈现运行状态和问卜记录，不展示任何密钥。统计记录取自 Cloudflare KV。</p>
       <div class="stats">
-        <div class="stat"><div class="n" id="totalRecords">0</div><div class="l">总数</div></div>
-        <div class="stat"><div class="n" id="todayRecords">0</div><div class="l">今日</div></div>
-        <div class="stat"><div class="n" id="uniqueIPs">0</div><div class="l">独立IP</div></div>
+        <div class="stat"><div class="n" id="totalRecords">0</div><div class="l">全部记录</div></div>
+        <div class="stat"><div class="n" id="todayRecords">0</div><div class="l">今日记录</div></div>
+        <div class="stat"><div class="n" id="uniqueIPs">0</div><div class="l">当前访客</div></div>
       </div>
-      <button class="logout" id="logoutBtn"><i data-lucide="log-out"></i> 退出</button>
     </div>
+    <aside class="panel health">
+      <h3>灵枢线路</h3>
+      <div class="provider-grid" id="providerGrid"><div class="provider"><span>读取中</span><span class="dot"></span></div></div>
+      <div class="health-time" id="healthTime">尚未检查</div>
+    </aside>
+  </section>
 
-    <div class="records">
-      <div class="records-head">
-        <h2><i data-lucide="messages-square"></i> 对话记录 <span id="loadModeLabel" style="font-size:12px;color:var(--muted);font-weight:400"></span></h2>
-        <div class="ctrls">
-          <input type="date" id="dateSelector" class="date" />
-          <button class="ghost" id="todayBtn"><i data-lucide="calendar-days"></i> 今日</button>
-          <button class="ghost primary" id="allBtn"><i data-lucide="library"></i> 全部</button>
-        </div>
+  <section class="panel records-panel">
+    <div class="records-head">
+      <div class="records-title"><h2>问卜档案</h2><p>按访客归档；“最近记录”单次最多加载 250 条，避免后台请求过重。</p></div>
+      <div class="filters">
+        <input type="date" id="dateSelector" class="date" />
+        <button class="ghost" id="todayBtn"><i data-lucide="calendar-days"></i>今日</button>
+        <button class="ghost" id="allBtn"><i data-lucide="library"></i>最近记录</button>
       </div>
-      <div id="recordsList"><div class="loading"><div class="spinner"></div><p>加载中</p></div></div>
     </div>
-  </div>
-
+    <div class="search-row"><input class="search-input" id="searchInput" type="search" placeholder="筛选 IP、地区、问题或回答……" /><div class="mode" id="loadModeLabel">今日</div></div>
+    <div id="recordsList"><div class="loading"><div class="spinner"></div>正在启封档案</div></div>
+  </section>
+</main>
 <script>
-let adminPassword = '';
+'use strict';
+let adminPassword='';
 let isLoggedIn=false;
-
-function refreshIcons(){ if(window.lucide) window.lucide.createIcons(); }
-
+let lastPayload=null;
+const providerNames={zhipu:'智谱 · GLM',groq:'Groq · Qwen',cloudflare:'Cloudflare',gemini:'Gemini',hfpublic:'公共备用',custom:'自备上游'};
+const $=id=>document.getElementById(id);
+function icons(){if(window.lucide) window.lucide.createIcons()}
+function esc(v){const d=document.createElement('div');d.textContent=String(v??'');return d.innerHTML}
+function localDateKey(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function showErr(msg){const e=$('errorMsg');e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',2600)}
 async function login(){
-  const input=document.getElementById('passwordInput');
-  const pwd=input.value.trim();
-  if(!pwd){ showErr('请输入密码'); return; }
-  // 直接以后端校验为准：发一次轻量请求
-  const test = await fetch('/api/admin/records?date='+new Date().toISOString().slice(0,10), { headers:{ 'X-Admin-Password': pwd } });
-  if(test.status===401){
-    showErr('密码错误或未授权'); return;
-  }
-  if(!test.ok){
-    showErr('校验失败：'+test.status); return;
-  }
-  adminPassword = pwd;
-  isLoggedIn=true;
-  sessionStorage.setItem('adminPwd', pwd);
-  document.getElementById('loginContainer').style.display='none';
-  document.getElementById('adminContainer').style.display='block';
-  initDateSelector(); initialLoad();
-}
-function showErr(msg){
-  const e=document.getElementById('errorMsg'); e.textContent=msg; e.style.display='block'; setTimeout(()=>e.style.display='none',2500);
-}
-function logout(){
-  isLoggedIn=false; adminPassword='';
-  sessionStorage.removeItem('adminPwd');
-  document.getElementById('loginContainer').style.display='grid';
-  document.getElementById('adminContainer').style.display='none';
-  document.getElementById('passwordInput').value='';
-}
-document.getElementById('loginBtn').addEventListener('click', login);
-document.getElementById('logoutBtn').addEventListener('click', logout);
-document.getElementById('passwordInput').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
-document.getElementById('todayBtn').addEventListener('click', loadTodayRecords);
-document.getElementById('allBtn').addEventListener('click', loadAllRecords);
-
-// 恢复会话
-const savedPwd = sessionStorage.getItem('adminPwd');
-if(savedPwd){
-  document.getElementById('passwordInput').value = savedPwd;
-  // 自动尝试登录
-  login();
-}
-
-function initDateSelector(){
-  const el=document.getElementById('dateSelector');
-  const today=new Date().toISOString().slice(0,10);
-  el.value=today;
-  el.addEventListener('change', loadRecordsByDate);
-}
-function loadTodayRecords(){
-  const t=new Date().toISOString().slice(0,10);
-  document.getElementById('dateSelector').value=t;
-  loadRecords(t);
-}
-function loadAllRecords(){
-  document.getElementById('dateSelector').value='';
-  loadRecords(null,true);
-}
-function loadRecordsByDate(){
-  const d=document.getElementById('dateSelector').value;
-  if(d) loadRecords(d);
-}
-async function initialLoad(){
-  const t=new Date().toISOString().slice(0,10);
-  document.getElementById('dateSelector').value=t;
-  await loadRecords(t);
-}
-async function loadRecords(date=null, loadAll=false){
-  if(!isLoggedIn) return;
-  const list=document.getElementById('recordsList');
-  const label=document.getElementById('loadModeLabel');
-  label.textContent = loadAll? '(全部)' : `(${date||new Date().toISOString().slice(0,10)})`;
-  list.innerHTML='<div class="loading"><div class="spinner"></div><p>'+(loadAll?'加载全部中…':'加载 '+date+' 中…')+'</p></div>';
+  const pwd=$('passwordInput').value.trim(); if(!pwd)return showErr('请输入管理口令');
+  $('loginBtn').disabled=true;
   try{
-    let url='/api/admin/records';
-    if(loadAll) url+='?all=true';
-    else if(date) url+=`?date=${date}`;
-    const resp = await fetch(url, { headers:{ 'X-Admin-Password': adminPassword } });
-    if(!resp.ok) throw new Error('加载失败 '+resp.status);
-    const data = await resp.json();
-    displayRecords(data, loadAll, date);
-  }catch(e){
-    list.innerHTML='<div class="loading"><p>加载失败：'+escapeHtml(e.message)+'</p></div>';
-  }
+    const resp=await fetch('/api/admin/records?date='+encodeURIComponent(localDateKey())+'&limit=1',{headers:{'X-Admin-Password':pwd},cache:'no-store'});
+    if(resp.status===401)throw new Error('密码错误或未授权');
+    if(!resp.ok)throw new Error('后台校验失败 · '+resp.status);
+    adminPassword=pwd;isLoggedIn=true;
+    $('loginContainer').style.display='none';$('adminContainer').style.display='block';
+    initDate();await Promise.all([loadRecords(localDateKey()),loadHealth()]);
+  }catch(e){showErr(e.message||'连接失败')}finally{$('loginBtn').disabled=false}
 }
-
-function displayRecords(data, loadAll, date){
-  const list=document.getElementById('recordsList');
-  const records=data.records||[];
-  document.getElementById('totalRecords').textContent=data.stats?.total||records.length;
-  document.getElementById('todayRecords').textContent=data.stats?.today||0;
-  document.getElementById('uniqueIPs').textContent=data.stats?.uniqueIPs||0;
-  if(data.dateRange){
-    const sel=document.getElementById('dateSelector');
-    if(data.dateRange.min) sel.min=data.dateRange.min;
-    if(data.dateRange.max) sel.max=data.dateRange.max;
-  }
-  if(!records.length){
-    const msg = loadAll? '暂无记录' : `${date||'今日'}暂无记录`;
-    list.innerHTML='<div class="loading"><p>'+msg+'</p></div>'; return;
-  }
-  const groups={};
-  records.forEach(r=>{ const ip=r.ip||'未知IP'; (groups[ip]=groups[ip]||[]).push(r); });
-  Object.values(groups).forEach(arr=> arr.sort((a,b)=> new Date(b.timestamp)-new Date(a.timestamp)) );
-  const sortedIPs = Object.keys(groups).sort((a,b)=> new Date(groups[b][0].timestamp)-new Date(groups[a][0].timestamp));
-  let html=''; let gIdx=0; let global=0;
-  sortedIPs.forEach(ip=>{
-    const arr=groups[ip];
-    const latest=new Date(arr[0].timestamp).toLocaleString('zh-CN');
-    const loc=arr[0].location||'';
-    html+=`<div class="ip-group" id="group-${gIdx}"><div class="ip-head" onclick="toggleGroup(${gIdx})"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="ip">${escapeHtml(ip)}</span><span class="loc">${escapeHtml(loc||'查询中')}</span><span class="cnt">${arr.length}条 · ${latest}</span></div><span style="font-size:12px;color:var(--muted)"><i data-lucide="chevron-down"></i></span></div><div class="ip-body">`;
-    arr.forEach(rec=>{
-      const time=new Date(rec.timestamp).toLocaleString('zh-CN');
-      const q=escapeHtml(rec.question||'');
-      const a=formatContent(rec.answer||'');
-      const isLong=(rec.answer||'').length>220;
-      html+=`<div class="record"><div class="record-meta"><span class="tag">${escapeHtml(rec.routeLabel||rec.model||rec.route||'文本')}</span><span class="time">${time}</span></div><div class="conv"><div class="bubble user"><div class="role">用户</div><div>${q}</div></div><div class="bubble assistant"><div class="role">玄机子</div><div class="${isLong?'collapsed-txt':''}" id="answer-${global}">${a}</div>${isLong?`<button class="expand" onclick="toggleExpand(${global})">展开全文</button>`:''}</div></div></div>`;
-      global++;
-    });
-    html+='</div></div>'; gIdx++;
-  });
-  list.innerHTML=html; refreshIcons();
+function logout(){adminPassword='';isLoggedIn=false;lastPayload=null;$('adminContainer').style.display='none';$('loginContainer').style.display='grid';$('passwordInput').value=''}
+function initDate(){const el=$('dateSelector');if(el.dataset.ready)return;el.dataset.ready='1';el.value=localDateKey();el.addEventListener('change',()=>el.value&&loadRecords(el.value))}
+async function loadHealth(){
+  try{const r=await fetch('/api/health',{cache:'no-store',headers:{'X-Admin-Password':adminPassword}});if(!r.ok)throw new Error();const d=await r.json();$('providerGrid').innerHTML=(d.providers||[]).map(p=>`<div class="provider ${p.configured?'on':''}"><span>${esc(providerNames[p.id]||p.id)}</span><span class="dot" title="${p.configured?'已配置':'未配置'}"></span></div>`).join('')||'<div class="provider"><span>暂无线路</span><span class="dot"></span></div>';$('healthTime').textContent='检查时间 · '+new Date(d.at||Date.now()).toLocaleString('zh-CN')}
+  catch{$('providerGrid').innerHTML='<div class="provider"><span>状态读取失败</span><span class="dot"></span></div>';$('healthTime').textContent='可稍后手动刷新'}
 }
-function toggleGroup(i){
-  const el=document.getElementById('group-'+i);
-  if(el) el.classList.toggle('collapsed');
+async function loadRecords(date=null,all=false){
+  if(!isLoggedIn)return;const list=$('recordsList');$('loadModeLabel').textContent=all?'最近 250 条':(date||'今日');list.innerHTML='<div class="loading"><div class="spinner"></div>正在读取问卜档案</div>';
+  try{let url='/api/admin/records?limit=250';if(all)url+='&all=true';else url+='&date='+encodeURIComponent(date||localDateKey());const r=await fetch(url,{headers:{'X-Admin-Password':adminPassword},cache:'no-store'});if(r.status===401){logout();throw new Error('登录已失效')}if(!r.ok)throw new Error('读取失败 · '+r.status);lastPayload=await r.json();renderRecords(lastPayload)}catch(e){list.innerHTML='<div class="empty">'+esc(e.message||'读取失败')+'</div>'}
 }
-function toggleExpand(i){
-  const el=document.getElementById('answer-'+i);
-  const btn=el.nextElementSibling;
-  if(el.classList.contains('collapsed-txt')){ el.classList.remove('collapsed-txt'); btn.textContent='收起'; }
-  else { el.classList.add('collapsed-txt'); btn.textContent='展开全文'; }
+function renderRecords(data){
+  const rows=data?.records||[];$('totalRecords').textContent=data?.stats?.total??rows.length;$('todayRecords').textContent=data?.stats?.today??0;$('uniqueIPs').textContent=data?.stats?.uniqueIPs??0;
+  if(data?.dateRange){const el=$('dateSelector');if(data.dateRange.min)el.min=data.dateRange.min;if(data.dateRange.max)el.max=data.dateRange.max}
+  const q=$('searchInput').value.trim().toLowerCase();const filtered=!q?rows:rows.filter(r=>[r.ip,r.location,r.question,r.answer,r.routeLabel,r.model].some(v=>String(v||'').toLowerCase().includes(q)));
+  if(!filtered.length){$('recordsList').innerHTML='<div class="empty">'+(rows.length?'没有符合筛选条件的档案':'这一日尚无问卜记录')+'</div>';return}
+  const groups={};for(const r of filtered){const ip=r.ip||'未知访客';(groups[ip]??=[]).push(r)}
+  const ips=Object.keys(groups).sort((a,b)=>new Date(groups[b][0]?.timestamp||0)-new Date(groups[a][0]?.timestamp||0));let html='',idx=0,answerIdx=0;
+  for(const ip of ips){const arr=groups[ip].sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0));const first=arr[0]||{};html+=`<section class="ip-group" id="group-${idx}"><div class="ip-head" data-group="${idx}" tabindex="0" role="button"><div class="ip-main"><span class="ip mono">${esc(ip)}</span><span class="loc">${esc(first.location||'地区未识别')}</span><span class="cnt">${arr.length} 次 · ${esc(new Date(first.timestamp||Date.now()).toLocaleString('zh-CN'))}</span></div><span class="chev">⌄</span></div><div class="ip-body">`;
+    for(const rec of arr){const ans=String(rec.answer||'');const long=ans.length>260;const ai=answerIdx++;html+=`<article class="record"><div class="record-meta"><span class="tag">${esc(rec.routeLabel||rec.model||rec.route||'推演')}</span><span class="time">${esc(new Date(rec.timestamp||Date.now()).toLocaleString('zh-CN'))}${rec.vision?' · 图象':''}</span></div><div class="conv"><div class="turn user"><div class="role">所问</div><div class="text">${esc(rec.question||'')}</div></div><div class="turn"><div class="role">玄机子</div><div id="answer-${ai}" class="text ${long?'collapsed-txt':''}">${format(ans)}</div>${long?`<button class="expand" data-answer="${ai}">展开全文</button>`:''}</div></div></article>`}
+    html+='</div></section>';idx++}
+  $('recordsList').innerHTML=html;
+  document.querySelectorAll('.ip-head').forEach(h=>{const fn=()=>h.closest('.ip-group')?.classList.toggle('collapsed');h.addEventListener('click',fn);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}})});
+  document.querySelectorAll('.expand').forEach(b=>b.addEventListener('click',()=>{const el=$('answer-'+b.dataset.answer);const c=el.classList.toggle('collapsed-txt');b.textContent=c?'展开全文':'收起'}));icons()
 }
-function formatContent(content){
-  if(!content) return '';
-  let s=escapeHtml(content);
-  s=s.replace(/^###\s*(.+)$/gm,'<div class="section-title">$1</div>').replace(/^##\s*(.+)$/gm,'<div class="section-title">$1</div>').replace(/^#\s*(.+)$/gm,'<div class="section-title">$1</div>');
-  s=s.replace(/\n/g,'<br>');
-  s=s.replace(/【([^】]+)】/g,'<div class="section-title">$1</div>');
-  s=s.replace(/「([^」]+)」/g,'<mark>$1</mark>');
-  s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
-  return s;
-}
-function escapeHtml(t){ const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
-
-refreshIcons();
+function format(v){let s=esc(v);s=s.replace(/^#{1,3}\s*(.+)$/gm,'<div class="section-title">$1</div>');s=s.replace(/【([^】]+)】/g,'<div class="section-title">$1</div>');s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');s=s.replace(/「([^」]+)」/g,'<mark>$1</mark>');return s.replace(/\n/g,'<br>')}
+$('loginBtn').addEventListener('click',login);$('passwordInput').addEventListener('keydown',e=>e.key==='Enter'&&login());$('logoutBtn').addEventListener('click',logout);$('todayBtn').addEventListener('click',()=>{$('dateSelector').value=localDateKey();loadRecords(localDateKey())});$('allBtn').addEventListener('click',()=>{$('dateSelector').value='';loadRecords(null,true)});$('refreshBtn').addEventListener('click',()=>Promise.all([$('dateSelector').value?loadRecords($('dateSelector').value):loadRecords(null,true),loadHealth()]));$('searchInput').addEventListener('input',()=>lastPayload&&renderRecords(lastPayload));
+icons();
 </script>
 </body>
 </html>

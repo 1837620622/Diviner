@@ -1,139 +1,67 @@
-// Cloudflare Pages Function - 管理后台API
-// 用于获取对话记录
-// 优化版：使用prefix筛选，最大化节省KV读取次数
-// 新格式key: chat_YYYY-MM-DD_timestamp_random
+// 玄机子 · 管理后台记录接口
+// 只允许通过 ADMIN_PASSWORD 访问；单次最多加载 250 条，避免 KV 子请求过量。
 
-const ADMIN_PASSWORD = (typeof process !== 'undefined' ? null : null); // 占位，实际从 env 读取
-// 优先从环境变量读取，避免硬编码泄露
+const HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 
-export async function onRequestGet(context) {
-    const { request, env } = context;
-    
-    // 管理后台必须显式配置口令，禁止使用公开默认密码。
-    const expected = (env.ADMIN_PASSWORD || '').trim();
-    if (!expected) {
-        return new Response(JSON.stringify({ error: '管理后台尚未配置 ADMIN_PASSWORD' }), {
-            status: 503,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        });
-    }
-    const password = (request.headers.get('X-Admin-Password') || '').trim();
-    if (password !== expected) {
-        return new Response(JSON.stringify({
-            error: '未授权访问'
-        }), {
-            status: 401,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        });
-    }
-    
-    try {
-        const CHAT_LOGS = env.CHAT_LOGS;
-        
-        if (!CHAT_LOGS) {
-            return new Response(JSON.stringify({
-                records: [],
-                stats: { total: 0, today: 0, uniqueIPs: 0 },
-                dateRange: { min: null, max: null }
-            }), {
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-            });
-        }
-        
-        const url = new URL(request.url);
-        const loadAll = url.searchParams.get('all') === 'true';
-        const dateParam = url.searchParams.get('date');
-        const today = new Date().toISOString().split('T')[0];
-        const targetDate = dateParam || today;
-        
-        // ========== 第一步：只用list获取keys，解析日期范围（不消耗get配额）==========
-        const allKeys = await CHAT_LOGS.list({ prefix: 'chat_' });
-        const allDates = new Set();
-        
-        // 从key名解析日期（新格式: chat_YYYY-MM-DD_timestamp_random）
-        for (const key of allKeys.keys) {
-            const match = key.name.match(/^chat_(\d{4}-\d{2}-\d{2})_/);
-            if (match) {
-                allDates.add(match[1]);
-            }
-        }
-        
-        // ========== 第二步：按需读取记录 ==========
-        let keysToLoad;
-        if (loadAll) {
-            // 加载全部：直接用已获取的keys
-            keysToLoad = allKeys.keys;
-        } else {
-            // 按日期筛选：用prefix精确获取（节省读取）
-            const filtered = await CHAT_LOGS.list({ prefix: `chat_${targetDate}_` });
-            keysToLoad = filtered.keys;
-        }
-        
-        // 读取记录
-        const records = [];
-        const ipSet = new Set();
-        let todayCount = 0;
-        
-        for (const key of keysToLoad) {
-            const record = await CHAT_LOGS.get(key.name, { type: 'json' });
-            if (record) {
-                records.push(record);
-                if (record.ip) ipSet.add(record.ip);
-                if (record.timestamp?.startsWith(today)) todayCount++;
-            }
-        }
-        
-        // 计算日期范围
-        const sortedDates = Array.from(allDates).sort();
-        
-        return new Response(JSON.stringify({
-            records: records,
-            stats: {
-                total: allKeys.keys.length,
-                today: todayCount,
-                uniqueIPs: ipSet.size,
-                loaded: records.length
-            },
-            dateRange: {
-                min: sortedDates[0] || today,
-                max: sortedDates[sortedDates.length - 1] || today,
-                available: sortedDates
-            }
-        }), {
-            status: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        });
-        
-    } catch (error) {
-        return new Response(JSON.stringify({
-            error: '获取记录失败: ' + error.message
-        }), {
-            status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        });
-    }
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), { status, headers: HEADERS });
 }
 
-// 处理CORS预检请求
-export async function onRequestOptions() {
-    return new Response(null, {
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password'
-        }
+async function listAllKeys(kv, prefix, maxKeys = 5000) {
+  let cursor;
+  const keys = [];
+  do {
+    const page = await kv.list({ prefix, limit: 1000, ...(cursor ? { cursor } : {}) });
+    keys.push(...page.keys);
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor && keys.length < maxKeys);
+  return keys.slice(0, maxKeys);
+}
+
+export async function onRequestGet({ request, env }) {
+  const expected = String(env.ADMIN_PASSWORD || '').trim();
+  if (!expected) return json({ error: '管理后台尚未配置 ADMIN_PASSWORD' }, 503);
+
+  const supplied = String(request.headers.get('X-Admin-Password') || '').trim();
+  if (!supplied || supplied !== expected) return json({ error: '未授权访问' }, 401);
+
+  if (!env.CHAT_LOGS) {
+    return json({ records: [], stats: { total: 0, today: 0, uniqueIPs: 0, loaded: 0 }, dateRange: { min: null, max: null, available: [] } });
+  }
+
+  try {
+    const url = new URL(request.url);
+    const loadAll = url.searchParams.get('all') === 'true';
+    const today = new Date().toISOString().slice(0, 10);
+    const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('date') || '') ? url.searchParams.get('date') : today;
+    const requestedLimit = Number(url.searchParams.get('limit') || 200);
+    const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 200, 1), 250);
+
+    const allKeys = await listAllKeys(env.CHAT_LOGS, 'chat_', 5000);
+    const dates = [...new Set(allKeys.map((k) => k.name.match(/^chat_(\d{4}-\d{2}-\d{2})_/)?.[1]).filter(Boolean))].sort();
+
+    let candidate = loadAll ? allKeys : allKeys.filter((k) => k.name.startsWith(`chat_${targetDate}_`));
+    candidate = candidate.sort((a, b) => b.name.localeCompare(a.name)).slice(0, limit);
+
+    const records = [];
+    for (const key of candidate) {
+      const rec = await env.CHAT_LOGS.get(key.name, { type: 'json' });
+      if (rec) records.push(rec);
+    }
+
+    const uniqueIPs = new Set(records.map((r) => r.ip).filter(Boolean)).size;
+    const todayCount = allKeys.filter((k) => k.name.startsWith(`chat_${today}_`)).length;
+
+    return json({
+      records,
+      stats: { total: allKeys.length, today: todayCount, uniqueIPs, loaded: records.length, capped: allKeys.length >= 5000 },
+      dateRange: { min: dates[0] || null, max: dates[dates.length - 1] || null, available: dates },
     });
+  } catch (error) {
+    return json({ error: '获取记录失败', detail: String(error?.message || error).slice(0, 200) }, 500);
+  }
+}
+
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password' } });
 }
