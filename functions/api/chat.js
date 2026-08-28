@@ -3,6 +3,9 @@
 // 浏览器在请求体里带 model 字段（前端下拉所选的模型 id），
 // 服务端据此映射到对应上游（Groq / b.ai / 智谱），密钥与上游真实模型代号不下发到浏览器。
 // 任一线路失败时，返回带 model_error 标记的 SSE 帧，由前端提示用户重新选择模型。
+// 联网查证模块：请求体带 web_search: true 时先搜索资料并以 SSE 帧播报进程，
+// 再把资料注入 system 消息，让模型以自身易学知识与查证资料相互校正后作答。
+import { webSearch } from './_search.js';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 
@@ -68,6 +71,57 @@ function sanitizeMessages(input, allowImages = true) {
     }
     return { role, content: parts.length ? parts : '' };
   });
+}
+
+// 把联网查证资料逐条拼成注入文本（标题、摘要、链接 + 校正指令）。
+function buildSourcesBlock(sources) {
+  const lines = sources.map(
+    (s, i) => `${i + 1}. 标题：${s.title}\n   摘要：${s.snippet}\n   链接：${s.url}`
+  );
+  return [
+    '【联网查证资料】',
+    ...lines,
+    '',
+    '以上为联网查证所得。作答时须以你自身的易学知识与上述资料相互校正；若两者冲突，须在『象数解析』中明言冲突所在，不可含糊。',
+  ].join('\n');
+}
+
+// 将查证资料注入原始消息的 system 消息末尾。
+// 必须在 sanitizeMessages 之前执行：sanitize 对 system 消息单独保留、整体随请求上行，
+// 注入内容不会被「最近 18 条 / 文本预算」的裁剪逻辑丢掉。
+// 无 system 消息时新建一条；system.content 为多模态数组时追加文本块。
+function injectSearchSources(rawMessages, sources) {
+  const block = buildSourcesBlock(sources);
+  const sys = rawMessages.find((m) => m?.role === 'system');
+  if (!sys) {
+    rawMessages.unshift({ role: 'system', content: block });
+    return;
+  }
+  if (Array.isArray(sys.content)) {
+    sys.content.push({ type: 'text', text: block });
+  } else {
+    sys.content = `${String(sys.content || '')}\n\n${block}`;
+  }
+}
+
+// 英文问卜者语言提示（请求体 lang === 'en' 时追加到 system 消息末尾）。
+const EN_LANG_HINT = '[语言] The questioner is using English. Always reply in English (keep Chinese divination terms with brief English glosses).';
+
+// 将英文提示追加到原始消息的 system 消息末尾（占一行）。
+// 与查证资料注入同理：在 sanitizeMessages 之前执行，确保不被裁剪；
+// 无 system 消息时新建一条；system.content 为多模态数组时追加文本块。
+// 须在 injectSearchSources 之后调用，使语言指令位于 system 消息最末尾。
+function injectEnglishHint(rawMessages) {
+  const sys = rawMessages.find((m) => m?.role === 'system');
+  if (!sys) {
+    rawMessages.unshift({ role: 'system', content: EN_LANG_HINT });
+    return;
+  }
+  if (Array.isArray(sys.content)) {
+    sys.content.push({ type: 'text', text: EN_LANG_HINT });
+  } else {
+    sys.content = `${String(sys.content || '')}\n${EN_LANG_HINT}`;
+  }
 }
 
 // 构造一个 OpenAI 兼容线路描述。extra 可带：
@@ -147,6 +201,9 @@ function repairGarbledText(text) {
 function isRetryableFail(status, err) {
   // 402（额度用尽）重试无意义，不纳入重试集合。
   if (status === 429 || status === 408 || status === 503 || status === 529) return true;
+  // 401/403 多为密钥未点亮，但聚合网关存在偶发瞬时拒绝，故也纳入「可重试一次」；
+  // 若重试后仍失败，friendlyFailMessage 依旧以「灵台尚未点亮」文案呈现，对用户不变。
+  if (status === 401 || status === 403) return true;
   // controller.abort('timeout') 抛出的是 AbortError，须按 name 识别，否则超时不会被重试。
   if (err?.name === 'AbortError') return true;
   const msg = String(err?.message || err || '').toLowerCase();
@@ -184,6 +241,9 @@ async function saveRecord(env, request, record) {
     model: record.model || '',
     modelId: record.modelId || '',
     vision: !!record.vision,
+    // 联网查证标记：只记是否启用与命中条数，不落资料全文，控制 KV 体积。
+    webSearch: !!record.webSearch,
+    sourceCount: Number(record.sourceCount || 0),
   };
   await env.CHAT_LOGS.put(key, JSON.stringify(payload), { expirationTtl: 60 * 60 * 24 * 90 });
 }
@@ -378,116 +438,197 @@ export async function onRequestPost(context) {
   const maxTokens = route.maxTokens || (Number.isFinite(body.max_tokens) ? Math.min(Math.max(body.max_tokens, 384), 4096) : 2400);
   const temperature = Number.isFinite(body.temperature) ? Math.min(Math.max(body.temperature, 0.1), 1) : 0.72;
 
-  const { response: activeResponse, fail } = await callSelectedRoute(route, messages, maxTokens, temperature);
+  // ── 联网查证开关 ─────────────────────────────────────────────────────
+  // web_search 为 true 时：先联网搜索问卜问题的相关资料，用 SSE 帧实时播报
+  // 搜索进程，成功后把资料注入 system 消息，再调用上游；搜索失败或超时只写
+  // skipped 帧，照常起卦，绝不因查证失败拒绝服务。
+  const wantWebSearch = body?.web_search === true;
+  // 语言偏好：lang === 'en' 时在 system 消息末尾追加英文作答指令；'zh' 或省略则不做任何改动。
+  const wantEnglish = body?.lang === 'en';
+  // 搜索词：优先请求体显式给出的 search_query；缺省取末条用户问题前 60 字。
+  const searchQuery = wantWebSearch
+    ? (String(body?.search_query || '').trim() || lastUserQuestion(messages).slice(0, 60))
+    : '';
 
-  if (!activeResponse) {
-    const message = friendlyFailMessage(fail);
-    const logPromise = saveRecord(env, request, {
-      question: lastUserQuestion(messages), answer: message, route: 'error', routeLabel: route.label,
-      model: route.model, modelId, vision: requestHasImage,
-    }).catch(() => {});
-    if (typeof context.waitUntil === 'function') context.waitUntil(logPromise);
-    return modelErrorSse(message, modelId);
-  }
-
-  const reader = activeResponse.body.getReader();
-  const decoder = new TextDecoder();
+  // 请求结构重构：不再等上游返回后才建流。先建 TransformStream 并立即返回
+  // SSE 响应头，「搜索 → 上游调用 → 转发」整体放进异步流程 flow（waitUntil 接管）。
+  // 未带 web_search 的请求帧序列与原版完全一致（含失败时的 model_error 帧）。
   const encoder = new TextEncoder();
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
-  const question = lastUserQuestion(messages);
+  const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
 
-  const pump = (async () => {
-    let lineBuffer = '';
+  const flow = (async () => {
     let answer = '';
-    let insideThink = false;
-    let doneSent = false;
+    let sources = [];
+    let reader = null;
+    let clientGone = false;
 
-    const emitDelta = async (delta) => {
-      const cleaned = repairGarbledText(delta);
-      if (!cleaned) return;
-      answer += cleaned;
-      await writer.write(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: cleaned } }] })}\n\n`));
+    // 上游调用前的写帧统一走这里：客户端已断开时静默跳过并立旗，
+    // 避免为无人接收的请求继续消耗搜索与上游的免费配额。
+    const safeWrite = async (chunk) => {
+      if (clientGone) return false;
+      try { await writer.write(chunk); return true; } catch { clientGone = true; return false; }
+    };
+    const writeFrame = (obj) => safeWrite(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+
+    // 记录问卜档案：优先 waitUntil 在响应生命周期外完成，无人接管时就地等待。
+    const trackLog = async (record) => {
+      const logPromise = saveRecord(env, request, record).catch(() => {});
+      try {
+        if (typeof context.waitUntil === 'function') {
+          context.waitUntil(logPromise);
+          return;
+        }
+      } catch { /* waitUntil 调用失败：就地等待落库 */ }
+      await logPromise;
     };
 
     try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        lineBuffer += decoder.decode(value, { stream: true });
-        const lines = lineBuffer.split(/\r?\n/);
-        lineBuffer = lines.pop() || '';
+      // 1) 联网查证（可选）。帧序：searching → done / skipped。
+      if (wantWebSearch) {
+        const announced = await writeFrame({ search_phase: 'searching', query: searchQuery });
+        if (!announced) return; // 客户端已断开：不搜索、不动上游。
+        let result = null;
+        try { result = await webSearch(env, searchQuery); } catch { /* webSearch 内部已吞异常，此处仅兜底 */ }
+        if (clientGone) return;
+        if (result?.ok && Array.isArray(result.sources) && result.sources.length) {
+          sources = result.sources;
+          await writeFrame({ search_phase: 'done', provider: result.provider || 'unknown', sources });
+          // 注入必须在 sanitizeMessages 之前：在原始消息上操作，资料随 system 消息完整保留。
+          injectSearchSources(rawMessages, sources);
+        } else {
+          await writeFrame({ search_phase: 'skipped', reason: result?.reason || '未取得结果' });
+        }
+        if (clientGone) return;
+      }
 
-        for (const raw of lines) {
-          const line = raw.trim();
-          if (!line.startsWith('data:')) continue;
-          const data = line.slice(5).trim();
-          if (!data) continue;
-          if (data === '[DONE]') {
-            if (!doneSent) {
-              await writer.write(encoder.encode('data: [DONE]\n\n'));
-              doneSent = true;
-            }
-            continue;
-          }
+      // 英文作答指令：放在查证资料注入之后，使其位于 system 消息最末尾。
+      if (wantEnglish) injectEnglishHint(rawMessages);
 
-          try {
-            const parsed = JSON.parse(data);
-            let delta = parsed?.choices?.[0]?.delta?.content ?? parsed?.response ?? parsed?.result?.response ?? '';
-            if (Array.isArray(delta)) delta = delta.map((x) => x?.text || '').join('');
-            if (!delta) continue;
+      // 2) 最终消息整理：注入过资料或语言指令则以原始消息重新 sanitize；否则沿用既有结果，与原版一致。
+      const finalMessages = (wantWebSearch && sources.length) || wantEnglish
+        ? sanitizeMessages(rawMessages, route.vision)
+        : messages;
+      const question = lastUserQuestion(finalMessages);
 
-            // 过滤内部推理标签（即便被拆到多个 SSE 分片里也要剥净）。
-            let output = '';
-            while (delta) {
-              if (insideThink) {
-                const end = delta.search(/<\/(?:think|thought|reasoning|search)>/i);
-                if (end === -1) { delta = ''; break; }
-                delta = delta.slice(end).replace(/^<\/(?:think|thought|reasoning|search)>/i, '');
-                insideThink = false;
-              } else {
-                const start = delta.search(/<(?:think|thought|reasoning|search)>/i);
-                if (start === -1) { output += delta; delta = ''; break; }
-                output += delta.slice(0, start);
-                delta = delta.slice(start).replace(/^<(?:think|thought|reasoning|search)>/i, '');
-                insideThink = true;
+      // 3) 调用用户所选线路（含原线路内重试逻辑，不跨模型兜底）。
+      const { response: activeResponse, fail } = await callSelectedRoute(route, finalMessages, maxTokens, temperature);
+
+      if (!activeResponse) {
+        // 失败帧结构与原 modelErrorSse() 完全一致：model_error 帧 + [DONE]。
+        const message = friendlyFailMessage(fail);
+        await writeFrame({ model_error: true, reselect: true, model: modelId, message });
+        await safeWrite(encoder.encode('data: [DONE]\n\n'));
+        await trackLog({
+          question, answer: message, route: 'error', routeLabel: route.label,
+          model: route.model, modelId, vision: requestHasImage,
+          webSearch: wantWebSearch, sourceCount: sources.length,
+        });
+        return;
+      }
+
+      // 4) 转发上游流：以下与原 pump 逻辑逐段一致。
+      reader = activeResponse.body.getReader();
+      const decoder = new TextDecoder();
+      let lineBuffer = '';
+      let insideThink = false;
+      let doneSent = false;
+
+      const emitDelta = async (delta) => {
+        const cleaned = repairGarbledText(delta);
+        if (!cleaned) return;
+        answer += cleaned;
+        await writer.write(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: cleaned } }] })}\n\n`));
+      };
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          lineBuffer += decoder.decode(value, { stream: true });
+          const lines = lineBuffer.split(/\r?\n/);
+          lineBuffer = lines.pop() || '';
+
+          for (const raw of lines) {
+            const line = raw.trim();
+            if (!line.startsWith('data:')) continue;
+            const data = line.slice(5).trim();
+            if (!data) continue;
+            if (data === '[DONE]') {
+              if (!doneSent) {
+                await writer.write(encoder.encode('data: [DONE]\n\n'));
+                doneSent = true;
               }
+              continue;
             }
-            await emitDelta(output);
-          } catch {
-            // 忽略上游异常帧，不把原始数据透传给浏览器。
+
+            try {
+              const parsed = JSON.parse(data);
+              let delta = parsed?.choices?.[0]?.delta?.content ?? parsed?.response ?? parsed?.result?.response ?? '';
+              if (Array.isArray(delta)) delta = delta.map((x) => x?.text || '').join('');
+              if (!delta) continue;
+
+              // 过滤内部推理标签（即便被拆到多个 SSE 分片里也要剥净）。
+              let output = '';
+              while (delta) {
+                if (insideThink) {
+                  const end = delta.search(/<\/(?:think|thought|reasoning|search)>/i);
+                  if (end === -1) { delta = ''; break; }
+                  delta = delta.slice(end).replace(/^<\/(?:think|thought|reasoning|search)>/i, '');
+                  insideThink = false;
+                } else {
+                  const start = delta.search(/<(?:think|thought|reasoning|search)>/i);
+                  if (start === -1) { output += delta; delta = ''; break; }
+                  output += delta.slice(0, start);
+                  delta = delta.slice(start).replace(/^<(?:think|thought|reasoning|search)>/i, '');
+                  insideThink = true;
+                }
+              }
+              await emitDelta(output);
+            } catch {
+              // 忽略上游异常帧，不把原始数据透传给浏览器。
+            }
           }
         }
-      }
 
-      // 推理模型可能把 token 都用在 reasoning 上，导致正文为空——此时提示重选或重试。
-      if (!answer.trim()) {
-        const empty = '此番推演只得气机流转，未成明文（多为该模型思考占用过多所致）。可稍候重试，或另择一尊法器（模型）再问。';
-        await writer.write(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: empty } }] })}\n\n`));
-        answer = empty;
-      }
+        // 推理模型可能把 token 都用在 reasoning 上，导致正文为空——此时提示重选或重试。
+        if (!answer.trim()) {
+          const empty = '此番推演只得气机流转，未成明文（多为该模型思考占用过多所致）。可稍候重试，或另择一尊法器（模型）再问。';
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: empty } }] })}\n\n`));
+          answer = empty;
+        }
 
-      if (!doneSent) await writer.write(encoder.encode('data: [DONE]\n\n'));
+        if (!doneSent) await writer.write(encoder.encode('data: [DONE]\n\n'));
+      } catch {
+        if (!doneSent) {
+          try { await writer.write(encoder.encode('data: [DONE]\n\n')); } catch {}
+        }
+      } finally {
+        // 客户端中途断开（关闭页面或点了停止）时，下游 writer 会先报错走到这里；
+        // 此时必须同步断掉上游读取，否则上游会为无人接收的推演继续生成，
+        // 白白烧掉全体用户共享的免费配额。正常跑完后 cancel 是无害的空操作。
+        try { await reader.cancel(); } catch {}
+        reader = null;
+        await trackLog({
+          question, answer, route: route.id, routeLabel: route.label,
+          model: route.model, modelId, vision: requestHasImage,
+          webSearch: wantWebSearch, sourceCount: sources.length,
+        });
+      }
     } catch {
-      if (!doneSent) {
-        try { await writer.write(encoder.encode('data: [DONE]\n\n')); } catch {}
-      }
+      // 预期外异常兜底：尽量以 model_error 帧告知前端，绝不让流无声挂起。
+      // （既有线路里 callSelectedRoute 已内部吞错，此分支为不可达防线。）
+      const message = friendlyFailMessage(null);
+      await writeFrame({ model_error: true, reselect: true, model: modelId, message });
+      await safeWrite(encoder.encode('data: [DONE]\n\n'));
     } finally {
-      // 客户端中途断开（关闭页面或点了停止）时，下游 writer 会先报错走到这里；
-      // 此时必须同步断掉上游读取，否则上游会为无人接收的推演继续生成，
-      // 白白烧掉全体用户共享的免费配额。正常跑完后 cancel 是无害的空操作。
-      try { await reader.cancel(); } catch {}
+      try { if (reader) await reader.cancel(); } catch {}
       try { await writer.close(); } catch {}
-      const logPromise = saveRecord(env, request, {
-        question, answer, route: route.id, routeLabel: route.label,
-        model: route.model, modelId, vision: requestHasImage,
-      }).catch(() => {});
-      if (typeof context.waitUntil === 'function') context.waitUntil(logPromise);
-      else await logPromise;
     }
   })();
 
-  if (typeof context.waitUntil === 'function') context.waitUntil(pump);
+  if (typeof context.waitUntil === 'function') context.waitUntil(flow);
 
   return new Response(readable, {
     headers: {
