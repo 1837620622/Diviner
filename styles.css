@@ -1812,7 +1812,10 @@ textarea#userInput::placeholder{color:#655f57}
 .send-btn { border-radius:7px;width:40px;height:40px;background:linear-gradient(150deg,#c0563f,#93311f 52%,#6e2117);border:1px solid rgba(232,190,141,.4);box-shadow:0 6px 20px rgba(124,40,31,.32),inset 0 1px rgba(255,255,255,.1); }
 .send-btn:not(:disabled):hover { transform:translateY(-1px) scale(1.04);filter:brightness(1.07);box-shadow:0 10px 26px rgba(150,48,34,.4),inset 0 1px rgba(255,255,255,.12); }
 .send-btn:not(:disabled):active { transform:translateY(1px) scale(.96);box-shadow:0 3px 10px rgba(124,40,31,.3); }
-.composer-legal-text { color:#5d5852;letter-spacing:.08em;font-family:var(--font-serif);display:flex;flex-direction:column;align-items:center;gap:3px; }
+/* 底部箴言与署名：先以一缕金线收住输入区，再落两行暗金小字，层次分明而不抢戏 */
+.composer-legal-text { position:relative;color:#6f675c;letter-spacing:.08em;font-family:var(--font-serif);display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:9px; }
+.composer-legal-text::before { content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:112px;height:1px;background:linear-gradient(90deg,transparent,rgba(198,161,91,.3),transparent); }
+.composer-legal-text>span:first-child { font-size:10.5px;line-height:1.6;color:#7a7166; }
 .composer-credit { color:#6d6250;font-size:9.5px;letter-spacing:.16em;opacity:.9; }
 
 /* 法器（模型）选择器：真实厂商图标 + 模型代号 + 能力徽标，问卜者自主择器。
@@ -2055,7 +2058,14 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
   .quick-topics-bar { padding-bottom:6px; }
   .composer-container { padding-top:8px; }
   .composer-input-card { border-radius:5px; }
+  /* 移动端弹窗：dvh 适配 iOS 动态工具条，收紧留白，加大关闭钮触控区 */
+  .modal-backdrop { padding:10px; }
+  .modal-window { max-height:calc(100vh - 22px);max-height:calc(100dvh - 22px);border-radius:5px; }
+  .modal-header { padding:12px 14px; }
+  .modal-title { font-size:14px; }
+  .modal-close-btn { min-width:36px;min-height:36px;display:grid;place-items:center; }
   .modal-body { padding:15px; }
+  .modal-footer { padding:9px 14px; }
   .ritual-window { border-radius:4px; }
   .tarot-deck-stage { height:110px; }
   .tarot-board { gap:5px;padding:10px 5px; }
@@ -2626,7 +2636,7 @@ body.sidebar-collapsed .sidebar-overlay { display: none !important; }
   .composer-legal-text {
     white-space: normal;
     line-height: 1.5;
-    padding: 0 8px;
+    padding: 9px 8px 0;
   }
 }
 @media (max-width: 390px) {
