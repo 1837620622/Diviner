@@ -39,34 +39,52 @@ export async function onRequestGet({ request, env }) {
 
   try {
     const url = new URL(request.url);
+    // 登录探测：仅校验口令，不触碰 KV，后台登录即刻通过，不再等待全量键翻页。
+    if (url.searchParams.get('probe') === '1') return json({ ok: true });
+
     const loadAll = url.searchParams.get('all') === 'true';
     const today = new Date().toISOString().slice(0, 10);
     const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('date') || '') ? url.searchParams.get('date') : today;
     const requestedLimit = Number(url.searchParams.get('limit') || 200);
     const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 200, 1), 250);
 
-    const allKeys = await listAllKeys(env.CHAT_LOGS, 'chat_', 5000);
-    const dates = [...new Set(allKeys.map((k) => k.name.match(/^chat_(\d{4}-\d{2}-\d{2})_/)?.[1]).filter(Boolean))].sort();
-
-    let candidate = loadAll ? allKeys : allKeys.filter((k) => k.name.startsWith(`chat_${targetDate}_`));
-    candidate = candidate.sort((a, b) => b.name.localeCompare(a.name)).slice(0, limit);
-
     // 可选按模型筛选：匹配前台模型代号 modelId，或上游真实模型名 model。
     const modelFilter = String(url.searchParams.get('model') || '').trim();
 
-    // 并发读取所选记录，替代逐条串行 await，显著降低后台加载时延。
-    const fetched = await Promise.all(candidate.map((key) => env.CHAT_LOGS.get(key.name, { type: 'json' })));
-    const records = fetched.filter(Boolean).filter((rec) =>
-      !modelFilter || rec.modelId === modelFilter || rec.model === modelFilter
-    );
+    const pickRecords = async (candidate) => {
+      // 并发读取所选记录，替代逐条串行 await，显著降低后台加载时延。
+      const fetched = await Promise.all(candidate.map((key) => env.CHAT_LOGS.get(key.name, { type: 'json' })));
+      return fetched.filter(Boolean).filter((rec) =>
+        !modelFilter || rec.modelId === modelFilter || rec.model === modelFilter
+      );
+    };
 
+    if (loadAll) {
+      const allKeys = await listAllKeys(env.CHAT_LOGS, 'chat_', 5000);
+      const dates = [...new Set(allKeys.map((k) => k.name.match(/^chat_(\d{4}-\d{2}-\d{2})_/)?.[1]).filter(Boolean))].sort();
+      const candidate = allKeys.sort((a, b) => b.name.localeCompare(a.name)).slice(0, limit);
+      const records = await pickRecords(candidate);
+      const uniqueIPs = new Set(records.map((r) => r.ip).filter(Boolean)).size;
+      const todayCount = allKeys.filter((k) => k.name.startsWith(`chat_${today}_`)).length;
+      return json({
+        records,
+        stats: { total: allKeys.length, today: todayCount, uniqueIPs, loaded: records.length, capped: allKeys.length >= 5000 },
+        dateRange: { min: dates[0] || null, max: dates[dates.length - 1] || null, available: dates },
+      });
+    }
+
+    // 单日模式：只列「目标日 + 今日」两个前缀（单日写配额上限约一千条，一页即尽），
+    // 避免把全部键最多 5 页串行翻完，后台打开速度与 KV 读耗同步大幅下降。
+    // 此时不返回全量统计（total 为 null），前端以「—」占位；看全量请用「最近记录」。
+    const dayKeys = await listAllKeys(env.CHAT_LOGS, `chat_${targetDate}_`, 1000);
+    const todayKeys = targetDate === today ? dayKeys : await listAllKeys(env.CHAT_LOGS, `chat_${today}_`, 1000);
+    const candidate = dayKeys.sort((a, b) => b.name.localeCompare(a.name)).slice(0, limit);
+    const records = await pickRecords(candidate);
     const uniqueIPs = new Set(records.map((r) => r.ip).filter(Boolean)).size;
-    const todayCount = allKeys.filter((k) => k.name.startsWith(`chat_${today}_`)).length;
-
     return json({
       records,
-      stats: { total: allKeys.length, today: todayCount, uniqueIPs, loaded: records.length, capped: allKeys.length >= 5000 },
-      dateRange: { min: dates[0] || null, max: dates[dates.length - 1] || null, available: dates },
+      stats: { total: null, today: todayKeys.length, uniqueIPs, loaded: records.length, capped: false },
+      dateRange: { min: null, max: null, available: [...new Set([targetDate, today])].sort() },
     });
   } catch (error) {
     return json({ error: '获取记录失败', detail: String(error?.message || error).slice(0, 200) }, 500);

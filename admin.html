@@ -9,7 +9,7 @@
 <title>玄机子 · 观象台</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script defer src="https://unpkg.com/lucide@1.34.0/dist/umd/lucide.min.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#08070b;color:#d9d1c3}body{font-family:"Noto Serif SC",serif;background:radial-gradient(800px 460px at 18% -5%,rgba(133,89,37,.12),transparent 60%),radial-gradient(700px 520px at 100% 35%,rgba(92,31,28,.1),transparent 62%),#08070b}.grain{position:fixed;inset:0;pointer-events:none;opacity:.24;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.10'/%3E%3C/svg%3E");mix-blend-mode:soft-light}.shell{width:min(1240px,calc(100% - 32px));margin:auto;padding:26px 0 44px}.muted{color:#756d63}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.seal{width:42px;height:42px;display:grid;place-items:center;border:1px solid #a74535;color:#d78c78;font-weight:700;font-size:18px;position:relative}.seal:after{content:"";position:absolute;inset:6px;border:1px solid rgba(215,140,120,.16);transform:rotate(45deg)}button,input{font:inherit}button{color:inherit}
 .login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}.login-card{width:min(430px,100%);padding:30px 28px 26px;border:1px solid rgba(207,170,98,.13);background:linear-gradient(150deg,rgba(22,19,24,.95),rgba(10,9,13,.96));box-shadow:0 30px 90px rgba(0,0,0,.45);position:relative;overflow:hidden}.login-card:before{content:"";position:absolute;width:220px;height:220px;border:1px solid rgba(195,159,91,.06);border-radius:50%;right:-105px;top:-115px;box-shadow:0 0 0 30px rgba(195,159,91,.018),0 0 0 62px rgba(195,159,91,.012)}.login-brand{display:flex;align-items:center;gap:14px;margin-bottom:25px}.login-brand h1{margin:0;font-size:18px;letter-spacing:.12em;color:#e7dbc3}.login-brand p{margin:5px 0 0;font-size:11px;letter-spacing:.09em;color:#675f56}.field-label{display:block;margin:0 0 8px;font-size:11px;letter-spacing:.12em;color:#857869}.login-card input,.search-input,.date{width:100%;border:1px solid rgba(208,173,103,.13);border-radius:3px;background:rgba(255,255,255,.025);color:#ddd2bf;padding:12px 13px;outline:none;transition:.2s}.login-card input:focus,.search-input:focus,.date:focus{border-color:rgba(210,174,102,.38);box-shadow:0 0 0 3px rgba(175,135,63,.045)}.primary{width:100%;margin-top:12px;border:1px solid rgba(186,137,66,.45);background:linear-gradient(180deg,#876232,#684721);color:#f1e2c4;padding:12px;cursor:pointer;letter-spacing:.12em;transition:.2s}.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}.err{display:none;margin:11px 0 0;color:#c97665;text-align:center;font-size:12px}.login-note{margin:14px 0 0;text-align:center;font-size:10px;line-height:1.7;color:#59534d}
@@ -86,7 +86,7 @@ async function login(){
   const pwd=$('passwordInput').value.trim(); if(!pwd)return showErr('请输入管理口令');
   $('loginBtn').disabled=true;
   try{
-    const resp=await fetch('/api/admin/records?date='+encodeURIComponent(localDateKey())+'&limit=1',{headers:{'X-Admin-Password':pwd},cache:'no-store'});
+    const resp=await fetch('/api/admin/records?probe=1',{headers:{'X-Admin-Password':pwd},cache:'no-store'});
     if(resp.status===401)throw new Error('密码错误或未授权');
     if(!resp.ok)throw new Error('后台校验失败 · '+resp.status);
     adminPassword=pwd;isLoggedIn=true;
@@ -105,7 +105,7 @@ async function loadRecords(date=null,all=false){
   try{let url='/api/admin/records?limit=250';if(all)url+='&all=true';else url+='&date='+encodeURIComponent(date||localDateKey());const r=await fetch(url,{headers:{'X-Admin-Password':adminPassword},cache:'no-store'});if(r.status===401){logout();throw new Error('登录已失效')}if(!r.ok)throw new Error('读取失败 · '+r.status);lastPayload=await r.json();renderRecords(lastPayload)}catch(e){list.innerHTML='<div class="empty">'+esc(e.message||'读取失败')+'</div>'}
 }
 function renderRecords(data){
-  const rows=data?.records||[];$('totalRecords').textContent=data?.stats?.total??rows.length;$('todayRecords').textContent=data?.stats?.today??0;$('uniqueIPs').textContent=data?.stats?.uniqueIPs??0;
+  const rows=data?.records||[];$('totalRecords').textContent=(data?.stats?.total==null?'—':data.stats.total);$('todayRecords').textContent=data?.stats?.today??0;$('uniqueIPs').textContent=data?.stats?.uniqueIPs??0;
   if(data?.dateRange){const el=$('dateSelector');if(data.dateRange.min)el.min=data.dateRange.min;if(data.dateRange.max)el.max=data.dateRange.max}
   const q=$('searchInput').value.trim().toLowerCase();const filtered=!q?rows:rows.filter(r=>[r.ip,r.location,r.question,r.answer].some(v=>String(v||'').toLowerCase().includes(q)));
   if(!filtered.length){$('recordsList').innerHTML='<div class="empty">'+(rows.length?'没有符合筛选条件的档案':'这一日尚无问卜记录')+'</div>';return}
