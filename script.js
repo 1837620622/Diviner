@@ -161,8 +161,126 @@ const SYSTEM_PROMPT = `你是【玄机子】。一位隐于闹市的研易先生
 - 梅花易数：上卦取一数除以 8 之余数，下卦取总数除以 8 之余数，动爻取总数除以 6 之余数（余 0 按 8 或 6 论）；无动爻之卦为体、有动爻之卦为用；用生体为吉，体克用亦吉，用克体则滞，体生用则气泄。
 - 塔罗：正逆位以所抽为准，不重抽、不重洗；圣三角三牌先各论其位（过去、现在、未来），再合观其势，不孤立解单张。
 - 干支五行是术数之根：凡排盘必默验生克冲合，确有把握再落笔；无把握处直说不确，宁可少断，不可错断。
+- 定盘铁律：问卜者消息中凡带【定盘】字样者，其四柱、日主与五行计数皆为本堂历法引擎所排（立春分年、节气换月、五鼠遁时），照盘直断即可；绝不重算、不改盘、不另起一套命盘，亦不可质疑盘面有误。
 
 收尾：以"供你参详，抉择仍在自身"作结。`;
+
+// ==================== 确定性排盘引擎 ====================
+// 历法换算（农历⇄公历、干支、节气）全部由 calendar.js 查表引擎完成，
+// 绝不交由模型心算——模型只负责解读引擎给出的盘面，此为排盘铁律。
+const STEM_LIST = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+const BRANCH_LIST = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+const STEM_ELEMENT = { 甲: '木', 乙: '木', 丙: '火', 丁: '火', 戊: '土', 己: '土', 庚: '金', 辛: '金', 壬: '水', 癸: '水' };
+const BRANCH_ELEMENT = { 子: '水', 丑: '土', 寅: '木', 卯: '木', 辰: '土', 巳: '火', 午: '火', 未: '土', 申: '金', 酉: '金', 戌: '土', 亥: '水' };
+const ELEMENT_LABEL = { 木: 'wood', 火: 'fire', 土: 'earth', 金: 'metal', 水: 'water' };
+const WEEK_CN = ['日', '一', '二', '三', '四', '五', '六'];
+const SHICHEN_NAMES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+// 五鼠遁时起时柱：日干定子时之干（甲己还加甲、乙庚丙作初、丙辛从戊起、丁壬庚子居、戊癸起壬子）。
+function hourPillar(dayGz, hourBranchIdx) {
+  const dayStemIdx = STEM_LIST.indexOf(dayGz.charAt(0));
+  if (dayStemIdx < 0 || hourBranchIdx < 0) return null;
+  const ziStemStart = [0, 2, 4, 6, 8][dayStemIdx % 5];
+  const stem = STEM_LIST[(ziStemStart + hourBranchIdx) % 10];
+  return stem + BRANCH_LIST[hourBranchIdx];
+}
+
+// 由小时起点值（0=早子、23=晚子、2=丑、4=寅……22=亥）求时辰地支序号。
+function hourBranchIndex(hourValue) {
+  return Math.floor(((Number(hourValue) % 24) + 1) / 2) % 12;
+}
+
+// 核心排盘：opts = { y, m, d, hourValue, calendarType: 'solar'|'lunar', isLeapMonth }
+// 返回结构化盘面；历法非法（超数据区间、农历无此日等）返回 null。
+function computeFourPillars(opts) {
+  const cal = window.calendar;
+  if (!cal) return null;
+  let { y, m, d } = opts;
+  let lunarNote = '';
+  if (opts.calendarType === 'lunar') {
+    // 农历先换公历：查表所得，绝无一日之差
+    const conv = cal.lunar2solar(Number(y), Number(m), Number(d), !!opts.isLeapMonth);
+    if (!conv || conv.lYear !== Number(y) || conv.lMonth !== Number(m) || conv.lDay !== Number(d) || conv.isLeap !== !!opts.isLeapMonth) return null;
+    lunarNote = `${conv.isLeap ? '闰' : ''}${conv.IMonthCn}${conv.IDayCn}`;
+    y = conv.cYear; m = conv.cMonth; d = conv.cDay;
+  }
+  const info = cal.solar2lunar(Number(y), Number(m), Number(d));
+  if (!info || !info.gzDay) return null;
+
+  // 晚子时（23:00-24:00）：日柱顺推至次日，时柱用次日子时
+  const isLateZi = Number(opts.hourValue) === 23;
+  let dayGz = info.gzDay;
+  if (isLateZi) {
+    const nd = new Date(Number(y), Number(m) - 1, Number(d) + 1);
+    const nextInfo = cal.solar2lunar(nd.getFullYear(), nd.getMonth() + 1, nd.getDate());
+    if (!nextInfo || !nextInfo.gzDay) return null;
+    dayGz = nextInfo.gzDay;
+  }
+  const bIdx = hourBranchIndex(opts.hourValue);
+  const hz = hourPillar(dayGz, bIdx);
+  if (!hz) return null;
+
+  const pillars = [info.gzYear, info.gzMonth, dayGz, hz];
+  const elements = { 木: 0, 火: 0, 土: 0, 金: 0, 水: 0 };
+  pillars.forEach(gz => {
+    elements[STEM_ELEMENT[gz.charAt(0)]] += 1;
+    elements[BRANCH_ELEMENT[gz.charAt(1)]] += 1;
+  });
+  const dayStem = dayGz.charAt(0);
+  const dayStemIdx = STEM_LIST.indexOf(dayStem);
+
+  // 农历注记（公历输入时由 solar2lunar 反查）
+  const lunarText = lunarNote || `${info.IMonthCn}${info.IDayCn}`;
+  return {
+    solarDate: `${y}年${Number(m)}月${Number(d)}日`,
+    lunarDate: `农历${lunarText}`,
+    animal: info.Animal,
+    pillars: { year: info.gzYear, month: info.gzMonth, day: dayGz, hour: hz },
+    dayMaster: { stem: dayStem, element: STEM_ELEMENT[dayStem], yinyang: dayStemIdx % 2 === 0 ? '阳' : '阴' },
+    elements,
+    shichen: SHICHEN_NAMES[bIdx] + '时',
+    weekCn: '星期' + WEEK_CN[new Date(Number(y), Number(m) - 1, Number(d)).getDay()],
+    termNote: info.isTerm ? `当日值${info.Term}` : ''
+  };
+}
+
+// 今时此刻注入块：随 system 提示词上行，杜绝模型臆断年份（如滞留旧年）。
+function currentDateBlock() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
+  const week = '星期' + WEEK_CN[now.getDay()];
+  const cal = window.calendar;
+  const info = cal ? cal.solar2lunar(y, m, d) : null;
+  const en = window.I18N_LANG === 'en';
+  if (en) {
+    let line = `\n\n【Today】Today is ${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')} (${week}).`;
+    if (info) line += ` Lunar date: ${info.isLeap ? 'leap ' : ''}month ${info.lMonth}, day ${info.lDay}; ganzhi: ${info.gzYear} year, ${info.gzMonth} month, ${info.gzDay} day.`;
+    line += ' Judge every "this year / next year", annual fortune and age strictly by this date.';
+    return line;
+  }
+  let line = `\n\n【今时此刻】今天是公历 ${y} 年 ${m} 月 ${d} 日（${week}）`;
+  if (info) line += `，农历${info.IMonthCn}${info.IDayCn}，干支 ${info.gzYear}年 ${info.gzMonth}月 ${info.gzDay}日`;
+  line += '。凡断流年、大运、岁运并临与「今年、明年」，一律以此为基准，不得滞留旧年。';
+  return line;
+}
+
+// 从呈文提取会话标题：法事模板以【某某术】开头，直接取其术名，
+// 避免标题被「【四柱八字精批】\n造化：坤造\n公历生辰……」这类模板字段截成半句天书。
+function titleFromPrompt(text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  const m = t.match(/^【([^】]{1,12})】/);
+  if (m) {
+    const tag = m[1].trim();
+    const rest = t.slice(m[0].length).trim();
+    // 模板之外若另有用户亲书之语（超过八字），以其为题更见本心
+    const firstClause = rest.split(/[。；;？?！!，,]/)[0].trim();
+    if (firstClause.length >= 9 && !/^(造化|公历|农历|出生|求测|梦境|今日|所问|三牌|本卦|签诗|掐指)/.test(firstClause)) {
+      return firstClause.slice(0, 14);
+    }
+    return tag.slice(0, 10);
+  }
+  return t.slice(0, 14);
+}
 
 // 22 张大阿卡纳塔罗牌数据 (罗马数字与纯净文本)
 const TAROT_DECK = [
@@ -942,7 +1060,7 @@ async function handleSend(customText = null, includeImages = true) {
   });
 
   if (sess.messages.length === 1 && text) {
-    sess.title = text.slice(0, 14);
+    sess.title = titleFromPrompt(text);
     chatTitle.textContent = sess.title;
     renderHistoryList();
   }
@@ -994,7 +1112,7 @@ async function handleSend(customText = null, includeImages = true) {
   }, 1000);
 
   try {
-    const apiMessages = [{ role: 'system', content: SYSTEM_PROMPT + profileBlock() }];
+    const apiMessages = [{ role: 'system', content: SYSTEM_PROMPT + profileBlock() + currentDateBlock() }];
     // 非视觉法器不携图：与 UI 承诺一致，亦省去无效 base64 上行（后端仍会按 vision 兜底剥离）
     const visionOk = !!getModelById(currentModelId)?.vision;
     sess.messages.forEach(m => {
@@ -1917,46 +2035,128 @@ function initXiaoliurenLogic() {
 }
 
 // ==================== 5. 四柱八字排盘逻辑 ====================
+// 盘面渲染：四柱竖列，干支大字，五行着色，日主描金。全部由 escapeHtml/textContent 组装。
+function renderBaziChartTable(chart, gender, city) {
+  const cols = [
+    { name: i18nT('bazi.pillarYear', '年柱'), gz: chart.pillars.year },
+    { name: i18nT('bazi.pillarMonth', '月柱'), gz: chart.pillars.month },
+    { name: i18nT('bazi.pillarDay', '日柱'), gz: chart.pillars.day, master: true },
+    { name: i18nT('bazi.pillarHour', '时柱'), gz: chart.pillars.hour }
+  ];
+  const elText = t => i18nT('bazi.el.' + ELEMENT_LABEL[t], t);
+  const pillarsHtml = cols.map(c => {
+    const stem = c.gz.charAt(0), branch = c.gz.charAt(1);
+    const masterCls = c.master ? ' pillar-master' : '';
+    return `<div class="bazi-pillar${masterCls}">
+      <span class="pillar-name">${escapeHtml(c.name)}</span>
+      <span class="pillar-gz"><i class="el-${ELEMENT_LABEL[STEM_ELEMENT[stem]]}">${escapeHtml(stem)}</i><i class="el-${ELEMENT_LABEL[BRANCH_ELEMENT[branch]]}">${escapeHtml(branch)}</i></span>
+      <span class="pillar-el">${escapeHtml(elText(STEM_ELEMENT[stem]))} ${escapeHtml(elText(BRANCH_ELEMENT[branch]))}</span>
+      ${c.master ? `<span class="pillar-master-mark">${escapeHtml(i18nT('bazi.dayMasterMark', '日主'))}</span>` : ''}
+    </div>`;
+  }).join('');
+  const elOrder = ['木', '火', '土', '金', '水'];
+  const elCountHtml = elOrder.map(t => {
+    const n = chart.elements[t];
+    return `<span class="elcount el-${ELEMENT_LABEL[t]}${n ? '' : ' elcount-zero'}">${escapeHtml(elText(t))}<b>${n}</b></span>`;
+  }).join('');
+  const dm = chart.dayMaster;
+  // calendar.js 只返回中文生肖；英文界面按序对译，其余语言沿用中文。
+  const ANIMAL_EN = ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig'];
+  const animalText = window.I18N_LANG === 'en'
+    ? (ANIMAL_EN[['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'].indexOf(chart.animal)] || chart.animal)
+    : chart.animal;
+  const headTitle = `${escapeHtml(gender)} · ${escapeHtml(i18nT('bazi.dayMasterIs', '日主'))} ${escapeHtml(dm.stem)}${escapeHtml(elText(dm.element))}`;
+  const headSub = escapeHtml(`${chart.solarDate} ${chart.shichen} · ${chart.lunarDate} · ${i18nT('bazi.zodiac', '属')}${animalText}${chart.termNote ? ' · ' + chart.termNote : ''}${city ? ' · ' + city : ''}`);
+  return `<div class="bazi-chart">
+    <div class="bazi-chart-head"><span class="bazi-chart-seal">命</span><div><h4>${headTitle}</h4><p>${headSub}</p></div></div>
+    <div class="bazi-chart-grid">${pillarsHtml}</div>
+    <div class="bazi-chart-foot"><span class="bazi-chart-foot-label">${escapeHtml(i18nT('bazi.elDist', '五行盘面'))}</span><span class="bazi-elcounts">${elCountHtml}</span></div>
+  </div>`;
+}
+
 function initBaziLogic() {
   const calcBtn = document.getElementById('calcBaziBtn');
   const submitBtn = document.getElementById('submitBaziBtn');
   const tableWrap = document.getElementById('baziResultTable');
+  const calTypeBtns = document.querySelectorAll('#bzCalTypeSwitch .caltype-btn');
+  const leapItem = document.getElementById('bzLeapItem');
+  const leapCheck = document.getElementById('bzLeap');
+  const leapNote = document.getElementById('bzLeapNote');
+  const monthLabel = document.querySelector('label[for="bzMonth"]') || document.getElementById('bzMonthLabel');
+  const dayLabel = document.querySelector('label[for="bzDay"]') || document.getElementById('bzDayLabel');
+  let calendarType = 'solar';
 
-  calcBtn.addEventListener('click', () => {
+  // 历法切换：公历 / 农历。切换后月日标签与闰月行随之而动。
+  function applyCalType() {
+    const lunar = calendarType === 'lunar';
+    calTypeBtns.forEach(b => b.classList.toggle('active', b.dataset.caltype === calendarType));
+    if (monthLabel) monthLabel.textContent = lunar ? i18nT('bazi.lunarMonthLabel', '农历月') : i18nT('bazi.monthLabel', '出生月');
+    if (dayLabel) dayLabel.textContent = lunar ? i18nT('bazi.lunarDayLabel', '农历日') : i18nT('bazi.dayLabel', '出生日');
+    if (leapItem) leapItem.hidden = !lunar;
+    if (lunar) refreshLeapNote();
+  }
+  // 依生年查闰月：该年有闰月则提示，无则明言，免善信勾选无中生有之闰月。
+  function refreshLeapNote() {
+    if (!leapNote) return;
+    const y = Number(document.getElementById('bzYear').value);
+    const leapM = window.calendar && y >= 1900 && y <= 2100 ? window.calendar.leapMonth(y) : 0;
+    leapNote.textContent = leapM
+      ? i18nT('bazi.leapNoteHas', '此年有闰{m}月；若生于闰月请勾选。', { m: window.calendar.nStr3[leapM - 1] })
+      : i18nT('bazi.leapNoteNone', '此年无闰月。');
+  }
+  calTypeBtns.forEach(btn => btn.addEventListener('click', () => {
+    calendarType = btn.dataset.caltype || 'solar';
+    applyCalType();
+  }));
+  document.getElementById('bzYear')?.addEventListener('change', () => { if (calendarType === 'lunar') refreshLeapNote(); });
+
+  // 读取表单并排盘；非法输入返回 { err }，成功返回 { chart, ... }。
+  function readAndCompute() {
     const y = Number(document.getElementById('bzYear').value);
     const m = Number(document.getElementById('bzMonth').value);
     const d = Number(document.getElementById('bzDay').value);
     const hourEl = document.getElementById('bzHour');
+    const hourValue = Number(hourEl.value);
     const hourLabel = hourEl.options[hourEl.selectedIndex]?.text || hourEl.value;
     const gender = document.getElementById('bzGender').value;
     const city = document.getElementById('bzCity').value.trim();
+    const isLeap = calendarType === 'lunar' && !!(leapCheck && leapCheck.checked);
     const nowYear = new Date().getFullYear();
-    const checkDate = new Date(y, m - 1, d);
-    const dateValid = checkDate.getFullYear() === y && checkDate.getMonth() === m - 1 && checkDate.getDate() === d;
-    if (!y || y < 1900 || y > nowYear || !m || m < 1 || m > 12 || !d || !dateValid) {
-      alert('请先填写有效的出生年月日。'); return;
+    if (!y || y < 1900 || y > nowYear) return { err: i18nT('bazi.errDate', '请先填写有效的出生年月日。') };
+    if (calendarType === 'lunar') {
+      if (!m || m < 1 || m > 12 || !d || d < 1 || d > 30) return { err: i18nT('bazi.errLunarDate', '请填写有效的农历月日（月 1–12，日 1–30）。') };
+      if (isLeap && window.calendar && window.calendar.leapMonth(y) !== m) return { err: i18nT('bazi.errLeapMismatch', '此年该月并非闰月，请取消闰月勾选或改用公历。') };
+    } else {
+      const checkDate = new Date(y, m - 1, d);
+      const dateValid = checkDate.getFullYear() === y && checkDate.getMonth() === m - 1 && checkDate.getDate() === d;
+      if (!m || m < 1 || m > 12 || !d || !dateValid) return { err: i18nT('bazi.errDate', '请先填写有效的出生年月日。') };
     }
+    const chart = computeFourPillars({ y, m, d, hourValue, calendarType, isLeapMonth: isLeap });
+    if (!chart) return { err: i18nT('bazi.errCalendar', '该日期历法换算未能完成，请核对日期或改用公历录入。') };
+    return { chart, hourLabel, gender, city };
+  }
+
+  calcBtn.addEventListener('click', () => {
+    const r = readAndCompute();
+    if (r.err) { alert(r.err); return; }
     sound.play('bazi');
     tableWrap.style.display = 'block';
-    const reviewTitle = i18nT('bazi.reviewTitle', '{gender} · 公历 {y}年{m}月{d}日 · {hour}', { gender, y, m, d, hour: hourLabel });
-    const reviewBody = (city ? i18nT('bazi.reviewCity', '出生地：{city}。', { city }) : i18nT('bazi.reviewNoCity', '尚未填写出生城市。')) + i18nT('bazi.reviewNote', '资料已录入；正式四柱、节气交接与真太阳时由后续推演校核，本页不会伪造干支结果。');
-    tableWrap.innerHTML = `<div class="bazi-review-card"><div class="bazi-review-seal">命</div><div><h4>${escapeHtml(reviewTitle)}</h4><p>${escapeHtml(reviewBody)}</p></div></div>`;
+    tableWrap.innerHTML = renderBaziChartTable(r.chart, r.gender, r.city);
     submitBtn.disabled = false;
   });
 
   submitBtn.addEventListener('click', () => {
-    const y = document.getElementById('bzYear').value;
-    const m = document.getElementById('bzMonth').value;
-    const d = document.getElementById('bzDay').value;
-    const hourEl = document.getElementById('bzHour');
-    const hourLabel = hourEl.options[hourEl.selectedIndex]?.text || hourEl.value;
-    const gender = document.getElementById('bzGender').value;
-    const city = document.getElementById('bzCity').value;
-    if (!y || !m || !d) { alert('请先完整填写出生年月日。'); return; }
     if (!guardToolSubmit()) return;
-    const prompt = `【四柱八字精批】\n造化：${gender}\n公历生辰：${y}年${m}月${d}日 ${hourLabel}\n出生地：${city ? city : '未填写'}\n请玄机子先说明历法校核依据，再尝试依节气与出生地校核四柱；若无法可靠完成真太阳时或干支换算，必须明确标注不确定处，不得虚构。随后再讨论日主五行、十神格局、喜忌与阶段性趋势。`;
+    const r = readAndCompute();
+    if (r.err) { alert(r.err); return; }
+    const { chart, hourLabel, gender, city } = r;
+    const p = chart.pillars;
+    const dm = chart.dayMaster;
+    const elOrder = ['木', '火', '土', '金', '水'];
+    const elLine = elOrder.map(t => `${t}${chart.elements[t]}`).join(' ');
+    const prompt = `【四柱八字精批】\n造化：${gender}\n公历生辰：${chart.solarDate} ${hourLabel}\n农历生辰：${chart.lunarDate}（${i18nT('bazi.zodiac', '属')}${chart.animal}）\n出生地：${city ? city : '未填写'}\n【定盘】以下四柱已由确定性历法引擎排定（立春分年、节气换月、五鼠遁起时柱；晚子时日柱已顺推），依盘直断即可，勿重排、勿改盘、勿另起一套：\n年柱 ${p.year}\n月柱 ${p.month}\n日柱 ${p.day}（日主所在）\n时柱 ${p.hour}\n日主：${dm.stem}${dm.element}（${dm.yinyang}${dm.element}）\n五行盘面（天干地支八字计数）：${elLine}\n请玄机子依此定盘精批：先于【象数解析】论日主旺衰、得令得地与调候（引《穷通宝鉴》《滴天髓》《三命通会》《子平真诠》中切合此造之论为据，引必有出处，勿泛引），再定十神格局与喜忌用神；于【吉凶趋避】以【今时此刻】所载之年为基准，推大运顺逆与近年流年关口，分层言之；于【可行建议】给出三条当下可落地的趋避之法。`;
     document.getElementById('modalBazi').classList.remove('show');
-    prefillAndGuide(prompt, '生辰资料已录入。如需可补充出生城市与所问重点，随后亲手呈递。');
+    prefillAndGuide(prompt, i18nT('bazi.guideAfterChart', '命盘已排定誊入呈匣。可再补充当下所问之事（事业、姻缘或流年），随后亲手呈递。'));
   });
 }
 
@@ -2064,10 +2264,13 @@ function renderAlmanacData() {
   const d = new Date();
   const dateStr = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
   const weekday = '日一二三四五六'[d.getDay()];
+  // 今日干支与农历由历法引擎查表给出，随提纲一并呈上，模型不必再猜
+  const info = window.calendar ? window.calendar.solar2lunar(d.getFullYear(), d.getMonth() + 1, d.getDate()) : null;
+  const lunarStr = info ? `${info.IMonthCn}${info.IDayCn} · 干支 ${info.gzYear}年 ${info.gzMonth}月 ${info.gzDay}日${info.isTerm ? ' · 当日值' + info.Term : ''}` : '';
   content.innerHTML = `
     <div class="almanac-sheet">
       <div class="almanac-date-mark"><small>${d.getFullYear()}</small><strong>${String(d.getMonth()+1).padStart(2,'0')}·${String(d.getDate()).padStart(2,'0')}</strong><span>星期${weekday}</span></div>
-      <div class="almanac-pending"><b>今日宜忌待推演</b><p>黄历干支、值神、冲煞与宜忌不能仅凭公历日期在前端硬编码。本页只确认日期，点击下方后再由推演线路给出参考。</p></div>
+      <div class="almanac-pending"><b>${lunarStr ? escapeHtml(lunarStr) : '今日宜忌待推演'}</b><p>干支农历已由历法引擎查表核定；值神、冲煞与宜忌由推演线路依此基准给出。</p></div>
     </div>`;
 
   const btn = document.getElementById('queryAlmanacDayBtn');
@@ -2075,7 +2278,8 @@ function renderAlmanacData() {
     if (!guardToolSubmit()) return;
     sound.play('almanac');
     document.getElementById('modalAlmanac').classList.remove('show');
-    prefillAndGuide(`【择吉黄历】请以 ${dateStr}（星期${weekday}）为基准，先核对该日干支、值神与冲煞，再分别列出宜、忌及行事趋避。若无法可靠校历，请明确说明不确定处，不要编造。`, '今日黄历提纲已誊入呈匣。可注明今日欲行之事（出行、签约、动土等），随后亲手呈递。');
+    const ganzhiNote = info ? `本堂历法引擎核定：农历${info.IMonthCn}${info.IDayCn}，干支 ${info.gzYear}年 ${info.gzMonth}月 ${info.gzDay}日${info.isTerm ? '，当日值' + info.Term : ''}。依此基准直断，勿另校历。` : '若无法可靠校历，请明确说明不确定处，不要编造。';
+    prefillAndGuide(`【择吉黄历】请以 ${dateStr}（星期${weekday}）为基准。${ganzhiNote}先陈该日值神与冲煞，再分别列出宜、忌及行事趋避。`, '今日黄历提纲已誊入呈匣。可注明今日欲行之事（出行、签约、动土等），随后亲手呈递。');
   });
 }
 
