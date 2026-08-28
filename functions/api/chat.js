@@ -554,6 +554,7 @@ export async function onRequestPost(context) {
       let lineBuffer = '';
       let insideThink = false;
       let doneSent = false;
+      let upstreamDone = false;
 
       const emitDelta = async (delta) => {
         const cleaned = repairGarbledText(delta);
@@ -582,6 +583,7 @@ export async function onRequestPost(context) {
                 await writer.write(encoder.encode('data: [DONE]\n\n'));
                 doneSent = true;
               }
+              upstreamDone = true;
               continue;
             }
 
@@ -612,6 +614,9 @@ export async function onRequestPost(context) {
               // 忽略上游异常帧，不把原始数据透传给浏览器。
             }
           }
+          // 上游既已发出 [DONE]，即刻收尾：不再等它自行断连，
+          // 免得浏览器侧响应流久悬，也省下空等的空闲计时。
+          if (upstreamDone) break;
         }
 
         // 推理模型可能把 token 都用在 reasoning 上，导致正文为空——此时提示重选或重试。

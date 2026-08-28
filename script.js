@@ -1009,7 +1009,14 @@ async function handleSend(customText = null, includeImages = true) {
 
     activeController = new AbortController();
     const controller = activeController;
-    requestTimer = setTimeout(() => controller.abort('timeout'), 120000);
+    // 空闲看门狗：上游连续七十五秒不吐一字才视同阻滞而中止；每收到数据即重置，
+    // 正常的长推演（总耗时超两分钟）不会被误杀。联网参详阶段后端会先吐
+    // search_phase 帧，同样计入「有数据」，不会误判。
+    const armIdleTimer = () => {
+      if (requestTimer) clearTimeout(requestTimer);
+      requestTimer = setTimeout(() => controller.abort('timeout'), 75000);
+    };
+    armIdleTimer();
 
     const resp = await fetch(API_ENDPOINT, {
       method: 'POST',
@@ -1043,6 +1050,7 @@ async function handleSend(customText = null, includeImages = true) {
     while (!isDone) {
       const { value, done } = await reader.read();
       if (done) break;
+      armIdleTimer(); // 有字到达即灵机未断，重置空闲倒计时
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
@@ -1140,7 +1148,12 @@ async function handleSend(customText = null, includeImages = true) {
       openModelSelector();
     } else if (timedOut) {
       setStatus(i18nT('status.timeout', '推演超时 · 可另择法器'));
-      fallback = `推演耗时过久，已自动中止。\n\n【建议趋避】稍候重新问卜，或另择一尊较快的法器（模型）；深度推理类法器本就耗时较长。\n\n【玄机箴言】静水流深，急则生变。`;
+      // 已流出的内容务必保留：卦辞既已入善信之眼，不因灵机中途渐弱而尽弃。
+      if (accumulatedText.trim()) {
+        fallback = `${accumulatedText.trim()}\n\n——（灵机中途渐弱，卦辞至此；稍候可重新问卜续参）——`;
+      } else {
+        fallback = `推演耗时过久，已自动中止。\n\n【建议趋避】稍候重新问卜，或另择一尊较快的法器（模型）；深度推理类法器本就耗时较长。\n\n【玄机箴言】静水流深，急则生变。`;
+      }
     } else {
       setStatus(i18nT('status.fluctuation', '推演遇到波动 · 可另择法器'));
       fallback = `推演暂遇阻滞。\n\n【建议趋避】稍候片刻重新问卜，或点击输入框上方的模型选择器另择一尊法器；若上传了图片请稍作压缩后重试。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
