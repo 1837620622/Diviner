@@ -11,10 +11,10 @@
 <meta content="dark" name="color-scheme"/>
 <!-- 衬线字体与高阶字形 -->
 <!-- 字体样式异步加载：font-display:swap 加 unicode-range 子集，先行渲染、随后换字，不再阻塞首屏 -->
-<link as="style" href="assets/fonts.css?v=20260828_v30" onload="this.onload=null;this.rel='stylesheet'" rel="preload"/>
-<noscript><link href="assets/fonts.css?v=20260828_v30" rel="stylesheet"/></noscript>
-<script defer src="assets/lucide.min.js?v=20260828_v30"></script>
-<link href="styles.css?v=20260828_v30" rel="stylesheet">
+<link as="style" href="assets/fonts.css?v=20260828_v32" onload="this.onload=null;this.rel='stylesheet'" rel="preload"/>
+<noscript><link href="assets/fonts.css?v=20260828_v32" rel="stylesheet"/></noscript>
+<script defer src="assets/lucide.min.js?v=20260828_v32"></script>
+<link href="styles.css?v=20260828_v32" rel="stylesheet">
 </head>
 <body class="dark-mystic-theme">
 <!-- 浑天星图背景 -->
@@ -499,14 +499,14 @@
 </div>
 </div>
 <div class="form-grid-2">
-<div class="form-item"><label data-i18n="bazi.yearLabel" for="bzYear">出生年</label><input class="input-modern" id="bzYear" max="2035" min="1920" placeholder="例：1995" data-i18n-ph="bazi.yearPlaceholder" type="number"/></div>
+<div class="form-item"><label data-i18n="bazi.yearLabel" for="bzYear">出生年</label><input class="input-modern" id="bzYear" min="1900" placeholder="例：1995" data-i18n-ph="bazi.yearPlaceholder" type="number"/></div>
 <div class="form-item"><label data-i18n="bazi.monthLabel" for="bzMonth" id="bzMonthLabel">出生月</label><input class="input-modern" id="bzMonth" max="12" min="1" placeholder="1–12" type="number"/></div>
 <div class="form-item"><label data-i18n="bazi.dayLabel" for="bzDay" id="bzDayLabel">出生日</label><input class="input-modern" id="bzDay" max="31" min="1" placeholder="1–31" type="number"/></div>
 <div class="form-item"><label data-i18n="bazi.hourLabel" for="bzHour">出生时辰</label>
 <select class="input-modern" id="bzHour">
-<option value="0">早子时 (00:00-01:00)</option><option value="2">丑时 (01:00-03:00)</option><option value="4">寅时 (03:00-05:00)</option><option value="6">卯时 (05:00-07:00)</option>
-<option value="8">辰时 (07:00-09:00)</option><option selected="" value="10">巳时 (09:00-11:00)</option><option value="12">午时 (11:00-13:00)</option><option value="14">未时 (13:00-15:00)</option>
-<option value="16">申时 (15:00-17:00)</option><option value="18">酉时 (17:00-19:00)</option><option value="20">戌时 (19:00-21:00)</option><option value="22">亥时 (21:00-23:00)</option><option value="23">晚子时 (23:00-24:00)</option>
+<option value="0" data-i18n="bazi.hour.0">早子时 (00:00-01:00)</option><option value="2" data-i18n="bazi.hour.2">丑时 (01:00-03:00)</option><option value="4" data-i18n="bazi.hour.4">寅时 (03:00-05:00)</option><option value="6" data-i18n="bazi.hour.6">卯时 (05:00-07:00)</option>
+<option value="8" data-i18n="bazi.hour.8">辰时 (07:00-09:00)</option><option selected="" value="10" data-i18n="bazi.hour.10">巳时 (09:00-11:00)</option><option value="12" data-i18n="bazi.hour.12">午时 (11:00-13:00)</option><option value="14" data-i18n="bazi.hour.14">未时 (13:00-15:00)</option>
+<option value="16" data-i18n="bazi.hour.16">申时 (15:00-17:00)</option><option value="18" data-i18n="bazi.hour.18">酉时 (17:00-19:00)</option><option value="20" data-i18n="bazi.hour.20">戌时 (19:00-21:00)</option><option value="22" data-i18n="bazi.hour.22">亥时 (21:00-23:00)</option><option value="23" data-i18n="bazi.hour.23">晚子时 (23:00-24:00)</option>
 </select>
 </div>
 <div class="form-item"><label data-i18n="bazi.genderLabel" for="bzGender">性别</label><select class="input-modern" id="bzGender"><option value="乾造" data-i18n="bazi.genderQian">乾造（男）</option><option value="坤造" data-i18n="bazi.genderKun">坤造（女）</option></select></div>
@@ -516,7 +516,7 @@
 <small class="bazi-leap-note" id="bzLeapNote"></small>
 </div>
 </div>
-<button class="btn btn-gold w-100" id="calcBaziBtn" style="margin-top:12px;"><i data-lucide="compass"></i> <span data-i18n="bazi.calcBtn">精密排盘</span></button>
+<button class="btn btn-gold w-100" id="calcBaziBtn" style="margin-top:12px;"><i data-lucide="compass"></i> <span data-i18n="bazi.calcBtn">即刻排盘</span></button>
 <div class="bazi-table-wrap" id="baziResultTable" style="display:none;"></div>
 </div>
 <div class="modal-footer">
@@ -669,7 +669,7 @@
 </div>
 </div>
 <!-- 13. 命主档案 -->
-<div class="modal-backdrop" data-sound="about" id="modalProfile">
+<div class="modal-backdrop" data-sound="profile" id="modalProfile">
 <div class="modal-window ritual-window">
 <div class="modal-header">
 <div class="modal-title"><i data-lucide="id-card"></i><span data-i18n="profile.title">命主档案</span><small class="modal-kicker" data-i18n="profile.kicker">定位与形象 · 随卦自动携带</small></div>
@@ -688,8 +688,8 @@
 </div>
 </div>
 </div>
-<script src="calendar.js?v=20260828_v30"></script>
-<script src="locales.js?v=20260828_v30"></script>
-<script src="script.js?v=20260828_v30"></script>
+<script src="calendar.js?v=20260828_v32"></script>
+<script src="locales.js?v=20260828_v32"></script>
+<script src="script.js?v=20260828_v32"></script>
 </body>
 </html>

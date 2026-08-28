@@ -580,6 +580,7 @@ function initApp() {
   initProfile();
   renderHistoryList();
   renderAlmanacData();
+  bindAlmanacQuery();
   initAtmosphere();
   const mq = window.matchMedia('(max-width: 768px)');
   mq.addEventListener('change', (e) => {
@@ -904,7 +905,7 @@ function scrollToBottom() {
 // 法器提交统一守卫：上一卦尚在推演时不静默丢弃，而是提示并保留弹窗与起卦结果
 function guardToolSubmit() {
   if (isRequesting) {
-    setStatus('上一卦尚在推演，请稍候再呈');
+    setStatus(i18nT('status.busy', '上一卦尚在推演，请稍候再呈'));
     sound.play('deny');
     return false;
   }
@@ -994,7 +995,7 @@ function prefillAndGuide(prompt, guideText) {
   autoGrowTextarea();
   showDraftGuide(guideText);
   userInput.focus();
-  setStatus('卦已排就 · 待善信呈递');
+  setStatus(i18nT('status.draftReady', '卦已排就 · 待善信呈递'));
   userInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -1677,7 +1678,7 @@ async function handleFiles(files) {
   if (!list.length) return;
   for (const f of list) {
     if (!f.type.startsWith('image/')) continue;
-    if (f.size > 15 * 1024 * 1024) { alert('单张图片请控制在 15MB 以内。'); continue; }
+    if (f.size > 15 * 1024 * 1024) { alert(i18nT('upload.sizeLimit', '单张图片请控制在 15MB 以内。')); continue; }
     try {
       const dataUrl = await compressImage(f);
       pendingImages.push({ file: f, dataUrl });
@@ -1929,7 +1930,7 @@ function initMeihuaLogic() {
     const v2 = document.getElementById('meihuaNum2').value.trim();
     const n1 = parseInt(v1), n2 = parseInt(v2);
     if (!v1 || !v2 || isNaN(n1) || isNaN(n2) || n1 < 1 || n2 < 1) {
-      setStatus('请填入两个正整数再行报数起卦');
+      setStatus(i18nT('meihua.errNum', '请填入两个正整数再行报数起卦'));
       sound.play('deny');
       return;
     }
@@ -2086,6 +2087,11 @@ function initBaziLogic() {
   const dayLabel = document.querySelector('label[for="bzDay"]') || document.getElementById('bzDayLabel');
   let calendarType = 'solar';
 
+  // 出生年上限随 JS 校验（1900–今年）动态给定，与历法引擎范围一致，
+  // 不再在 HTML 里写死过时的 max。
+  const yearInput = document.getElementById('bzYear');
+  if (yearInput) yearInput.max = String(new Date().getFullYear());
+
   // 历法切换：公历 / 农历。切换后月日标签与闰月行随之而动。
   function applyCalType() {
     const lunar = calendarType === 'lunar';
@@ -2117,7 +2123,19 @@ function initBaziLogic() {
     const d = Number(document.getElementById('bzDay').value);
     const hourEl = document.getElementById('bzHour');
     const hourValue = Number(hourEl.value);
-    const hourLabel = hourEl.options[hourEl.selectedIndex]?.text || hourEl.value;
+    // 时辰名按取值定盘推得，不取 option 显示文本——选项文案随界面语言切换，
+    // 而中文呈文模板里的生辰须保持中文时辰名，两者解耦。
+    let hourLabel;
+    if (hourValue === 0) {
+      hourLabel = '早子时 (00:00-01:00)';
+    } else if (hourValue === 23) {
+      hourLabel = '晚子时 (23:00-24:00)';
+    } else {
+      const branch = '子丑寅卯辰巳午未申酉戌亥'[hourValue / 2];
+      const s = String(hourValue - 1).padStart(2, '0');
+      const e = String(hourValue + 1).padStart(2, '0');
+      hourLabel = `${branch}时 (${s}:00-${e}:00)`;
+    }
     const gender = document.getElementById('bzGender').value;
     const city = document.getElementById('bzCity').value.trim();
     const isLeap = calendarType === 'lunar' && !!(leapCheck && leapCheck.checked);
@@ -2154,7 +2172,7 @@ function initBaziLogic() {
     const dm = chart.dayMaster;
     const elOrder = ['木', '火', '土', '金', '水'];
     const elLine = elOrder.map(t => `${t}${chart.elements[t]}`).join(' ');
-    const prompt = `【四柱八字精批】\n造化：${gender}\n公历生辰：${chart.solarDate} ${hourLabel}\n农历生辰：${chart.lunarDate}（${i18nT('bazi.zodiac', '属')}${chart.animal}）\n出生地：${city ? city : '未填写'}\n【定盘】以下四柱已由确定性历法引擎排定（立春分年、节气换月、五鼠遁起时柱；晚子时日柱已顺推），依盘直断即可，勿重排、勿改盘、勿另起一套：\n年柱 ${p.year}\n月柱 ${p.month}\n日柱 ${p.day}（日主所在）\n时柱 ${p.hour}\n日主：${dm.stem}${dm.element}（${dm.yinyang}${dm.element}）\n五行盘面（天干地支八字计数）：${elLine}\n请玄机子依此定盘精批：先于【象数解析】论日主旺衰、得令得地与调候（引《穷通宝鉴》《滴天髓》《三命通会》《子平真诠》中切合此造之论为据，引必有出处，勿泛引），再定十神格局与喜忌用神；于【吉凶趋避】以【今时此刻】所载之年为基准，推大运顺逆与近年流年关口，分层言之；于【可行建议】给出三条当下可落地的趋避之法。`;
+    const prompt = `【四柱八字精批】\n造化：${gender}\n公历生辰：${chart.solarDate} ${hourLabel}\n农历生辰：${chart.lunarDate}（属${chart.animal}）\n出生地：${city ? city : '未填写'}\n【定盘】以下四柱已由确定性历法引擎排定（立春分年、节气换月、五鼠遁起时柱；晚子时日柱已顺推），依盘直断即可，勿重排、勿改盘、勿另起一套：\n年柱 ${p.year}\n月柱 ${p.month}\n日柱 ${p.day}（日主所在）\n时柱 ${p.hour}\n日主：${dm.stem}${dm.element}（${dm.yinyang}${dm.element}）\n五行盘面（天干地支八字计数）：${elLine}\n请玄机子依此定盘精批：先于【象数解析】论日主旺衰、得令得地与调候（引《穷通宝鉴》《滴天髓》《三命通会》《子平真诠》中切合此造之论为据，引必有出处，勿泛引），再定十神格局与喜忌用神；于【吉凶趋避】以【今时此刻】所载之年为基准，推大运顺逆与近年流年关口，分层言之；于【可行建议】给出三条当下可落地的趋避之法。`;
     document.getElementById('modalBazi').classList.remove('show');
     prefillAndGuide(prompt, i18nT('bazi.guideAfterChart', '命盘已排定誊入呈匣。可再补充当下所问之事（事业、姻缘或流年），随后亲手呈递。'));
   });
@@ -2250,7 +2268,7 @@ function initDreamLogic() {
 
   submitBtn.addEventListener('click', () => {
     const detail = txt.value.trim();
-    if (!detail) return alert('请先描述梦境详情。');
+    if (!detail) return alert(i18nT('dream.errEmpty', '请先描述梦境详情。'));
     if (!guardToolSubmit()) return;
     const prompt = `【周公解梦意象解析】\n梦境实录：${detail}\n请玄机子依周公解梦与现代潜意识原型，为我解析此梦之征兆与心灵启示。`;
     document.getElementById('modalDream').classList.remove('show');
@@ -2273,11 +2291,22 @@ function renderAlmanacData() {
       <div class="almanac-pending"><b>${lunarStr ? escapeHtml(lunarStr) : '今日宜忌待推演'}</b><p>干支农历已由历法引擎查表核定；值神、冲煞与宜忌由推演线路依此基准给出。</p></div>
     </div>`;
 
+}
+
+// 「以此日问黄历」按钮只绑定一次；若放进 renderAlmanacData，每开一次弹窗就多挂一个
+// 监听器，点击会连发 N 次。处理器内重取当下日期，跨午夜也不会用到旧闭包。
+function bindAlmanacQuery() {
   const btn = document.getElementById('queryAlmanacDayBtn');
+  if (!btn || btn.dataset.bound) return;
+  btn.dataset.bound = '1';
   btn.addEventListener('click', () => {
     if (!guardToolSubmit()) return;
     sound.play('almanac');
     document.getElementById('modalAlmanac').classList.remove('show');
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+    const weekday = '日一二三四五六'[d.getDay()];
+    const info = window.calendar ? window.calendar.solar2lunar(d.getFullYear(), d.getMonth() + 1, d.getDate()) : null;
     const ganzhiNote = info ? `本堂历法引擎核定：农历${info.IMonthCn}${info.IDayCn}，干支 ${info.gzYear}年 ${info.gzMonth}月 ${info.gzDay}日${info.isTerm ? '，当日值' + info.Term : ''}。依此基准直断，勿另校历。` : '若无法可靠校历，请明确说明不确定处，不要编造。';
     prefillAndGuide(`【择吉黄历】请以 ${dateStr}（星期${weekday}）为基准。${ganzhiNote}先陈该日值神与冲煞，再分别列出宜、忌及行事趋避。`, '今日黄历提纲已誊入呈匣。可注明今日欲行之事（出行、签约、动土等），随后亲手呈递。');
   });
