@@ -10,9 +10,11 @@
 <meta content="#100d18" name="theme-color"/>
 <meta content="dark" name="color-scheme"/>
 <!-- 衬线字体与高阶字形 -->
-<link href="assets/fonts.css?v=20260828_v22" rel="stylesheet">
-<script defer src="assets/lucide.min.js?v=20260828_v22"></script>
-<link href="styles.css?v=20260828_v22" rel="stylesheet">
+<!-- 字体样式异步加载：font-display:swap 加 unicode-range 子集，先行渲染、随后换字，不再阻塞首屏 -->
+<link as="style" href="assets/fonts.css?v=20260828_v24" onload="this.onload=null;this.rel='stylesheet'" rel="preload"/>
+<noscript><link href="assets/fonts.css?v=20260828_v24" rel="stylesheet"/></noscript>
+<script defer src="assets/lucide.min.js?v=20260828_v24"></script>
+<link href="styles.css?v=20260828_v24" rel="stylesheet">
 </head>
 <body class="dark-mystic-theme">
 <!-- 浑天星图背景 -->
@@ -652,7 +654,7 @@
 </div>
 </div>
 </div>
-<script src="locales.js?v=20260828_v22"></script>
-<script src="script.js?v=20260828_v22"></script>
+<script src="locales.js?v=20260828_v24"></script>
+<script src="script.js?v=20260828_v24"></script>
 </body>
 </html>

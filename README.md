@@ -79,14 +79,20 @@ npx wrangler pages deploy . --project-name=diviner --commit-dirty=true
 index.html
 styles.css
 script.js
+locales.js
 admin.html
 functions/api/chat.js
 functions/api/health.js
+functions/api/_search.js
 functions/api/admin/records.js
 wrangler.toml
+_headers
 .dev.vars.example
 免费模型配置说明.md
+assets/
 logos/
+zan.jpg
+AGENTS.md
 ```
 
 ## 使用边界

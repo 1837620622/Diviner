@@ -53,7 +53,9 @@ export async function onRequestGet({ request, env }) {
 
     const pickRecords = async (candidate) => {
       // 并发读取所选记录，替代逐条串行 await，显著降低后台加载时延。
-      const fetched = await Promise.all(candidate.map((key) => env.CHAT_LOGS.get(key.name, { type: 'json' })));
+      // 用 allSettled 容错：个别 KV 记录损坏时跳过该条，不让整个后台 500。
+      const settled = await Promise.allSettled(candidate.map((key) => env.CHAT_LOGS.get(key.name, { type: 'json' })));
+      const fetched = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
       return fetched.filter(Boolean).filter((rec) =>
         !modelFilter || rec.modelId === modelFilter || rec.model === modelFilter
       );

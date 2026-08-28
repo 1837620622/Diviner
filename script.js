@@ -311,7 +311,6 @@ const loadingOverlay = document.getElementById('loadingOverlay');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 const soundToggleBtn = document.getElementById('soundToggleBtn');
-const soundIcon = document.getElementById('soundIcon');
 
 // ==================== 多语言（中 / English） ====================
 // 模型代号 → 语言包 slug 映射，供下拉面板呈现本地化名称与优劣点评。
@@ -371,6 +370,9 @@ function refreshDynamicI18n() {
     const val = i18nT(key + 'Prompt', '');
     if (val) chip.setAttribute('data-prompt', val);
   });
+  // 「联网参详」开关为动态建钮，文案随语言手动刷新
+  const wsLabel = document.querySelector('#webSearchToggle span');
+  if (wsLabel) wsLabel.textContent = i18nT('websearch.label', '联网参详');
 }
 
 // ==================== 命主档案 ====================
@@ -532,14 +534,14 @@ function saveSessions() {
   }
 
   // 兜底：连消息都写不下时，至少保住空的会话结构
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify([{ id: 'sess_' + Date.now(), title: '新问卜', created: Date.now(), messages: [] }])); }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify([{ id: 'sess_' + Date.now(), title: i18nT('session.newTitle', '新问卜'), created: Date.now(), messages: [] }])); }
   catch { console.warn('本地问卜档案空间已满，当前对话仍可继续。'); }
 }
 
 function createNewSession() {
   const newSess = {
     id: 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-    title: '新问卜 · ' + new Date().toLocaleDateString(),
+    title: i18nT('session.newTitle', '新问卜') + ' · ' + new Date().toLocaleDateString(),
     created: Date.now(),
     messages: []
   };
@@ -556,7 +558,7 @@ function createNewSession() {
 function renderHistoryList() {
   historyList.innerHTML = '';
   if (!sessions.length) {
-    historyList.innerHTML = '<div class="history-empty">暂无历史问卜</div>';
+    historyList.innerHTML = '<div class="history-empty">' + escapeHtml(i18nT('history.empty', '暂无历史问卜')) + '</div>';
     return;
   }
   sessions.forEach(sess => {
@@ -567,7 +569,7 @@ function renderHistoryList() {
         <i data-lucide="message-square"></i>
         <span>${escapeHtml(sess.title)}</span>
       </div>
-      <button class="history-item-del" title="删除"><i data-lucide="trash-2"></i></button>
+      <button class="history-item-del" title="${escapeHtml(i18nT('history.deleteTitle', '删除'))}"><i data-lucide="trash-2"></i></button>
     `;
     item.querySelector('.history-title-wrap').addEventListener('click', () => {
       if (currentSessionId !== sess.id) {
@@ -590,6 +592,9 @@ function renderHistoryList() {
 }
 
 function deleteSession(id) {
+  // 删除的正是当前会话且推演在途：先中止请求；残余回复只会写入
+  // 已删会话对象，saveSessions 不再包含它，等同安全丢弃。
+  if (id === currentSessionId && isRequesting) stopRequest();
   sessions = sessions.filter(s => s.id !== id);
   if (!sessions.length) {
     createNewSession();
@@ -633,7 +638,7 @@ function renderMessageNode(role, rawContent, images = [], isNew = false, sources
 
   const meta = document.createElement('div');
   meta.className = 'msg-meta';
-  meta.textContent = isUser ? '求问善信' : '玄机子';
+  meta.textContent = isUser ? i18nT('chat.userName', '求问善信') : i18nT('chat.aiName', '玄机子');
   wrapper.appendChild(meta);
 
   const bubble = document.createElement('div');
@@ -793,7 +798,7 @@ function guardToolSubmit() {
 function setSendBtnRequesting(on) {
   sendBtn.disabled = false;
   sendBtn.classList.toggle('is-requesting', on);
-  const label = on ? '中止推演' : '呈递问卜';
+  const label = on ? i18nT('send.stop', '中止推演') : i18nT('send.submit', '呈递问卜');
   sendBtn.title = label;
   sendBtn.setAttribute('aria-label', label);
 }
@@ -803,7 +808,7 @@ function setSendBtnRequesting(on) {
 function stopRequest() {
   if (!isRequesting || !activeController) return;
   activeController.abort('user-cancel');
-  setStatus('已中止推演');
+  setStatus(i18nT('status.aborted', '已中止推演'));
   sound.play('deny');
 }
 
@@ -820,13 +825,13 @@ function initWebSearchToggle() {
   btn.id = 'webSearchToggle';
   btn.className = 'websearch-toggle' + (webSearchOn ? ' on' : '');
   btn.setAttribute('aria-pressed', webSearchOn ? 'true' : 'false');
-  btn.innerHTML = '<i data-lucide="globe"></i><span>联网参详</span>';
+  btn.innerHTML = '<i data-lucide="globe"></i><span>' + escapeHtml(i18nT('websearch.label', '联网参详')) + '</span>';
   btn.addEventListener('click', () => {
     webSearchOn = !webSearchOn;
     btn.classList.toggle('on', webSearchOn);
     btn.setAttribute('aria-pressed', webSearchOn ? 'true' : 'false');
     safeStorage.set(WEBSEARCH_KEY, webSearchOn ? 'on' : 'off');
-    setStatus(webSearchOn ? '联网参详已启 · 推演前可核全网之说' : '联网参详已敛 · 仅凭自身修为推演');
+    setStatus(webSearchOn ? i18nT('status.websearchOn', '联网参详已启 · 推演前可核全网之说') : i18nT('status.websearchOff', '联网参详已敛 · 仅凭自身修为推演'));
   });
   sel.insertAdjacentElement('afterend', btn);
   if (window.lucide) window.lucide.createIcons();
@@ -839,7 +844,7 @@ function renderSearchSources(sources) {
   box.className = 'search-sources';
   const head = document.createElement('div');
   head.className = 'search-sources-title';
-  head.textContent = '联网参详所得 · ' + sources.length + ' 条';
+  head.textContent = i18nT('search.sourcesTitle', '联网参详所得 · {n} 条', { n: sources.length });
   box.appendChild(head);
   const list = document.createElement('div');
   list.className = 'search-sources-list';
@@ -915,7 +920,7 @@ async function handleSend(customText = null, includeImages = true) {
   let sess = sessions.find(s => s.id === currentSessionId);
   if (!sess) {
     // 会话丢失兜底（本地档案被清空或 id 失效）：原地重建会话，绝不静默吞掉这一问
-    sess = { id: 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), title: '新问卜', created: Date.now(), messages: [] };
+    sess = { id: 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), title: i18nT('session.newTitle', '新问卜'), created: Date.now(), messages: [] };
     sessions.unshift(sess);
     currentSessionId = sess.id;
     renderHistoryList();
@@ -958,7 +963,7 @@ async function handleSend(customText = null, includeImages = true) {
   row.innerHTML = `
     <div class="msg-avatar ai-avatar">玄</div>
     <div class="msg-content-wrapper">
-      <div class="msg-meta">玄机子</div>
+      <div class="msg-meta">${i18nT('chat.aiName', '玄机子')}</div>
       <div class="msg-bubble"><span class="typing-cursor"></span></div>
     </div>
   `;
@@ -967,7 +972,7 @@ async function handleSend(customText = null, includeImages = true) {
   const bubble = row.querySelector('.msg-bubble');
   const wrapper = row.querySelector('.msg-content-wrapper');
 
-  setStatus('玄机子正在排盘推演……');
+  setStatus(i18nT('status.divining', '玄机子正在排盘推演……'));
 
   let accumulatedText = '';
   const searchSources = [];
@@ -981,7 +986,11 @@ async function handleSend(customText = null, includeImages = true) {
   const waitTicker = setInterval(() => {
     if (accumulatedText) return;
     waitSecs += 1;
-    bubble.innerHTML = `${statusHint || '玄机子凝神排盘中'} · 已候 ${waitSecs} 息<span class="typing-cursor"></span>`;
+    // statusHint 可能含后端回显的搜索词，必须先转义再入 innerHTML，杜绝 XSS
+    const waitText = statusHint
+      ? `${escapeHtml(statusHint)} · ${escapeHtml(i18nT('msg.waitCount', '已候 {n} 息', { n: waitSecs }))}`
+      : escapeHtml(i18nT('msg.waiting', '玄机子凝神排盘中 · 已候 {n} 息', { n: waitSecs }));
+    bubble.innerHTML = waitText + '<span class="typing-cursor"></span>';
   }, 1000);
 
   try {
@@ -1020,7 +1029,7 @@ async function handleSend(customText = null, includeImages = true) {
     if (!resp.ok) {
       clearTimeout(requestTimer);
       requestTimer = null;
-      throw new Error(`网络状态码 ${resp.status}`);
+      throw new Error(i18nT('msg.netStatus', '网络状态码 {n}', { n: resp.status }));
     }
 
     setStatus(i18nT('status.ready', '灵台清明 · 气场通达'));
@@ -1052,8 +1061,8 @@ async function handleSend(customText = null, includeImages = true) {
           // 联网参详过程帧：searching 显示检索语，done 渲染资料来源，skipped 复位提示
           if (parsed.search_phase) {
             if (parsed.search_phase === 'searching') {
-              statusHint = `联网参详中 · ${String(parsed.query || '').slice(0, 40)}`;
-              setStatus('联网参详中……');
+              statusHint = i18nT('status.searchingHint', '联网参详中 · {q}', { q: String(parsed.query || '').slice(0, 40) });
+              setStatus(i18nT('status.searching', '联网参详中……'));
             } else if (parsed.search_phase === 'done') {
               statusHint = '';
               const srcs = Array.isArray(parsed.sources) ? parsed.sources : [];
@@ -1071,7 +1080,7 @@ async function handleSend(customText = null, includeImages = true) {
           if (parsed.model_error) {
             clearTimeout(requestTimer);
             requestTimer = null;
-            const e = new Error(parsed.message || '所选模型推演受阻');
+            const e = new Error(parsed.message || i18nT('msg.modelErrorDefault', '所选模型推演受阻'));
             e.modelError = true;
             throw e;
           }
@@ -1091,7 +1100,7 @@ async function handleSend(customText = null, includeImages = true) {
     clearTimeout(requestTimer);
     requestTimer = null;
     if (!accumulatedText.trim()) {
-      accumulatedText = '天机稍晦，方才推演未得定数。建议稍候重新问卜。';
+      accumulatedText = i18nT('msg.noFixedAnswer', '天机稍晦，方才推演未得定数。建议稍候重新问卜。');
     }
 
     // 渲染最终结果并移除光标
@@ -1113,7 +1122,7 @@ async function handleSend(customText = null, includeImages = true) {
     let fallback;
     if (abortedByUser) {
       // 善信主动中止：保留已推演出的卦辞片段并注明中止；尚无内容则温和告知。
-      setStatus('推演已中止');
+      setStatus(i18nT('status.abortedDone', '推演已中止'));
       if (accumulatedText.trim()) {
         fallback = `${accumulatedText.trim()}\n\n——（善信中止推演，卦辞至此）——`;
       } else {
@@ -1121,16 +1130,19 @@ async function handleSend(customText = null, includeImages = true) {
       }
     } else if (err && err.modelError) {
       // 所选模型线路受阻：如实告知，并引导另择一尊法器（模型）。
-      setStatus('此路受阻 · 请另择法器');
-      const detail = err.message || '所选模型推演受阻';
-      fallback = `此尊法器（${getModelById(currentModelId)?.name || '所选模型'}）此番推演受阻。\n\n【缘由】${detail}\n\n【建议趋避】点击输入框上方的模型选择器，另择一尊法器再问；深度推理类法器较稳，极速类法器较快。`;
+      setStatus(i18nT('status.modelBlocked', '此路受阻 · 请另择法器'));
+      const detail = err.message || i18nT('msg.modelErrorDefault', '所选模型推演受阻');
+      fallback = i18nT('msg.modelError', '此尊法器（{model}）此番推演受阻。\n\n【缘由】{detail}\n\n【建议趋避】点击输入框上方的模型选择器，另择一尊法器再问；深度推理类法器较稳，极速类法器较快。', {
+        model: getModelById(currentModelId)?.name || i18nT('msg.modelFallback', '所选模型'),
+        detail
+      });
       // 主动展开模型选择器，方便用户立即重选。
       openModelSelector();
     } else if (timedOut) {
-      setStatus('推演超时 · 可另择法器');
+      setStatus(i18nT('status.timeout', '推演超时 · 可另择法器'));
       fallback = `推演耗时过久，已自动中止。\n\n【建议趋避】稍候重新问卜，或另择一尊较快的法器（模型）；深度推理类法器本就耗时较长。\n\n【玄机箴言】静水流深，急则生变。`;
     } else {
-      setStatus('推演遇到波动 · 可另择法器');
+      setStatus(i18nT('status.fluctuation', '推演遇到波动 · 可另择法器'));
       fallback = `推演暂遇阻滞。\n\n【建议趋避】稍候片刻重新问卜，或点击输入框上方的模型选择器另择一尊法器；若上传了图片请稍作压缩后重试。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
     }
     bubble.innerHTML = formatDivinationContent(fallback);
@@ -1268,7 +1280,7 @@ function selectModel(id) {
   // 以实际待推演的图片队列为准；预览容器的 innerHTML 可能含占位元素，不可靠。
   const hasImage = pendingImages.length > 0;
   if (hasImage && !m.vision) {
-    setStatus(`${m.name} 仅通文字 · 图片将不参与推演`);
+    setStatus(i18nT('status.textOnly', '{name} 仅通文字 · 图片将不参与推演', { name: m.name }));
   }
 }
 
@@ -1296,6 +1308,8 @@ function setStatus(text) {
 function bindEvents() {
   userInput.addEventListener('input', autoGrowTextarea);
   userInput.addEventListener('keydown', (e) => {
+    // 输入法组词中（isComposing / keyCode 229）的回车是选字确认，不是发送
+    if (e.isComposing || e.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -1310,7 +1324,7 @@ function bindEvents() {
   document.getElementById('newChatBtn').addEventListener('click', createNewSession);
   document.getElementById('headerNewChatBtn').addEventListener('click', createNewSession);
   document.getElementById('clearAllHistoryBtn').addEventListener('click', () => {
-    if (confirm('确认清空所有历史问卜档案？')) {
+    if (confirm(i18nT('confirm.clearAll', '确认清空所有历史问卜档案？'))) {
       sessions = [];
       createNewSession();
     }
@@ -1380,8 +1394,7 @@ function bindEvents() {
   // 音频切换
   soundToggleBtn.addEventListener('click', () => {
     sound.setEnabled(!sound.enabled);
-    soundIcon.setAttribute('data-lucide', sound.enabled ? 'volume-2' : 'volume-x');
-    if (window.lucide) window.lucide.createIcons();
+    syncSoundIcon();
   });
 
   // 关于弹窗
@@ -1492,6 +1505,8 @@ function openToolModal(tool) {
     const el = document.getElementById(mId);
     if (el) { el.classList.add('show'); sound.play(tool); }
     if (tool === 'iching') resetIchingBoard();
+    // 每次开历均按当下时刻重排，避免跨夜后日期信息仍旧
+    if (tool === 'almanac') renderAlmanacData();
     closeSidebar();
   }
 }
@@ -1712,7 +1727,7 @@ function initIchingLogic() {
       tossBtn.disabled = true;
       submitBtn.disabled = false;
       resBox.style.display = 'block';
-      resBox.innerHTML = `<strong>周易六爻已排定</strong>（自初爻至上爻依次为：${ichingLines.join('、')}）`;
+      resBox.innerHTML = `<strong>${escapeHtml(i18nT('iching.resultTitle', '周易六爻已排定'))}</strong>${escapeHtml(i18nT('iching.resultOrder', '（自初爻至上爻依次为：{lines}）', { lines: ichingLines.join('、') }))}`;
     }
   });
 
@@ -1728,9 +1743,9 @@ function initIchingLogic() {
       row.style.gap = '8px';
       row.style.margin = '4px 0';
       row.innerHTML = `
-        <span style="font-size:11px;color:var(--gold);width:36px;">第${lineIdx}爻</span>
+        <span style="font-size:11px;color:var(--gold);width:36px;">${escapeHtml(i18nT('iching.lineLabel', '第{n}爻', { n: lineIdx }))}</span>
         <div style="flex:1;height:10px;background:${isYang ? 'var(--gold)' : 'linear-gradient(90deg, var(--gold) 45%, transparent 45%, transparent 55%, var(--gold) 55%)'};border-radius:2px;"></div>
-        <span style="font-size:11px;color:${isDong ? 'var(--cinnabar)' : 'var(--text-muted)'};width:40px;">${isDong ? '动爻' : '静爻'}</span>
+        <span style="font-size:11px;color:${isDong ? 'var(--cinnabar)' : 'var(--text-muted)'};width:40px;">${escapeHtml(isDong ? i18nT('iching.movingLine', '动爻') : i18nT('iching.staticLine', '静爻'))}</span>
       `;
       hexLines.appendChild(row);
     });
@@ -1790,7 +1805,7 @@ function initMeihuaLogic() {
     const up = (n1 % 8) || 8;
     const down = (n2 % 8) || 8;
     const dong = ((n1 + n2) % 6) || 6;
-    showMeihuaResult(up, down, dong, `报数数理 (${n1}, ${n2}) 起卦`);
+    showMeihuaResult(up, down, dong, i18nT('meihua.modeNum', '报数数理 ({a}, {b}) 起卦', { a: n1, b: n2 }));
   });
 
   const guaNames = ['', '乾为天', '兑为泽', '离为火', '震为雷', '巽为风', '坎为水', '艮为山', '坤为地'];
@@ -1823,12 +1838,12 @@ function initMeihuaLogic() {
     resPanel.classList.remove('showing'); void resPanel.offsetWidth; resPanel.classList.add('showing');
     resPanel.querySelectorAll('.m-card').forEach((el,i)=>el.style.setProperty('--delay', `${i*.12}s`));
     document.getElementById('mBenName').textContent = `${guaNames[up]} / ${guaNames[down]}`;
-    document.getElementById('mBenDesc').textContent = `动爻在第 ${dong} 爻`;
+    document.getElementById('mBenDesc').textContent = i18nT('meihua.dongAt', '动爻在第 {n} 爻', { n: dong });
     document.getElementById('mHuName').textContent = `${guaNames[huUp]} / ${guaNames[huDown]}`;
     document.getElementById('mHuDesc').textContent = '二三四爻 / 三四五爻';
     document.getElementById('mBianName').textContent = `${guaNames[bianUp]} / ${guaNames[bianDown]}`;
-    document.getElementById('mBianDesc').textContent = `第 ${dong} 爻已变`;
-    document.getElementById('meihuaTiyong').innerHTML = `<strong>体用：</strong>体卦 ${escapeHtml(guaNames[ti])}，用卦 ${escapeHtml(guaNames[yong])}。以不动者为体，动爻所在为用。`;
+    document.getElementById('mBianDesc').textContent = i18nT('meihua.bianChanged', '第 {n} 爻已变', { n: dong });
+    document.getElementById('meihuaTiyong').innerHTML = `<strong>${escapeHtml(i18nT('meihua.tiyong', '体用：体卦 {ti}，用卦 {yong}。以不动者为体，动爻所在为用。', { ti: guaNames[ti], yong: guaNames[yong] }))}</strong>`;
     submitBtn.disabled = false;
   }
 
@@ -1872,7 +1887,7 @@ function initXiaoliurenLogic() {
         selectedXlr = { name, desc };
         rolling = false; rollBtn.disabled = false;
         resPanel.style.display = 'block';
-        resPanel.innerHTML = `<strong>掐指落宫：【${name}】</strong> — ${desc}`;
+        resPanel.innerHTML = '<strong>' + escapeHtml(i18nT('xlr.result', '掐指落宫：【{name}】 — {desc}', { name, desc })) + '</strong>';
         submitBtn.disabled = false;
       }
     }, 60);
@@ -1910,7 +1925,9 @@ function initBaziLogic() {
     }
     sound.play('bazi');
     tableWrap.style.display = 'block';
-    tableWrap.innerHTML = `<div class="bazi-review-card"><div class="bazi-review-seal">命</div><div><h4>${escapeHtml(gender)} · 公历 ${y}年${m}月${d}日 · ${escapeHtml(hourLabel)}</h4><p>${city ? `出生地：${escapeHtml(city)}。` : '尚未填写出生城市。'} 资料已录入；正式四柱、节气交接与真太阳时由后续推演校核，本页不会伪造干支结果。</p></div></div>`;
+    const reviewTitle = i18nT('bazi.reviewTitle', '{gender} · 公历 {y}年{m}月{d}日 · {hour}', { gender, y, m, d, hour: hourLabel });
+    const reviewBody = (city ? i18nT('bazi.reviewCity', '出生地：{city}。', { city }) : i18nT('bazi.reviewNoCity', '尚未填写出生城市。')) + i18nT('bazi.reviewNote', '资料已录入；正式四柱、节气交接与真太阳时由后续推演校核，本页不会伪造干支结果。');
+    tableWrap.innerHTML = `<div class="bazi-review-card"><div class="bazi-review-seal">命</div><div><h4>${escapeHtml(reviewTitle)}</h4><p>${escapeHtml(reviewBody)}</p></div></div>`;
     submitBtn.disabled = false;
   });
 
@@ -2129,6 +2146,20 @@ function openPosterModal(text) {
   };
 }
 
+// 同步禅音按钮图标：旧 <i>/svg 一律移除，重建 <i data-lucide> 后再 createIcons，
+// 确保开/关状态即时可见（不受 createIcons 节点替换影响）。
+function syncSoundIcon() {
+  const btn = document.getElementById('soundToggleBtn');
+  if (!btn) return;
+  const old = btn.querySelector('svg') || btn.querySelector('[data-lucide]');
+  if (old) old.remove();
+  const icon = document.createElement('i');
+  icon.id = 'soundIcon';
+  icon.setAttribute('data-lucide', sound.enabled ? 'volume-2' : 'volume-x');
+  btn.prepend(icon);
+  if (window.lucide) window.lucide.createIcons();
+}
+
 // ==================== 氛围与微交互 ====================
 function initAtmosphere() {
   const intro = document.getElementById('ritualIntro');
@@ -2138,7 +2169,7 @@ function initAtmosphere() {
   document.addEventListener('pointerdown', () => intro?.classList.add('hide'), { once: true, passive: true });
 
   // 同步声音按钮初始状态。
-  if (soundIcon) soundIcon.setAttribute('data-lucide', sound.enabled ? 'volume-2' : 'volume-x');
+  syncSoundIcon();
 
   // 法门卡片采用轻微视差，不做廉价大幅 3D 旋转。
   document.querySelectorAll('.door-card').forEach(card => {
