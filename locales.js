@@ -413,7 +413,6 @@
     // ── 关于弹窗 ──
     'about.title': '关于玄机子',
     'about.heading': '玄机子 · 灵台问卜',
-    'about.version': '版本：v8.3 灵台校勘版',
     'about.intro': '玄机子以东方数理为骨、以现代推演为用，融周易六爻、梅花易数、四柱八字、小六壬、观象灵签、择吉黄历、周公解梦与灵犀塔罗于一炉，辅以联网参详与上下文记忆，为问卜者陈明局势、指点迷津。',
     'about.feat1Title': '九门法器 · 随心择法',
     'about.feat1Desc': '六爻、梅花、六壬、八字、塔罗、灵签、黄历、解梦与木鱼，一事一法，各有机锋。',
@@ -824,7 +823,6 @@
     // ── 关于弹窗（英文全译） ──
     'about.title': 'About Xuanjizi',
     'about.heading': 'Xuanjizi · Divination at the Spirit Terrace',
-    'about.version': 'Version v8.3 · Spirit Terrace Edition',
     'about.intro': 'Xuanjizi is rooted in the classical mathematics of the East and practiced through modern divination — weaving together the Six Lines and Plum Blossom methods of the Yi Jing, the Four Pillars of Destiny, Xiao Liu Ren, oracle lots, the auspicious almanac, dream interpretation and the Western tarot, aided by live web research and a memory of your past questions.',
     'about.feat1Title': 'Nine Instruments · Choose Your Way',
     'about.feat1Desc': 'Six Lines, Plum Blossom, Liu Ren, Four Pillars, Tarot, oracle lots, almanac, dream reading and the wooden fish — one instrument per question, each with its own wisdom.',

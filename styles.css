@@ -2389,12 +2389,6 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
   color: #e7dbc3;
   letter-spacing: 0.12em;
 }
-.about-ver {
-  margin: 0 0 12px;
-  color: #8a7f70;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-}
 .about-p {
   margin: 0 auto 14px;
   max-width: 36em;
