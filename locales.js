@@ -410,12 +410,19 @@
     'poster.canvasQuote': '「知命而不受制于命，顺势而为，自强不息」',
     'poster.fileName': '玄机子符笺',
 
-    // ── 关于弹窗（依约定：正文不逐句翻译，仅译标题，正文 zh/en 同值） ──
+    // ── 关于弹窗 ──
     'about.title': '关于玄机子',
     'about.heading': '玄机子 · 灵台问卜',
     'about.version': '版本：v8.3 灵台校勘版',
-    'about.intro': '融汇东方传统易学、四柱八字、梅花六爻与西方灵犀塔罗，为问卜者提供客观、富于哲思与可行建议的推演指导。',
+    'about.intro': '玄机子以东方数理为骨、以现代推演为用，融周易六爻、梅花易数、四柱八字、小六壬、观象灵签、择吉黄历、周公解梦与灵犀塔罗于一炉，辅以联网参详与上下文记忆，为问卜者陈明局势、指点迷津。',
+    'about.feat1Title': '九门法器 · 随心择法',
+    'about.feat1Desc': '六爻、梅花、六壬、八字、塔罗、灵签、黄历、解梦与木鱼，一事一法，各有机锋。',
+    'about.feat2Title': '联网参详 · 有据可依',
+    'about.feat2Desc': '问及今人今事，自动检索全网信息并附来源出处，不凭空臆断。',
+    'about.feat3Title': '记忆灵台 · 越问越懂',
+    'about.feat3Desc': '记住对话上下文与命主档案，卦辞前后呼应，不必反复自述。',
     'about.quote': '「知命而不受制于命，顺势而为，自强不息。」',
+    'about.disclaimer': '卦象示趋避，事仍在人为。推演仅供参考，不构成医疗、投资、法律等专业建议。',
     'about.credit': '开发者：传康KK · 无偿开发，免费使用'
   };
 
@@ -814,13 +821,20 @@
     'poster.canvasQuote': '“Know fate, yet never be bound by it; move with the tide, and strive without rest.”',
     'poster.fileName': 'Xuanjizi_Talisman',
 
-    // ── 关于弹窗（正文与中文同值，不逐句翻译） ──
+    // ── 关于弹窗（英文全译） ──
     'about.title': 'About Xuanjizi',
-    'about.heading': zh['about.heading'],
-    'about.version': zh['about.version'],
-    'about.intro': zh['about.intro'],
-    'about.quote': zh['about.quote'],
-    'about.credit': zh['about.credit']
+    'about.heading': 'Xuanjizi · Divination at the Spirit Terrace',
+    'about.version': 'Version v8.3 · Spirit Terrace Edition',
+    'about.intro': 'Xuanjizi is rooted in the classical mathematics of the East and practiced through modern divination — weaving together the Six Lines and Plum Blossom methods of the Yi Jing, the Four Pillars of Destiny, Xiao Liu Ren, oracle lots, the auspicious almanac, dream interpretation and the Western tarot, aided by live web research and a memory of your past questions.',
+    'about.feat1Title': 'Nine Instruments · Choose Your Way',
+    'about.feat1Desc': 'Six Lines, Plum Blossom, Liu Ren, Four Pillars, Tarot, oracle lots, almanac, dream reading and the wooden fish — one instrument per question, each with its own wisdom.',
+    'about.feat2Title': 'Web Research · Grounded Answers',
+    'about.feat2Desc': 'Ask about today’s people and events: the reading draws on live sources with citations, never on guesswork.',
+    'about.feat3Title': 'A Memory Terrace · It Learns You',
+    'about.feat3Desc': 'It remembers your conversation and your profile, so readings build on one another instead of starting over.',
+    'about.quote': '“Know your fate, yet never be bound by it; move with the tide, and strive without rest.”',
+    'about.disclaimer': 'The hexagrams show tendencies, not certainties — the deed remains yours. Readings are for reflection only and are not medical, financial or legal advice.',
+    'about.credit': 'Developer: ChuanKang KK · Built pro bono, free to use'
   };
 
   // ───────────────────────────

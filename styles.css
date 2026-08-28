@@ -2757,3 +2757,173 @@ body.sidebar-collapsed .sidebar-overlay { display: none !important; }
 /* 命主档案已立之印：档案钮右上角一点金朱，未立则隐藏 */
 .footer-btn { position: relative; }
 .profile-dot { position: absolute; top: 6px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold-glow); }
+
+/* ════════════════════════════════════════════════════════════
+   v26 · 侧边栏视觉重做 + 关于弹窗重做
+   追加于文件末尾，同特异性下覆盖此前各层规则
+   ════════════════════════════════════════════════════════════ */
+
+/* ── 1 · 品牌印：正方朱砂印摆正，双线内框，字放大加亮 ── */
+.brand-seal {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  background: linear-gradient(140deg, #b23a28, #8c2519 78%);
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  color: #f2e0bc;
+  font: 700 21px/1 var(--font-serif);
+  letter-spacing: 0;
+  text-shadow: 0 1px 2px rgba(40, 6, 4, 0.5);
+  box-shadow: inset 0 0 12px rgba(56, 9, 7, 0.55), inset 0 1px rgba(255, 224, 186, 0.16), 0 3px 16px rgba(157, 47, 35, 0.3);
+}
+/* 覆盖旧覆盖层的四十五度旋转内框，改为不旋转的第二道内框 */
+.brand-seal::after {
+  inset: 3px;
+  border-color: rgba(244, 224, 186, 0.5);
+  border-radius: 2px;
+  transform: none;
+}
+.brand-title {
+  font-size: 18px;
+  letter-spacing: 0.22em;
+  color: #f0e2c0;
+}
+.brand-desc { color: #96896d; }
+
+/* ── 2 · 侧栏顶栏与收起钮：去方框，安静圆角 ── */
+.sidebar-header { padding: 22px 18px 16px; }
+#closeSidebarBtn {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted, #847c9c);
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  transition: color 0.25s, background 0.25s;
+}
+#closeSidebarBtn:hover { color: #f0e2c0; background: rgba(212, 175, 55, 0.08); }
+
+/* ── 3 · 新起一卦主钮：加高、金边、内顶光 ── */
+.btn-new-chat {
+  min-height: 44px;
+  letter-spacing: 0.2em;
+  border-color: rgba(231, 190, 144, 0.32);
+  box-shadow: inset 0 1px rgba(255, 240, 210, 0.16), 0 8px 30px rgba(92, 24, 21, 0.19);
+}
+
+/* ── 4 · 分节标题：末尾一道渐隐金线；清空钮排到最右 ── */
+.section-label { display: flex; align-items: center; gap: 8px; }
+.section-label::after {
+  content: "";
+  order: 1;
+  flex: 1;
+  min-width: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.32), transparent);
+}
+.clear-history-btn { order: 2; }
+
+/* ── 5 · 法器格：卡片加高，印章改双环金圈 ── */
+.tool-item { min-height: 74px; }
+.tool-seal {
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+  border-color: rgba(208, 174, 104, 0.42);
+  /* 双环：外环是边框，内环以层叠内阴影模拟 */
+  box-shadow: inset 0 0 0 2px rgba(14, 12, 20, 0.92), inset 0 0 0 3px rgba(208, 174, 104, 0.18), inset 0 0 14px rgba(198, 161, 91, 0.08);
+}
+
+/* ── 6 · 历史条目：选中态左侧加一道金条 ── */
+.history-item.active { box-shadow: inset 3px 0 0 0 rgba(212, 175, 55, 0.75); }
+
+/* ── 7 · 底部四钮：由挤成一排改为二乘二两行排布 ── */
+.sidebar-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+}
+.footer-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 9px 8px;
+  font-size: 12px;
+  gap: 7px;
+}
+
+/* ── 8 · 关于弹窗：竖排朱砂大印、功能三则、免责说明 ── */
+.about-seal {
+  writing-mode: vertical-rl;
+  -webkit-writing-mode: vertical-rl;
+  text-orientation: upright;
+  width: 72px;
+  height: 104px;
+  margin: 6px auto 16px;
+  padding: 0;
+  position: relative;
+  border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  color: #f6e3c2;
+  font: 800 26px/1.2 var(--font-serif);
+  letter-spacing: 0.22em;
+  text-shadow: 0 1px 2px rgba(40, 6, 4, 0.55);
+  background: linear-gradient(160deg, #b23a28, #8c2519 80%);
+  box-shadow: inset 0 0 18px rgba(58, 10, 8, 0.55), inset 0 1px rgba(255, 220, 180, 0.14), 0 6px 22px rgba(140, 37, 25, 0.32);
+}
+.about-seal::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(246, 227, 194, 0.45);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.about-features {
+  margin: 2px 0 16px;
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+.about-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(212, 175, 55, 0.14);
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(190, 145, 65, 0.05), rgba(255, 255, 255, 0.012));
+}
+.about-feature-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 50%;
+  color: var(--gold, #d4af37);
+  box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.08);
+}
+.about-feature-icon svg { width: 16px; height: 16px; }
+.about-feature-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.about-feature-text strong {
+  font: 600 13.5px/1.5 var(--font-serif);
+  letter-spacing: 0.08em;
+  color: #e2d4bb;
+}
+.about-feature-desc {
+  font: 400 12px/1.7 var(--font-serif);
+  color: #8e8375;
+}
+.about-disclaimer {
+  margin: 0 auto 12px;
+  max-width: 36em;
+  font: 400 11.5px/1.7 var(--font-serif);
+  letter-spacing: 0.04em;
+  color: #7d7466;
+}
