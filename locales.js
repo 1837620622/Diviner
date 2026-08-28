@@ -48,6 +48,23 @@
     'sidebar.zenSoundTitle': '空灵禅音',
     'sidebar.about': '关于',
     'sidebar.aboutTitle': '关于玄机子',
+    'sidebar.profile': '档案',
+    'sidebar.profileTitle': '命主档案',
+
+    // ── 命主档案弹窗 ──
+    'profile.title': '命主档案',
+    'profile.kicker': '定位与形象 · 随卦自动携带',
+    'profile.hint': '立档之后，每次起卦自动把这份信息带给玄机子；档案为本机共用，各对话上下文仍按会话独立记忆。',
+    'profile.locLabel': '定位 · 所在城市',
+    'profile.locPlaceholder': '例：四川 · 成都',
+    'profile.personaLabel': '形象自述',
+    'profile.personaPlaceholder': '例：1995 年生，从事互联网行业，性格谨慎细致，正面临事业与感情的抉择……',
+    'profile.customLabel': '个人嘱托 · 专属提示词',
+    'profile.customPlaceholder': '例：请先给结论再展开；多用白话解释；建议要具体可行……',
+    'profile.saveBtn': '立档存记',
+    'profile.clearBtn': '销档',
+    'status.profileSaved': '命主档案已立 · 随卦随行',
+    'status.profileCleared': '命主档案已销',
 
     // ── 九方法器（侧栏入口名） ──
     'tool.tarot': '灵犀塔罗',
@@ -414,6 +431,23 @@
     'sidebar.zenSoundTitle': 'Ambient zen chime',
     'sidebar.about': 'About',
     'sidebar.aboutTitle': 'About Xuanjizi',
+    'sidebar.profile': 'Profile',
+    'sidebar.profileTitle': 'Seeker Profile',
+
+    // ── Seeker Profile modal ──
+    'profile.title': 'Seeker Profile',
+    'profile.kicker': 'Location & persona · carried with every reading',
+    'profile.hint': 'Once saved, this profile is sent automatically with every reading on this device; each conversation still keeps its own independent context.',
+    'profile.locLabel': 'Location · City',
+    'profile.locPlaceholder': 'e.g. Chengdu, Sichuan',
+    'profile.personaLabel': 'About you',
+    'profile.personaPlaceholder': 'e.g. Born in 1995, working in tech, cautious by nature, facing choices in career and love…',
+    'profile.customLabel': 'Personal instructions · custom prompt',
+    'profile.customPlaceholder': 'e.g. Give the conclusion first; explain in plain language; keep advice concrete and actionable…',
+    'profile.saveBtn': 'Save Profile',
+    'profile.clearBtn': 'Clear',
+    'status.profileSaved': 'Profile saved · carried with every reading',
+    'status.profileCleared': 'Profile cleared',
 
     // ── 九方法器 ──
     'tool.tarot': 'Intuitive Tarot',

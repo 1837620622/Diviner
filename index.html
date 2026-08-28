@@ -10,9 +10,9 @@
 <meta content="#100d18" name="theme-color"/>
 <meta content="dark" name="color-scheme"/>
 <!-- 衬线字体与高阶字形 -->
-<link href="assets/fonts.css?v=20260828_v21" rel="stylesheet">
-<script defer src="assets/lucide.min.js?v=20260828_v21"></script>
-<link href="styles.css?v=20260828_v21" rel="stylesheet">
+<link href="assets/fonts.css?v=20260828_v22" rel="stylesheet">
+<script defer src="assets/lucide.min.js?v=20260828_v22"></script>
+<link href="styles.css?v=20260828_v22" rel="stylesheet">
 </head>
 <body class="dark-mystic-theme">
 <!-- 浑天星图背景 -->
@@ -89,6 +89,11 @@
 <button class="footer-btn sponsor-btn" id="sidebarSponsorBtn" title="随喜赞助">
 <i data-lucide="heart-handshake"></i>
 <span data-i18n="sidebar.sponsor">随喜</span>
+</button>
+<button class="footer-btn" id="profileBtn" title="命主档案">
+<i data-lucide="id-card"></i>
+<span data-i18n="sidebar.profile">档案</span>
+<span class="profile-dot" hidden id="profileDot"></span>
 </button>
 <button class="footer-btn" id="soundToggleBtn" title="空灵禅音">
 <i data-lucide="volume-2" id="soundIcon"></i>
@@ -627,7 +632,27 @@
 <div class="modal-footer"><button class="btn btn-primary" data-close="modalAbout" data-i18n="confirm">确认</button></div>
 </div>
 </div>
-<script src="locales.js?v=20260828_v21"></script>
-<script src="script.js?v=20260828_v21"></script>
+<!-- 13. 命主档案 -->
+<div class="modal-backdrop" data-sound="about" id="modalProfile">
+<div class="modal-window ritual-window">
+<div class="modal-header">
+<div class="modal-title"><i data-lucide="id-card"></i><span data-i18n="profile.title">命主档案</span><small class="modal-kicker" data-i18n="profile.kicker">定位与形象 · 随卦自动携带</small></div>
+<button class="modal-close-btn" data-close="modalProfile"><i data-lucide="x"></i></button>
+</div>
+<div class="modal-body">
+<div class="info-banner" data-i18n="profile.hint">立档之后，每次起卦自动把这份信息带给玄机子；档案为本机共用，各对话上下文仍按会话独立记忆。</div>
+<div class="form-item"><label data-i18n="profile.locLabel">定位 · 所在城市</label><input class="input-modern" id="profileLocation" maxlength="60" placeholder="例：四川 · 成都" data-i18n-ph="profile.locPlaceholder" type="text"/></div>
+<div class="form-item"><label data-i18n="profile.personaLabel">形象自述</label><textarea class="input-modern" id="profilePersona" maxlength="500" placeholder="例：1995 年生，从事互联网行业，性格谨慎细致，正面临事业与感情的抉择……" data-i18n-ph="profile.personaPlaceholder" rows="3"></textarea></div>
+<div class="form-item"><label data-i18n="profile.customLabel">个人嘱托 · 专属提示词</label><textarea class="input-modern" id="profileCustom" maxlength="500" placeholder="例：请先给结论再展开；多用白话解释；建议要具体可行……" data-i18n-ph="profile.customPlaceholder" rows="3"></textarea></div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" id="clearProfileBtn" data-i18n="profile.clearBtn">销档</button>
+<button class="btn btn-secondary" data-close="modalProfile" data-i18n="close">关闭</button>
+<button class="btn btn-primary" id="saveProfileBtn" data-i18n="profile.saveBtn">立档存记</button>
+</div>
+</div>
+</div>
+<script src="locales.js?v=20260828_v22"></script>
+<script src="script.js?v=20260828_v22"></script>
 </body>
 </html>

@@ -373,6 +373,82 @@ function refreshDynamicI18n() {
   });
 }
 
+// ==================== 命主档案 ====================
+// 定位、形象自述与个人嘱托存于本机，每次起卦自动并入系统提示词。
+// 档案为本机（同一 IP/设备）共用；各对话上下文仍由 session_id 独立承载。
+const PROFILE_KEY = 'xuanjizi_profile_v1';
+
+function getProfile() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    return (p && typeof p === 'object') ? p : {};
+  } catch (e) { return {}; }
+}
+
+function profileHasContent(p) {
+  return !!(p && (p.location || p.persona || p.custom));
+}
+
+// 随系统提示词携带的档案段：界面为英文时以英文书写，与后端英文回复提示一致。
+function profileBlock() {
+  const p = getProfile();
+  if (!profileHasContent(p)) return '';
+  const en = window.I18N_LANG === 'en';
+  let block = en
+    ? '\n\n【Seeker Profile】(provided by the seeker; keep it in mind throughout the conversation)'
+    : '\n\n【命主档案】（问卜者亲立，整个对话中记取并用之）';
+  if (p.location) block += en
+    ? `\nLocation: ${p.location} (use this place for true solar time, almanac and direction matters)`
+    : `\n定位：${p.location}（凡涉真太阳时校正、黄历日课、方位趋避，皆以此地为准）`;
+  if (p.persona) block += en
+    ? `\nAbout the seeker: ${p.persona}`
+    : `\n形象自述：${p.persona}`;
+  if (p.custom) block += en
+    ? `\nPersonal instructions: ${p.custom} (follow these when shaping your reading and advice)`
+    : `\n个人嘱托：${p.custom}（断语风格与建议侧重，遵从嘱托）`;
+  return block;
+}
+
+function refreshProfileDot() {
+  const dot = document.getElementById('profileDot');
+  if (dot) dot.hidden = !profileHasContent(getProfile());
+}
+
+function initProfile() {
+  const btn = document.getElementById('profileBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const p = getProfile();
+    document.getElementById('profileLocation').value = p.location || '';
+    document.getElementById('profilePersona').value = p.persona || '';
+    document.getElementById('profileCustom').value = p.custom || '';
+    document.getElementById('modalProfile').classList.add('show');
+    sound.play('open');
+  });
+  document.getElementById('saveProfileBtn').addEventListener('click', () => {
+    const p = {
+      location: document.getElementById('profileLocation').value.trim().slice(0, 60),
+      persona: document.getElementById('profilePersona').value.trim().slice(0, 500),
+      custom: document.getElementById('profileCustom').value.trim().slice(0, 500)
+    };
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch (e) { /* 存储不可用时静默忽略 */ }
+    refreshProfileDot();
+    document.getElementById('modalProfile').classList.remove('show');
+    setStatus(profileHasContent(p)
+      ? i18nT('status.profileSaved', '命主档案已立 · 随卦随行')
+      : i18nT('status.profileCleared', '命主档案已销'));
+  });
+  document.getElementById('clearProfileBtn').addEventListener('click', () => {
+    try { localStorage.removeItem(PROFILE_KEY); } catch (e) { /* 静默忽略 */ }
+    ['profileLocation', 'profilePersona', 'profileCustom'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    refreshProfileDot();
+    setStatus(i18nT('status.profileCleared', '命主档案已销'));
+  });
+  refreshProfileDot();
+}
+
 // 初始化会话与事件
 function initApp() {
   restoreSidebar();
@@ -381,6 +457,7 @@ function initApp() {
   initModelSelector();
   initWebSearchToggle();
   initI18n();
+  initProfile();
   renderHistoryList();
   renderAlmanacData();
   initAtmosphere();
@@ -908,7 +985,7 @@ async function handleSend(customText = null, includeImages = true) {
   }, 1000);
 
   try {
-    const apiMessages = [{ role: 'system', content: SYSTEM_PROMPT }];
+    const apiMessages = [{ role: 'system', content: SYSTEM_PROMPT + profileBlock() }];
     // 非视觉法器不携图：与 UI 承诺一致，亦省去无效 base64 上行（后端仍会按 vision 兜底剥离）
     const visionOk = !!getModelById(currentModelId)?.vision;
     sess.messages.forEach(m => {

@@ -2753,3 +2753,7 @@ body.sidebar-collapsed .sidebar-overlay { display: none !important; }
   width: 14px;
   height: 14px;
 }
+
+/* 命主档案已立之印：档案钮右上角一点金朱，未立则隐藏 */
+.footer-btn { position: relative; }
+.profile-dot { position: absolute; top: 6px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold-glow); }
