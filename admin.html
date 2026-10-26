@@ -7,10 +7,11 @@
 <meta name="theme-color" content="#09080c" />
 <meta name="robots" content="noindex,nofollow,noarchive" />
 <title>玄机子 · 观象台</title>
-<!-- 字体样式异步加载：font-display:swap 加 unicode-range 子集，先行渲染、随后换字，不再阻塞首屏 -->
-<link as="style" href="assets/fonts.css?v=20261026_v35" onload="this.onload=null;this.rel='stylesheet'" rel="preload"/>
+<!-- 字体样式异步加载：print 媒体先行加载、不阻塞首屏，fonts-switch.js 再启用；不用内联 onload，以便 CSP 禁止内联脚本 -->
+<link href="assets/fonts.css?v=20261026_v35" id="fontsCss" media="print" rel="stylesheet"/>
 <noscript><link href="assets/fonts.css?v=20261026_v35" rel="stylesheet"/></noscript>
 <script defer src="assets/lucide.min.js?v=20261026_v35"></script>
+<script defer src="assets/fonts-switch.js?v=20261026_v37"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#08070b;color:#d9d1c3}body{font-family:"Noto Serif SC",serif;background:radial-gradient(800px 460px at 18% -5%,rgba(133,89,37,.12),transparent 60%),radial-gradient(700px 520px at 100% 35%,rgba(92,31,28,.1),transparent 62%),#08070b}.grain{position:fixed;inset:0;pointer-events:none;opacity:.24;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.10'/%3E%3C/svg%3E");mix-blend-mode:soft-light}.shell{width:min(1240px,calc(100% - 32px));margin:auto;padding:26px 0 44px}.muted{color:#756d63}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.seal{width:42px;height:42px;display:grid;place-items:center;border:1px solid #a74535;color:#d78c78;font-weight:700;font-size:18px;position:relative}.seal:after{content:"";position:absolute;inset:6px;border:1px solid rgba(215,140,120,.16);transform:rotate(45deg)}button,input{font:inherit}button{color:inherit}
 .login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}.login-card{width:min(430px,100%);padding:30px 28px 26px;border:1px solid rgba(207,170,98,.13);background:linear-gradient(150deg,rgba(22,19,24,.95),rgba(10,9,13,.96));box-shadow:0 30px 90px rgba(0,0,0,.45);position:relative;overflow:hidden}.login-card:before{content:"";position:absolute;width:220px;height:220px;border:1px solid rgba(195,159,91,.06);border-radius:50%;right:-105px;top:-115px;box-shadow:0 0 0 30px rgba(195,159,91,.018),0 0 0 62px rgba(195,159,91,.012)}.login-brand{display:flex;align-items:center;gap:14px;margin-bottom:25px}.login-brand h1{margin:0;font-size:18px;letter-spacing:.12em;color:#e7dbc3}.login-brand p{margin:5px 0 0;font-size:11px;letter-spacing:.09em;color:#675f56}.field-label{display:block;margin:0 0 8px;font-size:11px;letter-spacing:.12em;color:#857869}.login-card input,.search-input,.date{width:100%;border:1px solid rgba(208,173,103,.13);border-radius:3px;background:rgba(255,255,255,.025);color:#ddd2bf;padding:12px 13px;outline:none;transition:.2s}.login-card input:focus,.search-input:focus,.date:focus{border-color:rgba(210,174,102,.38);box-shadow:0 0 0 3px rgba(175,135,63,.045)}.primary{width:100%;margin-top:12px;border:1px solid rgba(186,137,66,.45);background:linear-gradient(180deg,#876232,#684721);color:#f1e2c4;padding:12px;cursor:pointer;letter-spacing:.12em;transition:.2s}.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}.err{display:none;margin:11px 0 0;color:#c97665;text-align:center;font-size:12px}.login-note{margin:14px 0 0;text-align:center;font-size:10px;line-height:1.7;color:#59534d}
@@ -72,56 +73,6 @@
     <div id="recordsList"><div class="loading"><div class="spinner"></div>正在启封档案</div></div>
   </section>
 </main>
-<script>
-'use strict';
-let adminPassword='';
-let isLoggedIn=false;
-let lastPayload=null;
-const providerNames={groq:'灵台甲',bai:'灵台乙',zhipu:'灵台丙'};
-const $=id=>document.getElementById(id);
-function icons(){if(window.lucide) window.lucide.createIcons()}
-function esc(v){const d=document.createElement('div');d.textContent=String(v??'');return d.innerHTML}
-function localDateKey(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
-function showErr(msg){const e=$('errorMsg');e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',2600)}
-async function login(){
-  const pwd=$('passwordInput').value.trim(); if(!pwd)return showErr('请输入管理口令');
-  $('loginBtn').disabled=true;
-  try{
-    const resp=await fetch('/api/admin/records?probe=1',{headers:{'X-Admin-Password':pwd},cache:'no-store'});
-    if(resp.status===401)throw new Error('密码错误或未授权');
-    if(!resp.ok)throw new Error('后台校验失败 · '+resp.status);
-    adminPassword=pwd;isLoggedIn=true;
-    $('loginContainer').style.display='none';$('adminContainer').style.display='block';
-    initDate();await Promise.all([loadRecords(localDateKey()),loadHealth()]);
-  }catch(e){showErr(e.message||'连接失败')}finally{$('loginBtn').disabled=false}
-}
-function logout(){adminPassword='';isLoggedIn=false;lastPayload=null;$('adminContainer').style.display='none';$('loginContainer').style.display='grid';$('passwordInput').value=''}
-function initDate(){const el=$('dateSelector');if(el.dataset.ready)return;el.dataset.ready='1';el.value=localDateKey();el.addEventListener('change',()=>el.value&&loadRecords(el.value))}
-async function loadHealth(){
-  try{const r=await fetch('/api/health',{cache:'no-store',headers:{'X-Admin-Password':adminPassword}});if(!r.ok)throw new Error();const d=await r.json();$('providerGrid').innerHTML=(d.providers||[]).map(p=>`<div class="provider ${p.configured?'on':''}"><span>${esc(providerNames[p.id]||p.id)}</span><span class="dot" title="${p.configured?'已配置':'未配置'}"></span></div>`).join('')||'<div class="provider"><span>暂无线路</span><span class="dot"></span></div>';$('healthTime').textContent='检查时间 · '+new Date(d.at||Date.now()).toLocaleString('zh-CN')}
-  catch{$('providerGrid').innerHTML='<div class="provider"><span>状态读取失败</span><span class="dot"></span></div>';$('healthTime').textContent='可稍后手动刷新'}
-}
-async function loadRecords(date=null,all=false){
-  if(!isLoggedIn)return;const list=$('recordsList');$('loadModeLabel').textContent=all?'最近 250 条':(date||'今日');list.innerHTML='<div class="loading"><div class="spinner"></div>正在读取问卜档案</div>';
-  try{let url='/api/admin/records?limit=250';if(all)url+='&all=true';else url+='&date='+encodeURIComponent(date||localDateKey());const r=await fetch(url,{headers:{'X-Admin-Password':adminPassword},cache:'no-store'});if(r.status===401){logout();throw new Error('登录已失效')}if(!r.ok)throw new Error('读取失败 · '+r.status);lastPayload=await r.json();renderRecords(lastPayload)}catch(e){list.innerHTML='<div class="empty">'+esc(e.message||'读取失败')+'</div>'}
-}
-function renderRecords(data){
-  const rows=data?.records||[];$('totalRecords').textContent=(data?.stats?.total==null?'—':data.stats.total);$('todayRecords').textContent=data?.stats?.today??0;$('uniqueIPs').textContent=data?.stats?.uniqueIPs??0;
-  if(data?.dateRange){const el=$('dateSelector');if(data.dateRange.min)el.min=data.dateRange.min;if(data.dateRange.max)el.max=data.dateRange.max}
-  const q=$('searchInput').value.trim().toLowerCase();const filtered=!q?rows:rows.filter(r=>[r.ip,r.location,r.question,r.answer].some(v=>String(v||'').toLowerCase().includes(q)));
-  if(!filtered.length){$('recordsList').innerHTML='<div class="empty">'+(rows.length?'没有符合筛选条件的档案':'这一日尚无问卜记录')+'</div>';return}
-  const groups={};for(const r of filtered){const ip=r.ip||'未知访客';(groups[ip]??=[]).push(r)}
-  const ips=Object.keys(groups).sort((a,b)=>new Date(groups[b][0]?.timestamp||0)-new Date(groups[a][0]?.timestamp||0));let html='',idx=0,answerIdx=0;
-  for(const ip of ips){const arr=groups[ip].sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0));const first=arr[0]||{};html+=`<section class="ip-group" id="group-${idx}"><div class="ip-head" data-group="${idx}" tabindex="0" role="button"><div class="ip-main"><span class="ip mono">${esc(ip)}</span><span class="loc">${esc(first.location||'地区未识别')}</span><span class="cnt">${arr.length} 次 · ${esc(new Date(first.timestamp||Date.now()).toLocaleString('zh-CN'))}</span></div><span class="chev">⌄</span></div><div class="ip-body">`;
-    for(const rec of arr){const ans=String(rec.answer||'');const long=ans.length>260;const ai=answerIdx++;html+=`<article class="record"><div class="record-meta"><span class="tag">灵台</span><span class="time">${esc(new Date(rec.timestamp||Date.now()).toLocaleString('zh-CN'))}${rec.vision?' · 图象':''}</span></div><div class="conv"><div class="turn user"><div class="role">所问</div><div class="text">${esc(rec.question||'')}</div></div><div class="turn"><div class="role">玄机子</div><div id="answer-${ai}" class="text ${long?'collapsed-txt':''}">${format(ans)}</div>${long?`<button class="expand" data-answer="${ai}">展开全文</button>`:''}</div></div></article>`}
-    html+='</div></section>';idx++}
-  $('recordsList').innerHTML=html;
-  document.querySelectorAll('.ip-head').forEach(h=>{const fn=()=>h.closest('.ip-group')?.classList.toggle('collapsed');h.addEventListener('click',fn);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}})});
-  document.querySelectorAll('.expand').forEach(b=>b.addEventListener('click',()=>{const el=$('answer-'+b.dataset.answer);const c=el.classList.toggle('collapsed-txt');b.textContent=c?'展开全文':'收起'}));icons()
-}
-function format(v){let s=esc(v);s=s.replace(/^#{1,3}\s*(.+)$/gm,'<div class="section-title">$1</div>');s=s.replace(/【([^】]+)】/g,'<div class="section-title">$1</div>');s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');s=s.replace(/「([^」]+)」/g,'<mark>$1</mark>');return s.replace(/\n/g,'<br>')}
-$('loginBtn').addEventListener('click',login);$('passwordInput').addEventListener('keydown',e=>e.key==='Enter'&&login());$('logoutBtn').addEventListener('click',logout);$('todayBtn').addEventListener('click',()=>{$('dateSelector').value=localDateKey();loadRecords(localDateKey())});$('allBtn').addEventListener('click',()=>{$('dateSelector').value='';loadRecords(null,true)});$('refreshBtn').addEventListener('click',()=>Promise.all([$('dateSelector').value?loadRecords($('dateSelector').value):loadRecords(null,true),loadHealth()]));$('searchInput').addEventListener('input',()=>lastPayload&&renderRecords(lastPayload));
-icons();
-</script>
+<script defer src="admin.js?v=20261026_v37"></script>
 </body>
 </html>
