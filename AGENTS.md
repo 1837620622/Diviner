@@ -24,6 +24,7 @@ functions/api/_search.js      联网查证：Brave（配置了 key 时优先）�
 functions/api/health.js       后台口令校验后只返回「是否已配置」
 functions/api/admin/records.js
 tests/calendar-baseline.mjs   历法基准校验（node --test）
+tests/divination-chart.test.mjs 卦盘基准：六十四卦、八宫世应、纳甲、六亲、六神、旬空、三钱抛掷、梅花数理
 tests/chat-protocol.test.mjs  问卜协议回归：模拟上游，覆盖跨站拒绝、兜底帧、限流重试、联网查证帧序
 .github/workflows/ci.yml      CI：语法检查 + 历法基准校验
 .dev.vars.example             本地空模板，禁止填真实值后提交
@@ -69,7 +70,7 @@ Git 推送 `main` 也会触发 Pages 的 Git 集成部署。
 
 ```bash
 for f in script.js calendar.js locales.js functions/api/*.js functions/api/admin/*.js; do node --check "$f"; done
-node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs
+node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs
 ```
 
 手工检查（部署后在线上核对）：
@@ -142,6 +143,9 @@ Workers AI Binding 名称：`AI`。
 - 核心函数：`script.js` 的 `computeFourPillars()`（排盘）、`yearPillarBySolar()`（年柱以立春分年，排盘、今时此刻、黄历共用）、`currentDateBlock()`（今日干支注入 system 提示词）、`titleFromPrompt()`（会话标题去模板化）。
 - 年柱不取 `solar2lunar` 的 `gzYear`：那是以春节为界的农历年，会让立春到春节之间的年柱错一年。
 - 铁律：凡历法换算一律走引擎，模型只解读引擎给出的【定盘】，不得重算、改盘；system 提示词内已写入「定盘铁律」与实时【今时此刻】。
+- 卦盘引擎（同在排盘引擎段内，纯函数）：`liuyaoChart()` 排六爻定盘（八宫世应、京房纳甲、六亲以本宫五行为我、六神依日干、旬空依日干支、动爻与变卦）；`meihuaChart()` 排梅花本互变三卦与体用生克。六十四卦由上下卦对照表给出，并与八宫推演交叉核对。
+- 六爻提交时以【周易六爻定盘】呈递，逐爻自上而下；梅花以【梅花易数定盘】呈递。模型只解读，不另摇、不改盘。
+- 梅花时间起卦（邵雍法）：上卦 = (农历年支序 + 农历月 + 农历日) ÷ 8，下卦 = 同一和加时辰序 ÷ 8，动爻 = 和加时辰序 ÷ 6；年支序子为 1 至亥为 12，时辰序子时（23:00–01:00）为 1。报数起卦：第一数÷8、第二数÷8、两数之和÷6。
 - 基准校验（改历法代码后必跑 `node --test tests/calendar-baseline.mjs`）：农历一九九九年四月初一 = 公历 1999-05-15，四柱 己卯 己巳 丁卯（巳时乙巳），日主丁火。另含立春前后（2024、2026、1999 年）、小寒前子月、闰二月与闰四月的用例。
 
 ## 已知风险
@@ -150,5 +154,7 @@ Workers AI Binding 名称：`AI`。
 - 智谱与 Groq 的默认模型名写在 Functions 里，不写进前端。若厂商改名，只改 `functions/api/chat.js` 或云端环境变量。b.ai 与智谱的模型名无法在离线环境核对；线上若出现「此模型暂不可用」，先对照厂商文档核对模型名。
 - 八字与黄历干支已由前端历法引擎查表核定并随提示词上行；真太阳时校正（出生城市经度时差）仍依赖模型说明，未做代码级换算。
 - 年柱以立春日为界，精确到日，未计交节时分：立春当日出生者，年柱一律按当日归为本年，与严格的交节时刻可能有出入。
+- 卦盘未排伏神，互卦与变卦不附六亲；六爻的日辰、月建、旬空、六神取抛满六爻那一刻的日期，若跨日或跨节气，同一卦的旬空与月建会随之不同。
+- 梅花时间起卦取当下的农历年支、农历月日与时辰，与标准做法一致；若需以起卦前的某一时刻为准，应由使用者另行指定。
 - KV 中历史记录含所选模型 id，后台可按模型筛选。
 - 本项目是文化体验与自省工具，不能替代医疗、法律、投资判断。

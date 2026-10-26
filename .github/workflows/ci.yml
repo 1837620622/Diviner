@@ -22,4 +22,4 @@ jobs:
             node --check "$f"
           done
       - name: 历法基准校验与问卜协议回归
-        run: node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs
+        run: node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs

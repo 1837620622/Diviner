@@ -2409,6 +2409,32 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
   color: #cbb58a;
   font: 500 13px/1.8 var(--font-serif);
 }
+/* 六爻卦盘（引擎排定，见 script.js 卦盘引擎） */
+.ly-main,
+.ly-meta {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-sub);
+}
+.ly-meta { color: var(--text-muted); }
+.ly-main b { color: var(--gold-light); font-weight: 600; }
+.ly-grid { display: grid; gap: 4px; margin-top: 8px; }
+.ly-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.ly-row .ly-pos,
+.ly-row .ly-nayin,
+.ly-row .ly-qin,
+.ly-row .ly-shen { min-width: 44px; }
+.ly-row .ly-pos { color: var(--gold); }
+.ly-row .ly-tag { color: var(--text-muted); }
+.ly-row.ly-moving .ly-tag { color: var(--cinnabar); }
+
 .about-credit {
   margin: 16px 0 2px;
   color: #8a7a5f;

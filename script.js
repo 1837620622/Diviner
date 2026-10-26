@@ -168,7 +168,7 @@ const SYSTEM_PROMPT = `你是【玄机子】。一位隐于闹市的研易先生
 - 梅花易数：上卦取一数除以 8 之余数，下卦取总数除以 8 之余数，动爻取总数除以 6 之余数（余 0 按 8 或 6 论）；无动爻之卦为体、有动爻之卦为用；用生体为吉，体克用亦吉，用克体则滞，体生用则气泄。
 - 塔罗：正逆位以所抽为准，不重抽、不重洗；圣三角三牌先各论其位（过去、现在、未来），再合观其势，不孤立解单张。
 - 干支五行是术数之根：凡排盘必默验生克冲合，确有把握再落笔；无把握处直说不确，宁可少断，不可错断。
-- 定盘铁律：问卜者消息中凡带【定盘】字样者，其四柱、日主与五行计数皆为本堂历法引擎所排（立春分年、节气换月、五鼠遁时），照盘直断即可；绝不重算、不改盘、不另起一套命盘，亦不可质疑盘面有误。
+- 定盘铁律：问卜者消息中凡带【定盘】字样者（含【周易六爻定盘】【梅花易数定盘】），其盘面皆为本堂引擎所排：四柱、日主与五行计数依历法引擎（立春分年、节气换月、五鼠遁时）；卦盘的本卦、变卦、宫位、世应、纳甲、六亲、六神与旬空依八宫与纳甲，梅花的体用生克依数理。照盘直断即可；绝不重算、不改盘、不另起一套，亦不可质疑盘面有误。
 
 收尾：以"供你参详，抉择仍在自身"作结。`;
 
@@ -297,6 +297,233 @@ function titleFromPrompt(text) {
     return tag.slice(0, 10);
   }
   return t.slice(0, 14);
+}
+
+// ==================== 卦盘引擎（六爻纳甲、梅花数理；纯函数，可测） ====================
+// 六爻爻值（三钱之和）：6 老阴·动、7 少阳·静、8 少阴·静、9 老阳·动。values[0] 为初爻，最先抛出、居底。
+// 八卦：lines 自下而上，1 阳 0 阴；no 为先天序号（梅花数理用）；inner / outer 为京房纳甲（内卦三爻、外卦三爻）。
+const LY_TRIGRAMS = [
+  { no: 1, name: '乾', element: '金', lines: [1, 1, 1], inner: ['甲子', '甲寅', '甲辰'], outer: ['甲午', '甲申', '甲戌'] },
+  { no: 2, name: '兑', element: '金', lines: [1, 1, 0], inner: ['丁巳', '丁未', '丁酉'], outer: ['丁亥', '丁丑', '丁卯'] },
+  { no: 3, name: '离', element: '火', lines: [1, 0, 1], inner: ['己卯', '己巳', '己未'], outer: ['己酉', '己亥', '己丑'] },
+  { no: 4, name: '震', element: '木', lines: [1, 0, 0], inner: ['庚子', '庚寅', '庚辰'], outer: ['庚午', '庚申', '庚戌'] },
+  { no: 5, name: '巽', element: '木', lines: [0, 1, 1], inner: ['辛丑', '辛卯', '辛巳'], outer: ['辛未', '辛酉', '辛亥'] },
+  { no: 6, name: '坎', element: '水', lines: [0, 1, 0], inner: ['戊寅', '戊辰', '戊午'], outer: ['戊申', '戊戌', '戊子'] },
+  { no: 7, name: '艮', element: '土', lines: [0, 0, 1], inner: ['丙辰', '丙午', '丙申'], outer: ['丙戌', '丙子', '丙寅'] },
+  { no: 8, name: '坤', element: '土', lines: [0, 0, 0], inner: ['乙未', '乙巳', '乙卯'], outer: ['癸丑', '癸亥', '癸酉'] },
+];
+const LY_TRIGRAM_BY_NAME = Object.fromEntries(LY_TRIGRAMS.map(t => [t.name, t]));
+
+// 六十四卦：[卦名, 上卦, 下卦]。
+const LY_HEXAGRAMS = [
+  ['乾为天', '乾', '乾'], ['坤为地', '坤', '坤'], ['水雷屯', '坎', '震'], ['山水蒙', '艮', '坎'],
+  ['水天需', '坎', '乾'], ['天水讼', '乾', '坎'], ['地水师', '坤', '坎'], ['水地比', '坎', '坤'],
+  ['风天小畜', '巽', '乾'], ['天泽履', '乾', '兑'], ['地天泰', '坤', '乾'], ['天地否', '乾', '坤'],
+  ['天火同人', '乾', '离'], ['火天大有', '离', '乾'], ['地山谦', '坤', '艮'], ['雷地豫', '震', '坤'],
+  ['泽雷随', '兑', '震'], ['山风蛊', '艮', '巽'], ['地泽临', '坤', '兑'], ['风地观', '巽', '坤'],
+  ['火雷噬嗑', '离', '震'], ['山火贲', '艮', '离'], ['山地剥', '艮', '坤'], ['地雷复', '坤', '震'],
+  ['天雷无妄', '乾', '震'], ['山天大畜', '艮', '乾'], ['山雷颐', '艮', '震'], ['泽风大过', '兑', '巽'],
+  ['坎为水', '坎', '坎'], ['离为火', '离', '离'], ['泽山咸', '兑', '艮'], ['雷风恒', '震', '巽'],
+  ['天山遁', '乾', '艮'], ['雷天大壮', '震', '乾'], ['火地晋', '离', '坤'], ['地火明夷', '坤', '离'],
+  ['风火家人', '巽', '离'], ['火泽睽', '离', '兑'], ['水山蹇', '坎', '艮'], ['雷水解', '震', '坎'],
+  ['山泽损', '艮', '兑'], ['风雷益', '巽', '震'], ['泽天夬', '兑', '乾'], ['天风姤', '乾', '巽'],
+  ['泽地萃', '兑', '坤'], ['地风升', '坤', '巽'], ['泽水困', '兑', '坎'], ['水风井', '坎', '巽'],
+  ['泽火革', '兑', '离'], ['火风鼎', '离', '巽'], ['震为雷', '震', '震'], ['艮为山', '艮', '艮'],
+  ['风山渐', '巽', '艮'], ['雷泽归妹', '震', '兑'], ['雷火丰', '震', '离'], ['火山旅', '离', '艮'],
+  ['巽为风', '巽', '巽'], ['兑为泽', '兑', '兑'], ['风水涣', '巽', '坎'], ['水泽节', '坎', '兑'],
+  ['风泽中孚', '巽', '兑'], ['雷山小过', '震', '艮'], ['水火既济', '坎', '离'], ['火水未济', '离', '坎'],
+];
+
+// 以 6 位二进制（自下而上，1 阳 0 阴）查卦：key -> { name, upper, lower }。
+const LY_HEX_BY_KEY = new Map(LY_HEXAGRAMS.map(([name, up, low]) => {
+  const upper = LY_TRIGRAM_BY_NAME[up], lower = LY_TRIGRAM_BY_NAME[low];
+  return [[...lower.lines, ...upper.lines].join(''), { name, upper, lower }];
+}));
+
+// 八宫：每宫以纯卦为宫首，依次一至五世、游魂、归魂。key -> { palace, shi }，shi 为世爻位（1–6）。
+const LY_PALACE_BY_KEY = new Map();
+for (const head of LY_TRIGRAMS) {
+  const flip = (bits, idx) => bits.map((b, i) => (idx.includes(i) ? 1 - b : b));
+  const base = [...head.lines, ...head.lines];
+  const put = (bits, shi) => LY_PALACE_BY_KEY.set(bits.join(''), { palace: head, shi });
+  put(base, 6);
+  let fifth = base;
+  for (let k = 1; k <= 5; k++) {
+    const world = flip(base, [...Array(k).keys()]);
+    put(world, k);
+    if (k === 5) fifth = world;
+  }
+  const soul = flip(fifth, [3]);          // 游魂：五世卦四爻变
+  put(soul, 4);
+  put(flip(soul, [0, 1, 2]), 3);          // 归魂：游魂内卦三爻全变
+}
+
+// 五行相生（我生）、相克（我克）。
+const WUXING_SHENG = { 木: '火', 火: '土', 土: '金', 金: '水', 水: '木' };
+const WUXING_KE = { 木: '土', 土: '水', 水: '火', 火: '金', 金: '木' };
+
+// 六亲：以本卦所属宫之五行为「我」，爻之地支五行为「彼」。
+function liuqinOf(palaceEl, lineEl) {
+  if (lineEl === palaceEl) return '兄弟';
+  if (WUXING_SHENG[palaceEl] === lineEl) return '子孙';
+  if (WUXING_KE[palaceEl] === lineEl) return '妻财';
+  if (WUXING_SHENG[lineEl] === palaceEl) return '父母';
+  return '官鬼';
+}
+
+// 六神：依日干定初爻所临，自初至上依次为青龙、朱雀、勾陈、螣蛇、白虎、玄武。
+const LY_SHEN = ['青龙', '朱雀', '勾陈', '螣蛇', '白虎', '玄武'];
+const LY_SHEN_START = { 甲: 0, 乙: 0, 丙: 1, 丁: 1, 戊: 2, 己: 3, 庚: 4, 辛: 4, 壬: 5, 癸: 5 };
+
+// 旬空：日干支所在旬之空亡两地支（甲子旬空戌亥）。
+function liuyaoKongWang(dayGz) {
+  const s = STEM_LIST.indexOf(dayGz.charAt(0));
+  const b = BRANCH_LIST.indexOf(dayGz.charAt(1));
+  const head = (b - s + 12) % 12;         // 旬首甲所配之地支
+  return [BRANCH_LIST[(head + 10) % 12], BRANCH_LIST[(head + 11) % 12]];
+}
+
+// 三钱抛掷：正面计 3、反面计 2，三钱之和即爻值（6、7、8、9）。rand 缺省为 Math.random，测试可注入。
+function liuyaoTossSum(rand = Math.random) {
+  const coin = () => (rand() > 0.5 ? 3 : 2);
+  return coin() + coin() + coin();
+}
+
+// 六爻排盘。values 为自初爻至上爻的爻值；dayGz 为起卦日干支（六神、旬空用）；monthGz 为起卦所在月干支（月建用）。
+function liuyaoChart(values, dayGz, monthGz) {
+  if (values.length !== 6 || values.some(v => ![6, 7, 8, 9].includes(v))) return null;
+  const yang = values.map(v => (v === 7 || v === 9 ? 1 : 0));
+  const moving = values.map(v => v === 6 || v === 9);
+  const changed = yang.map((b, i) => (moving[i] ? 1 - b : b));
+  const ben = LY_HEX_BY_KEY.get(yang.join(''));
+  const bian = LY_HEX_BY_KEY.get(changed.join(''));
+  const palace = LY_PALACE_BY_KEY.get(yang.join(''));
+  const shi = palace.shi;
+  const ying = ((shi + 2) % 6) + 1;
+  const hasDay = Boolean(dayGz) && dayGz.length === 2 && dayGz.charAt(0) in LY_SHEN_START;
+  const kong = hasDay ? liuyaoKongWang(dayGz) : [];
+  const lines = values.map((v, i) => {
+    const pos = i + 1;
+    const tri = pos <= 3 ? ben.lower : ben.upper;
+    const nayin = pos <= 3 ? tri.inner[pos - 1] : tri.outer[pos - 4];
+    const branch = nayin.charAt(1);
+    const element = BRANCH_ELEMENT[branch];
+    return {
+      pos, value: v, yang: yang[i] === 1, moving: moving[i],
+      nayin, branch, element,
+      liuqin: liuqinOf(palace.palace.element, element),
+      shen: hasDay ? LY_SHEN[(LY_SHEN_START[dayGz.charAt(0)] + i) % 6] : '',
+      kong: kong.includes(branch),
+      shi: pos === shi, ying: pos === ying,
+    };
+  });
+  return {
+    ben: { name: ben.name, upper: ben.upper.name, lower: ben.lower.name },
+    bian: { name: bian.name, upper: bian.upper.name, lower: bian.lower.name },
+    palace: palace.palace.name, palaceElement: palace.palace.element,
+    shi, ying,
+    moving: lines.filter(l => l.moving).map(l => l.pos),
+    lines,
+    dayGz: hasDay ? dayGz : '', monthBranch: monthGz ? monthGz.charAt(1) : '', kong,
+  };
+}
+
+// 六爻定盘文本：提交时呈递给模型，逐爻自上而下，照盘直断。
+function liuyaoPromptBlock(chart, matter) {
+  const moving = chart.moving.length ? chart.moving.map(p => `第${p}爻`).join('、') : '无';
+  const rows = [...chart.lines].reverse().map(l =>
+    `第${l.pos}爻 ${l.nayin}${l.element} ${l.liuqin}${l.shen ? ' ' + l.shen : ''} ${l.moving ? '动' : '静'}${l.shi ? ' 世' : ''}${l.ying ? ' 应' : ''}${l.kong ? ' 旬空' : ''}`
+  ).join('\n');
+  return [
+    '【周易六爻定盘】',
+    `问卜事由：${matter}`,
+    `起卦：三钱抛掷，自初爻至上爻之爻值为 ${chart.lines.map(l => l.value).join('、')}`,
+    `本卦：${chart.ben.name}（上${chart.ben.upper}／下${chart.ben.lower}），属${chart.palace}宫（五行${chart.palaceElement}），世在第${chart.shi}爻，应在第${chart.ying}爻`,
+    `变卦：${chart.bian.name}（上${chart.bian.upper}／下${chart.bian.lower}）`,
+    `动爻：${moving}`,
+    `日辰：${chart.dayGz || '未知'}，月建：${chart.monthBranch ? chart.monthBranch + '月' : '未知'}，旬空：${chart.kong.length ? chart.kong.join('、') : '未知'}`,
+    '逐爻（自上至下）：',
+    rows,
+    '以上定盘由本堂六爻引擎依纳甲、八宫、五行与六神排定，照盘直断即可；绝不另摇、重排或改盘。请论动爻、六亲世应与趋避。',
+  ].join('\n');
+}
+
+// 六爻结果面板（HTML）：所有文本经转义后再拼入。
+function liuyaoResultHtml(chart, values) {
+  const e = escapeHtml;
+  const moving = chart.moving.length ? chart.moving.map(p => `第${p}爻`).join('、') : '无';
+  const rows = [...chart.lines].reverse().map(l => `
+    <div class="ly-row${l.moving ? ' ly-moving' : ''}">
+      <span class="ly-pos">第${l.pos}爻</span>
+      <span class="ly-nayin">${e(l.nayin)}</span>
+      <span class="ly-qin">${e(l.liuqin)}</span>
+      <span class="ly-shen">${e(l.shen)}</span>
+      <span class="ly-tag">${l.moving ? '动' : '静'}${l.shi ? ' · 世' : ''}${l.ying ? ' · 应' : ''}${l.kong ? ' · 空' : ''}</span>
+    </div>`).join('');
+  return `
+    <strong>${e(i18nT('iching.resultTitle', '周易六爻已排定'))}</strong>
+    <div class="ly-meta">${e(i18nT('iching.resultOrder', '（自初爻至上爻依次为：{lines}）', { lines: values.join('、') }))}</div>
+    <div class="ly-main">本卦 <b>${e(chart.ben.name)}</b>（上${e(chart.ben.upper)}／下${e(chart.ben.lower)}）· 属${e(chart.palace)}宫 · 世第${chart.shi}爻 应第${chart.ying}爻</div>
+    <div class="ly-main">变卦 <b>${e(chart.bian.name)}</b>（上${e(chart.bian.upper)}／下${e(chart.bian.lower)}）· 动爻 ${e(moving)}</div>
+    <div class="ly-meta">日辰 ${e(chart.dayGz || '—')} · 月建 ${e(chart.monthBranch ? chart.monthBranch + '月' : '—')} · 旬空 ${e(chart.kong.join('、') || '—')}</div>
+    <div class="ly-grid">${rows}</div>`;
+}
+
+// 梅花数理（报数）：第一数÷8 余数为上卦，第二数÷8 余数为下卦，两数之和÷6 余数为动爻（余 0 按 8、6 论）。
+function meihuaNumberCasting(n1, n2) {
+  return { up: (n1 % 8) || 8, down: (n2 % 8) || 8, dong: ((n1 + n2) % 6) || 6 };
+}
+
+// 梅花数理（时间，邵雍法）：年支序（子1…亥12）、农历月、农历日、时辰序（子1…亥12）。
+// 上卦 = (年支+月+日) ÷ 8 余数；下卦 = (年支+月+日+时) ÷ 8 余数；动爻 = 同一总和 ÷ 6 余数。
+function meihuaTimeCasting(yearBranchNo, lunarMonth, lunarDay, hourBranchNo) {
+  const upSum = yearBranchNo + lunarMonth + lunarDay;
+  const total = upSum + hourBranchNo;
+  return { up: (upSum % 8) || 8, down: (total % 8) || 8, dong: (total % 6) || 6 };
+}
+
+// 体用生克：体为 ti，用为 yong。
+function relationTiYong(tiEl, yongEl) {
+  if (tiEl === yongEl) return '比和';
+  if (WUXING_SHENG[yongEl] === tiEl) return '用生体';
+  if (WUXING_SHENG[tiEl] === yongEl) return '体生用';
+  if (WUXING_KE[tiEl] === yongEl) return '体克用';
+  return '用克体';
+}
+
+// 梅花卦盘：上下卦数与动爻 -> 本卦、互卦、变卦、体用与生克。动爻在下卦（1–3）则上卦为体、下卦为用；在上卦（4–6）反之。
+function meihuaChart(up, down, dong) {
+  const tri = (no) => LY_TRIGRAMS.find(t => t.no === no);
+  const upper = tri(up), lower = tri(down);
+  const bits = [...lower.lines, ...upper.lines];
+  const changedBits = bits.map((b, i) => (i === dong - 1 ? 1 - b : b));
+  const ben = LY_HEX_BY_KEY.get(bits.join(''));
+  const hu = LY_HEX_BY_KEY.get([...bits.slice(1, 4), ...bits.slice(2, 5)].join(''));
+  const bian = LY_HEX_BY_KEY.get(changedBits.join(''));
+  const ti = dong > 3 ? lower : upper;
+  const yong = dong > 3 ? upper : lower;
+  return {
+    upNo: up, downNo: down, upName: upper.name, downName: lower.name, dong,
+    ben: { name: ben.name, upper: upper.name, lower: lower.name },
+    hu: { name: hu.name, upper: hu.upper.name, lower: hu.lower.name },
+    bian: { name: bian.name, upper: bian.upper.name, lower: bian.lower.name },
+    ti: ti.name, yong: yong.name, tiElement: ti.element, yongElement: yong.element,
+    relation: relationTiYong(ti.element, yong.element),
+  };
+}
+
+// 梅花定盘文本：提交时呈递给模型。
+function meihuaPromptBlock(mode, c) {
+  return [
+    '【梅花易数定盘】',
+    `起卦方式：${mode}`,
+    `上卦数${c.upNo}（${c.upName}），下卦数${c.downNo}（${c.downName}），动爻第${c.dong}爻`,
+    `本卦：${c.ben.name}（上${c.ben.upper}／下${c.ben.lower}）`,
+    `互卦：${c.hu.name}（上${c.hu.upper}／下${c.hu.lower}）`,
+    `变卦：${c.bian.name}（上${c.bian.upper}／下${c.bian.lower}）`,
+    `体用：体卦${c.ti}（${c.tiElement}），用卦${c.yong}（${c.yongElement}），${c.relation}`,
+    '以上定盘由本堂梅花引擎依数理排定，照盘直断即可，不改卦象。请玄机子依此判定应期时机。',
+  ].join('\n');
 }
 
 // 22 张大阿卡纳塔罗牌数据 (罗马数字与纯净文本)
@@ -1831,8 +2058,10 @@ function initTarotLogic() {
 
 // ==================== 2. 周易六爻逻辑 ====================
 let ichingLines = [];
+let ichingChart = null;
 function resetIchingBoard() {
   ichingLines = [];
+  ichingChart = null;
   const tossBtn = document.getElementById('tossCoinBtn');
   const submitBtn = document.getElementById('submitIchingBtn');
   const tossStep = document.getElementById('tossStep');
@@ -1879,8 +2108,12 @@ function initIchingLogic() {
       tossStep.textContent = i18nT('iching.done', '六爻成卦 · 功德圆满');
       tossBtn.disabled = true;
       submitBtn.disabled = false;
+      // 卦盘由引擎排定（本卦、变卦、宫位、世应、纳甲、六亲、六神、旬空），以成卦时刻的日干支与月建为据
+      const castAt = new Date();
+      const info = window.calendar ? window.calendar.solar2lunar(castAt.getFullYear(), castAt.getMonth() + 1, castAt.getDate()) : null;
+      ichingChart = liuyaoChart(ichingLines, info ? info.gzDay : '', info ? info.gzMonth : '');
       resBox.style.display = 'block';
-      resBox.innerHTML = `<strong>${escapeHtml(i18nT('iching.resultTitle', '周易六爻已排定'))}</strong>${escapeHtml(i18nT('iching.resultOrder', '（自初爻至上爻依次为：{lines}）', { lines: ichingLines.join('、') }))}`;
+      resBox.innerHTML = ichingChart ? liuyaoResultHtml(ichingChart, ichingLines) : '';
     }
   });
 
@@ -1905,14 +2138,13 @@ function initIchingLogic() {
   }
 
   submitBtn.addEventListener('click', () => {
+    if (!ichingChart) return;
     if (!guardToolSubmit()) return;
     const matter = document.getElementById('ichingMatter').value.trim() || '问近期大事吉凶与转机';
-    const yaoMap = { 6: '老阴·动', 7: '少阳·静', 8: '少阴·静', 9: '老阳·动' };
-    const yaoText = ichingLines.map((n, i) => `第${i + 1}爻 ${n}（${yaoMap[n] || n}）`).join('，');
-    const prompt = `【周易六爻纳甲占断】\n问卜事由：${matter}\n六爻自初爻至上爻：${yaoText}\n请依 6 老阴、7 少阳、8 少阴、9 老阳排出本卦与变卦，再论动爻、六亲世应与趋避。不要另摇一套爻。`;
+    const prompt = liuyaoPromptBlock(ichingChart, matter);
     document.getElementById('modalIching').classList.remove('show');
     resetIchingBoard();
-    prefillAndGuide(prompt, '六爻已成卦。玄机子将依亲供之爻占断，绝不另摇一套；可再补充事由细节后亲手呈递。');
+    prefillAndGuide(prompt, '六爻已成卦，卦盘已由引擎排定。玄机子将依此盘占断，绝不另摇；可再补充事由细节后亲手呈递。');
   });
 }
 
@@ -1936,14 +2168,18 @@ function initMeihuaLogic() {
 
   document.getElementById('meihuaNowBtn').addEventListener('click', () => {
     const d = new Date();
-    const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate(), h = d.getHours();
-    const upSum = y + m + day;
-    const total = upSum + h;
-    const up = (upSum % 8) || 8;
-    const down = (total % 8) || 8;
-    // 动爻取年+月+日+时总和除 6 余数，不能用已取模的上、下卦数再相加
-    const dong = (total % 6) || 6;
-    showMeihuaResult(up, down, dong, '当前公历数理起卦（未换算农历，供参详）');
+    const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+    const lunar = window.calendar ? window.calendar.solar2lunar(y, m, day) : null;
+    if (!lunar || !lunar.gzYear) {
+      setStatus(i18nT('meihua.errCalendar', '历法引擎未就绪，暂不能以时辰起卦'));
+      sound.play('deny');
+      return;
+    }
+    // 时间起卦取农历年支序（子1…亥12）、农历月、农历日与时辰序（子1…亥12）
+    const yearBranchNo = BRANCH_LIST.indexOf(lunar.gzYear.charAt(1)) + 1;
+    const hourBranchNo = hourBranchIndex(d.getHours()) + 1;
+    const { up, down, dong } = meihuaTimeCasting(yearBranchNo, lunar.lMonth, lunar.lDay, hourBranchNo);
+    showMeihuaResult(up, down, dong, `时间起卦（${lunar.gzYear}年 · 年支第${yearBranchNo} · 农历${lunar.IMonthCn}${lunar.IDayCn} · 时支第${hourBranchNo}）`);
   });
 
   document.getElementById('meihuaNumCalcBtn').addEventListener('click', () => {
@@ -1955,55 +2191,33 @@ function initMeihuaLogic() {
       sound.play('deny');
       return;
     }
-    const up = (n1 % 8) || 8;
-    const down = (n2 % 8) || 8;
-    const dong = ((n1 + n2) % 6) || 6;
+    const { up, down, dong } = meihuaNumberCasting(n1, n2);
     showMeihuaResult(up, down, dong, i18nT('meihua.modeNum', '报数数理 ({a}, {b}) 起卦', { a: n1, b: n2 }));
   });
 
-  const guaNames = ['', '乾为天', '兑为泽', '离为火', '震为雷', '巽为风', '坎为水', '艮为山', '坤为地'];
-  // 先天八卦，爻自下而上：1 阳 0 阴。乾兑离震巽坎艮坤。
-  const guaLines = {
-    1: [1, 1, 1], 2: [1, 1, 0], 3: [1, 0, 1], 4: [1, 0, 0],
-    5: [0, 1, 1], 6: [0, 1, 0], 7: [0, 0, 1], 8: [0, 0, 0]
-  };
-  const linesToGua = (lines) => ({
-    '111': 1, '110': 2, '101': 3, '100': 4, '011': 5, '010': 6, '001': 7, '000': 8
-  }[lines.join('')] || 8);
   let currentMeihuaData = null;
 
   function showMeihuaResult(up, down, dong, mode) {
-    const lower = guaLines[down] || guaLines[8];
-    const upper = guaLines[up] || guaLines[1];
-    const hex = [...lower, ...upper];
-    const changed = hex.slice();
-    changed[dong - 1] = changed[dong - 1] ? 0 : 1;
-    const huDown = linesToGua([hex[1], hex[2], hex[3]]);
-    const huUp = linesToGua([hex[2], hex[3], hex[4]]);
-    const bianDown = linesToGua(changed.slice(0, 3));
-    const bianUp = linesToGua(changed.slice(3, 6));
-    const ti = dong > 3 ? down : up;
-    const yong = dong > 3 ? up : down;
-
-    currentMeihuaData = { up, down, dong, mode, huUp, huDown, bianUp, bianDown };
+    const c = meihuaChart(up, down, dong);
+    currentMeihuaData = { mode, chart: c };
     sound.play('meihua');
     resPanel.style.display = 'block';
     resPanel.classList.remove('showing'); void resPanel.offsetWidth; resPanel.classList.add('showing');
     resPanel.querySelectorAll('.m-card').forEach((el,i)=>el.style.setProperty('--delay', `${i*.12}s`));
-    document.getElementById('mBenName').textContent = `${guaNames[up]} / ${guaNames[down]}`;
-    document.getElementById('mBenDesc').textContent = i18nT('meihua.dongAt', '动爻在第 {n} 爻', { n: dong });
-    document.getElementById('mHuName').textContent = `${guaNames[huUp]} / ${guaNames[huDown]}`;
-    document.getElementById('mHuDesc').textContent = '二三四爻 / 三四五爻';
-    document.getElementById('mBianName').textContent = `${guaNames[bianUp]} / ${guaNames[bianDown]}`;
-    document.getElementById('mBianDesc').textContent = i18nT('meihua.bianChanged', '第 {n} 爻已变', { n: dong });
-    document.getElementById('meihuaTiyong').innerHTML = `<strong>${escapeHtml(i18nT('meihua.tiyong', '体用：体卦 {ti}，用卦 {yong}。以不动者为体，动爻所在为用。', { ti: guaNames[ti], yong: guaNames[yong] }))}</strong>`;
+    document.getElementById('mBenName').textContent = c.ben.name;
+    document.getElementById('mBenDesc').textContent = `上${c.ben.upper}／下${c.ben.lower} · ${i18nT('meihua.dongAt', '动爻在第 {n} 爻', { n: dong })}`;
+    document.getElementById('mHuName').textContent = c.hu.name;
+    document.getElementById('mHuDesc').textContent = `上${c.hu.upper}／下${c.hu.lower}`;
+    document.getElementById('mBianName').textContent = c.bian.name;
+    document.getElementById('mBianDesc').textContent = `上${c.bian.upper}／下${c.bian.lower} · ${i18nT('meihua.bianChanged', '第 {n} 爻已变', { n: dong })}`;
+    document.getElementById('meihuaTiyong').innerHTML = `<strong>${escapeHtml(i18nT('meihua.tiyong', '体用：体卦 {ti}，用卦 {yong}。以不动者为体，动爻所在为用。', { ti: c.ti, yong: c.yong }))}</strong> · ${escapeHtml(c.relation)}`;
     submitBtn.disabled = false;
   }
 
   submitBtn.addEventListener('click', () => {
     if (!currentMeihuaData) return;
     if (!guardToolSubmit()) return;
-    const prompt = `【梅花易数推演】\n起卦方式：${currentMeihuaData.mode}\n上卦数：${currentMeihuaData.up}，下卦数：${currentMeihuaData.down}，动爻：第${currentMeihuaData.dong}爻。\n本卦：上${guaNames[currentMeihuaData.up]} / 下${guaNames[currentMeihuaData.down]}\n互卦：上${guaNames[currentMeihuaData.huUp]} / 下${guaNames[currentMeihuaData.huDown]}\n变卦：上${guaNames[currentMeihuaData.bianUp]} / 下${guaNames[currentMeihuaData.bianDown]}\n请玄机子依梅花易数判定体用五行生克与应期时机。`;
+    const prompt = meihuaPromptBlock(currentMeihuaData.mode, currentMeihuaData.chart);
     document.getElementById('modalMeihua').classList.remove('show');
     prefillAndGuide(prompt, '本互变三卦已排定。请补充所问之事与当下处境后亲手呈递。');
   });
