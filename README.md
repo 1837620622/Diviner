@@ -24,6 +24,7 @@ script.js                      前端逻辑、MODEL_CATALOG、排盘引擎
 calendar.js                    历法查表库
 locales.js                     中英双语词典
 admin.html                     观象台后台
+admin.js                       观象台后台脚本（CSP 禁止内联脚本）
 functions/api/chat.js          问卜接口：路由表、限流、联网查证编排、流式转发
 functions/api/_search.js       联网查证（Brave / DuckDuckGo）
 functions/api/health.js        后台线路状态
@@ -31,6 +32,7 @@ functions/api/admin/records.js 后台记录接口
 tests/calendar-baseline.mjs    历法基准校验
 tests/chat-protocol.test.mjs   问卜协议回归（模拟上游）
 tests/divination-chart.test.mjs 卦盘基准：六十四卦、八宫世应、纳甲、六亲、六神、旬空、三钱抛掷、梅花数理
+tests/security-headers.test.mjs 页面安全策略回归：CSP 下发、无内联事件与内联脚本
 .github/workflows/ci.yml       CI
 wrangler.toml                  Pages 配置（仅 KV / AI binding）
 _headers                       安全头与缓存策略
@@ -68,7 +70,7 @@ npx wrangler pages dev . --ai AI
 ## 测试
 
 ```bash
-node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs
+node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs tests/security-headers.test.mjs
 ```
 
 CI（`.github/workflows/ci.yml`）另做全部 Functions 与前端脚本的语法检查。

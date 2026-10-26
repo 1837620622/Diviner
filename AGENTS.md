@@ -15,7 +15,9 @@ script.js                     只请求 /api/chat；MODEL_CATALOG 定义法器�
 calendar.js                   历法查表库（jjonline/calendar.js），挂载 window.calendar
 locales.js                    中英双语词典与 t()；data-i18n 静态文案在此
 admin.html                    观象台后台（口令走请求头，不写进源码）
+admin.js                      观象台后台脚本（独立文件，CSP 禁止内联脚本）
 zan.jpg                       赞赏码图片
+assets/                       字体样式与图标库；fonts-switch.js 启用 fonts.css
 _headers                      安全头与缓存策略
 wrangler.toml                 仅 KV / AI binding，无密钥
 logos/                        真实厂商 logo（deepseek/qwen/zhipu/tencent/xiaomi）
@@ -26,7 +28,8 @@ functions/api/admin/records.js
 tests/calendar-baseline.mjs   历法基准校验（node --test）
 tests/divination-chart.test.mjs 卦盘基准：六十四卦、八宫世应、纳甲、六亲、六神、旬空、三钱抛掷、梅花数理
 tests/chat-protocol.test.mjs  问卜协议回归：模拟上游，覆盖跨站拒绝、兜底帧、限流重试、联网查证帧序
-.github/workflows/ci.yml      CI：语法检查 + 历法、问卜协议与卦盘基准
+tests/security-headers.test.mjs 页面安全策略回归：CSP 下发、无内联事件与内联脚本
+.github/workflows/ci.yml      CI：语法检查 + 历法、问卜协议、卦盘与页面安全基准
 .dev.vars.example             本地空模板，禁止填真实值后提交
 免费模型配置说明.md            线路与配置的说明（配置者视角）
 ```
@@ -69,8 +72,8 @@ Git 推送 `main` 也会触发 Pages 的 Git 集成部署。
 自动检查（与 CI 相同）：
 
 ```bash
-for f in script.js calendar.js locales.js functions/api/*.js functions/api/admin/*.js; do node --check "$f"; done
-node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs
+for f in script.js calendar.js locales.js admin.js assets/fonts-switch.js functions/api/*.js functions/api/admin/*.js; do node --check "$f"; done
+node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs tests/security-headers.test.mjs
 ```
 
 手工检查（部署后在线上核对）：
@@ -135,6 +138,7 @@ Workers AI Binding 名称：`AI`。
 - 回复结构按四段小标题渲染：象数解析 / 吉凶趋避 / 可行建议 / 玄机箴言。模型兜底文案也须使用这四个标题。`formatDivinationContent` 同时识别旧的【建议趋避】并渲染为小标题，但它不属于四段结构，新代码不再使用。
 - 联网参详来源只渲染 `http(s)` 链接；服务端 `_search.js` 同样只保留 `http(s)` 结果。
 - 静态文案中英双份，位于 `locales.js`；新增 `data-i18n` 键须两种语言都写。
+- 页面带 CSP（`_headers`）：`script-src 'self'`，不许内联脚本与内联事件属性（`onclick=`、`onload=` 等）；事件用 `addEventListener`，脚本写成独立文件。`style-src` 允许内联，动态 HTML 中的 `style=` 不受影响。`tests/security-headers.test.mjs` 守住这条约定。
 
 ## 排盘引擎（确定性历法）
 

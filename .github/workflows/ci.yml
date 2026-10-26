@@ -18,8 +18,8 @@ jobs:
           node-version: 22
       - name: 语法检查
         run: |
-          for f in script.js calendar.js locales.js functions/api/*.js functions/api/admin/*.js; do
+          for f in script.js calendar.js locales.js admin.js assets/fonts-switch.js functions/api/*.js functions/api/admin/*.js; do
             node --check "$f"
           done
       - name: 历法、问卜协议与卦盘基准
-        run: node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs
+        run: node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs tests/security-headers.test.mjs
