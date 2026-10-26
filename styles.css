@@ -2416,6 +2416,31 @@ button:focus-visible,.door-card:focus-visible,.history-item:focus-visible { outl
   letter-spacing: 0.14em;
 }
 
+.about-sister {
+  margin: 10px 0 0;
+  font: 500 11px/1.6 var(--font-serif);
+  letter-spacing: 0.08em;
+}
+.about-sister a,
+.welcome-sister {
+  color: var(--gold);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: color 0.25s, border-color 0.25s;
+}
+.about-sister a:hover,
+.welcome-sister:hover {
+  color: var(--gold-light);
+  border-bottom-color: var(--gold-glow);
+}
+.welcome-sister {
+  display: block;
+  width: fit-content;
+  margin: 10px auto 0;
+  font: 500 11px/1.6 var(--font-serif);
+  letter-spacing: 0.08em;
+}
+
 .dream-tags-container {
   display: flex;
   flex-wrap: wrap;

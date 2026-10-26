@@ -45,6 +45,11 @@ function stripHtml(input) {
     .trim();
 }
 
+// 只放行 http(s) 链接：来源会原样下发到浏览器渲染成链接，其它协议一律丢弃。
+function isHttpUrl(url) {
+  return /^https?:\/\//i.test(String(url || ''));
+}
+
 // 截断文本至多 n 字。
 function clipText(text, n) {
   const s = String(text || '');
@@ -94,7 +99,7 @@ async function searchBrave(apiKey, query, max, signal) {
   const sources = [];
   for (const r of results) {
     const url = String(r?.url || '').trim();
-    if (!url) continue;
+    if (!isHttpUrl(url)) continue;
     const title = clipText(stripHtml(r?.title), SNIPPET_LIMIT);
     const snippet = clipText(stripHtml(r?.description), SNIPPET_LIMIT);
     if (!title && !snippet) continue;
@@ -118,7 +123,7 @@ function parseDdgHtml(htmlText, max) {
     if (/result--ad/i.test(tag)) continue; // 跳过广告位
     const hrefMatch = tag.match(/href="([^"]*)"/i);
     const url = decodeDdgHref(hrefMatch ? hrefMatch[1] : '');
-    if (!url || seen.has(url)) continue;
+    if (!isHttpUrl(url) || seen.has(url)) continue;
 
     const afterTag = htmlText.slice(m.index + tag.length);
     const closeIdx = afterTag.toLowerCase().indexOf('</a>');

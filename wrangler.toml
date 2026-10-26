@@ -4,16 +4,12 @@ compatibility_date = "2024-01-01"
 pages_build_output_dir = "."
 
 # 密钥只放 Dashboard Variables and Secrets，不要写入本文件。
-# 需要：B_AI_API_KEY、GROQ_API_KEY、ZHIPU_API_KEY、ADMIN_PASSWORD。
+# 需要：B_AI_API_KEY、GROQ_API_KEY、ZHIPU_API_KEY、ADMIN_PASSWORD；可选：BRAVE_API_KEY。
 
-# KV命名空间绑定
-# 需要在Cloudflare Dashboard中创建KV命名空间后，将ID填入下方
-# 1. 登录 https://dash.cloudflare.com
-# 2. 进入 Workers & Pages -> KV
-# 3. 点击 "Create a namespace"，名称填写 "CHAT_LOGS"
-# 4. 创建后复制ID，替换下方的 "your-kv-namespace-id"
-# 5. 或者通过命令行：wrangler kv:namespace create CHAT_LOGS
-
+# KV 命名空间绑定：CHAT_LOGS 保存问卜档案，后台读取。
+# 本项目已绑定下方 namespace。若部署到其他 Cloudflare 账号：
+#   wrangler kv namespace create CHAT_LOGS
+# 再把返回的 id 替换下方的值。
 [[kv_namespaces]]
 binding = "CHAT_LOGS"
 id = "6033ad3d4bfa43c3bc679bcbe6e74643"

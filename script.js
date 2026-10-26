@@ -1282,11 +1282,11 @@ async function handleSend(customText = null, includeImages = true) {
       if (accumulatedText.trim()) {
         fallback = `${accumulatedText.trim()}\n\n——（灵机中途渐弱，卦辞至此；稍候可重新问卜续参）——`;
       } else {
-        fallback = `推演耗时过久，已自动中止。\n\n【建议趋避】稍候重新问卜，或另择一尊较快的法器（模型）；深度推理类法器本就耗时较长。\n\n【玄机箴言】静水流深，急则生变。`;
+        fallback = `推演耗时过久，已自动中止。\n\n【可行建议】稍候重新问卜，或另择一尊较快的法器（模型）；深度推理类法器本就耗时较长。\n\n【玄机箴言】静水流深，急则生变。`;
       }
     } else {
       setStatus(i18nT('status.fluctuation', '推演遇到波动 · 可另择法器'));
-      fallback = `推演暂遇阻滞。\n\n【建议趋避】稍候片刻重新问卜，或点击输入框上方的模型选择器另择一尊法器；若上传了图片请稍作压缩后重试。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
+      fallback = `推演暂遇阻滞。\n\n【可行建议】稍候片刻重新问卜，或点击输入框上方的模型选择器另择一尊法器；若上传了图片请稍作压缩后重试。\n\n【玄机箴言】静水流深，急则生变；稍安勿躁，自有明断。`;
     }
     bubble.innerHTML = formatDivinationContent(fallback);
     attachMessageActions(wrapper, fallback);
