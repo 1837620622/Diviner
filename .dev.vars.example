@@ -3,3 +3,8 @@ B_AI_API_KEY=""
 GROQ_API_KEY=""
 ZHIPU_API_KEY=""
 ADMIN_PASSWORD=""
+# 可选：联网查证优先使用 Brave Search，未配置则回退 DuckDuckGo。
+BRAVE_API_KEY=""
+# 可选：覆盖默认上游模型名，未配置则用内置默认值。
+# GROQ_MODEL=""
+# ZHIPU_MODEL=""

@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: 语法与历法基准
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 语法检查
+        run: |
+          for f in script.js calendar.js locales.js functions/api/*.js functions/api/admin/*.js; do
+            node --check "$f"
+          done
+      - name: 历法基准校验与问卜协议回归
+        run: node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs

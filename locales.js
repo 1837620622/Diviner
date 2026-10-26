@@ -109,6 +109,7 @@
     'welcome.step3': '明断',
     'welcome.divider': '择一法门 · 入境取象',
     'welcome.footnote': '占断用于整理思路与自省，不替代医疗、法律、投资等专业判断。',
+    'welcome.sister': '姊妹站 · 卦象问道，看风水问宅运 →',
     'welcome.door.tarotTitle': '灵犀塔罗',
     'welcome.door.tarotSub': '圣三角 · 观心抉择',
     'welcome.door.ichingTitle': '周易六爻',
@@ -462,7 +463,8 @@
     'about.feat3Desc': '记住对话上下文与命主档案，卦辞前后呼应，不必反复自述。',
     'about.quote': '「知命而不受制于命，顺势而为，自强不息。」',
     'about.disclaimer': '卦象示趋避，事仍在人为。推演仅供参考，不构成医疗、投资、法律等专业建议。',
-    'about.credit': '开发者：传康KK · 无偿开发，免费使用'
+    'about.credit': '开发者：传康KK · 无偿开发，免费使用',
+    'about.sister': '姊妹站 · 卦象问道：《改命记实录》风水问答 →'
   };
 
   // ───────────────────────────
@@ -559,6 +561,7 @@
     'welcome.step3': 'Read it clear',
     'welcome.divider': 'Choose a path · Enter and take its image',
     'welcome.footnote': 'Divination serves reflection and self-inquiry; it does not replace medical, legal, or investment advice.',
+    'welcome.sister': 'Sister site · Guaxiang Wendao, feng shui for home and fortune →',
     'welcome.door.tarotTitle': 'Intuitive Tarot',
     'welcome.door.tarotSub': 'Three-card spread · Behold the heart',
     'welcome.door.ichingTitle': 'I Ching Six Lines',
@@ -912,7 +915,8 @@
     'about.feat3Desc': 'It remembers your conversation and your profile, so readings build on one another instead of starting over.',
     'about.quote': '“Know your fate, yet never be bound by it; move with the tide, and strive without rest.”',
     'about.disclaimer': 'The hexagrams show tendencies, not certainties — the deed remains yours. Readings are for reflection only and are not medical, financial or legal advice.',
-    'about.credit': 'Developer: ChuanKang KK · Built pro bono, free to use'
+    'about.credit': 'Developer: ChuanKang KK · Built pro bono, free to use',
+    'about.sister': 'Sister site · Guaxiang Wendao: feng shui Q&A from the book →'
   };
 
   // ───────────────────────────

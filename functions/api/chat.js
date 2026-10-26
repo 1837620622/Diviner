@@ -567,7 +567,7 @@ export async function onRequestPost(context) {
 
       try {
         while (true) {
-          // 空闲保护：上游九十分钟无一字返回即视同阻滞，转入外层收尾
+          // 空闲保护：上游九十秒无一字返回即视同阻滞，转入外层收尾
           // 发出 [DONE]，并在 finally 中断上游，避免悬置的流空耗配额。
           const { value, done } = await withTimeout(reader.read(), 90 * 1000);
           if (done) break;
