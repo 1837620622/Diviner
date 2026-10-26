@@ -30,6 +30,7 @@ functions/api/health.js        后台线路状态
 functions/api/admin/records.js 后台记录接口
 tests/calendar-baseline.mjs    历法基准校验
 tests/chat-protocol.test.mjs   问卜协议回归（模拟上游）
+tests/divination-chart.test.mjs 卦盘基准：六十四卦、八宫世应、纳甲、六亲、六神、旬空、三钱抛掷、梅花数理
 .github/workflows/ci.yml       CI
 wrangler.toml                  Pages 配置（仅 KV / AI binding）
 _headers                       安全头与缓存策略
@@ -67,7 +68,7 @@ npx wrangler pages dev . --ai AI
 ## 测试
 
 ```bash
-node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs
+node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs
 ```
 
 CI（`.github/workflows/ci.yml`）另做全部 Functions 与前端脚本的语法检查。

@@ -21,5 +21,5 @@ jobs:
           for f in script.js calendar.js locales.js functions/api/*.js functions/api/admin/*.js; do
             node --check "$f"
           done
-      - name: 历法基准校验与问卜协议回归
+      - name: 历法、问卜协议与卦盘基准
         run: node --test tests/calendar-baseline.mjs tests/chat-protocol.test.mjs tests/divination-chart.test.mjs
