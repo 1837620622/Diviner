@@ -197,6 +197,14 @@ function hourBranchIndex(hourValue) {
   return Math.floor(((Number(hourValue) % 24) + 1) / 2) % 12;
 }
 
+// 年柱以立春分年：立春（cal.getTerm(y, 3)，节令日）之前属上一干支年，之后即为本年。
+// 不可取 solar2lunar 的 gzYear——那是以春节为界的农历年，会让立春到春节之间的年柱错一年。
+// 精确到日：立春的时分未计，与历法库的粒度一致。
+function yearPillarBySolar(cal, y, m, d) {
+  const beforeLichun = m < 2 || (m === 2 && d < cal.getTerm(y, 3));
+  return cal.toGanZhiYear(beforeLichun ? y - 1 : y);
+}
+
 // 核心排盘：opts = { y, m, d, hourValue, calendarType: 'solar'|'lunar', isLeapMonth }
 // 返回结构化盘面；历法非法（超数据区间、农历无此日等）返回 null。
 function computeFourPillars(opts) {
@@ -227,7 +235,8 @@ function computeFourPillars(opts) {
   const hz = hourPillar(dayGz, bIdx);
   if (!hz) return null;
 
-  const pillars = [info.gzYear, info.gzMonth, dayGz, hz];
+  const yearGz = yearPillarBySolar(cal, Number(y), Number(m), Number(d));
+  const pillars = [yearGz, info.gzMonth, dayGz, hz];
   const elements = { 木: 0, 火: 0, 土: 0, 金: 0, 水: 0 };
   pillars.forEach(gz => {
     elements[STEM_ELEMENT[gz.charAt(0)]] += 1;
@@ -242,7 +251,7 @@ function computeFourPillars(opts) {
     solarDate: `${y}年${Number(m)}月${Number(d)}日`,
     lunarDate: `农历${lunarText}`,
     animal: info.Animal,
-    pillars: { year: info.gzYear, month: info.gzMonth, day: dayGz, hour: hz },
+    pillars: { year: yearGz, month: info.gzMonth, day: dayGz, hour: hz },
     dayMaster: { stem: dayStem, element: STEM_ELEMENT[dayStem], yinyang: dayStemIdx % 2 === 0 ? '阳' : '阴' },
     elements,
     shichen: SHICHEN_NAMES[bIdx] + '时',
@@ -258,15 +267,16 @@ function currentDateBlock() {
   const week = '星期' + WEEK_CN[now.getDay()];
   const cal = window.calendar;
   const info = cal ? cal.solar2lunar(y, m, d) : null;
+  const yearGz = info ? yearPillarBySolar(cal, y, m, d) : '';
   const en = window.I18N_LANG === 'en';
   if (en) {
     let line = `\n\n【Today】Today is ${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')} (${week}).`;
-    if (info) line += ` Lunar date: ${info.isLeap ? 'leap ' : ''}month ${info.lMonth}, day ${info.lDay}; ganzhi: ${info.gzYear} year, ${info.gzMonth} month, ${info.gzDay} day.`;
+    if (info) line += ` Lunar date: ${info.isLeap ? 'leap ' : ''}month ${info.lMonth}, day ${info.lDay}; ganzhi: ${yearGz} year, ${info.gzMonth} month, ${info.gzDay} day.`;
     line += ' Judge every "this year / next year", annual fortune and age strictly by this date.';
     return line;
   }
   let line = `\n\n【今时此刻】今天是公历 ${y} 年 ${m} 月 ${d} 日（${week}）`;
-  if (info) line += `，农历${info.IMonthCn}${info.IDayCn}，干支 ${info.gzYear}年 ${info.gzMonth}月 ${info.gzDay}日`;
+  if (info) line += `，农历${info.IMonthCn}${info.IDayCn}，干支 ${yearGz}年 ${info.gzMonth}月 ${info.gzDay}日`;
   line += '。凡断流年、大运、岁运并临与「今年、明年」，一律以此为基准，不得滞留旧年。';
   return line;
 }
@@ -2295,7 +2305,8 @@ function renderAlmanacData() {
   const weekday = '日一二三四五六'[d.getDay()];
   // 今日干支与农历由历法引擎查表给出，随提纲一并呈上，模型不必再猜
   const info = window.calendar ? window.calendar.solar2lunar(d.getFullYear(), d.getMonth() + 1, d.getDate()) : null;
-  const lunarStr = info ? `${info.IMonthCn}${info.IDayCn} · 干支 ${info.gzYear}年 ${info.gzMonth}月 ${info.gzDay}日${info.isTerm ? ' · 当日值' + info.Term : ''}` : '';
+  const yearGz = info ? yearPillarBySolar(window.calendar, d.getFullYear(), d.getMonth() + 1, d.getDate()) : '';
+  const lunarStr = info ? `${info.IMonthCn}${info.IDayCn} · 干支 ${yearGz}年 ${info.gzMonth}月 ${info.gzDay}日${info.isTerm ? ' · 当日值' + info.Term : ''}` : '';
   content.innerHTML = `
     <div class="almanac-sheet">
       <div class="almanac-date-mark"><small>${d.getFullYear()}</small><strong>${String(d.getMonth()+1).padStart(2,'0')}·${String(d.getDate()).padStart(2,'0')}</strong><span>星期${weekday}</span></div>
@@ -2318,7 +2329,8 @@ function bindAlmanacQuery() {
     const dateStr = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
     const weekday = '日一二三四五六'[d.getDay()];
     const info = window.calendar ? window.calendar.solar2lunar(d.getFullYear(), d.getMonth() + 1, d.getDate()) : null;
-    const ganzhiNote = info ? `本堂历法引擎核定：农历${info.IMonthCn}${info.IDayCn}，干支 ${info.gzYear}年 ${info.gzMonth}月 ${info.gzDay}日${info.isTerm ? '，当日值' + info.Term : ''}。依此基准直断，勿另校历。` : '若无法可靠校历，请明确说明不确定处，不要编造。';
+    const yearGz = info ? yearPillarBySolar(window.calendar, d.getFullYear(), d.getMonth() + 1, d.getDate()) : '';
+    const ganzhiNote = info ? `本堂历法引擎核定：农历${info.IMonthCn}${info.IDayCn}，干支 ${yearGz}年 ${info.gzMonth}月 ${info.gzDay}日${info.isTerm ? '，当日值' + info.Term : ''}。依此基准直断，勿另校历。` : '若无法可靠校历，请明确说明不确定处，不要编造。';
     prefillAndGuide(`【择吉黄历】请以 ${dateStr}（星期${weekday}）为基准。${ganzhiNote}先陈该日值神与冲煞，再分别列出宜、忌及行事趋避。`, '今日黄历提纲已誊入呈匣。可注明今日欲行之事（出行、签约、动土等），随后亲手呈递。');
   });
 }
